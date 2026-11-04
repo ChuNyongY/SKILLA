@@ -47,7 +47,7 @@ class LocalApprovalPresenter:
     @staticmethod
     def _build_view(approval: ApprovalRequest) -> ApprovalView:
         return ApprovalView(
-            title="JAVIS 작업 승인",
+            title="SKILLA 작업 승인",
             capability=approval.capability_id,
             purpose=approval.purpose,
             target=approval.target_identity or "(지정되지 않음)",
@@ -157,7 +157,7 @@ class OsBackedStrongAuthenticator:
         ):
             return False
         message = (
-            f"JAVIS {approval.capability_id} 승인 | "
+            f"SKILLA {approval.capability_id} 승인 | "
             f"대상: {approval.target_identity or '(없음)'} | "
             f"요청: {approval.request_id} | 인자 해시: {approval.arguments_hash}"
         )

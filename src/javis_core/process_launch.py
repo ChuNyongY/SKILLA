@@ -34,6 +34,9 @@ class RegisteredApp(FrozenModel):
     )
     document_launch_mode: Literal["path-only", "browser-new-window"] = "path-only"
     launch_argument: Literal["--new-window"] | None = None
+    launch_arguments: tuple[
+        Literal["--launch-product=valorant", "--launch-patchline=live"], ...
+    ] = ()
 
     @model_validator(mode="after")
     def runtime_identity_must_be_complete(self) -> RegisteredApp:
@@ -51,6 +54,14 @@ class RegisteredApp(FrozenModel):
             raise ValueError("browser document launch requires single-instance handoff")
         if self.launch_argument is not None and not self.single_instance_handoff:
             raise ValueError("fixed launch argument requires single-instance handoff")
+        if self.launch_argument is not None and self.launch_arguments:
+            raise ValueError("single and multiple fixed launch arguments cannot be combined")
+        if self.launch_arguments != (
+            "--launch-product=valorant",
+            "--launch-patchline=live",
+        ):
+            if self.launch_arguments:
+                raise ValueError("unsupported fixed launch arguments")
         return self
 
     @classmethod
@@ -88,7 +99,7 @@ class ProcessLauncher(Protocol):
         self,
         executable: Path,
         *,
-        fixed_argument: str | None,
+        fixed_argument: str | tuple[str, ...] | None,
         working_directory: Path,
         environment: Mapping[str, str],
     ) -> int: ...
@@ -125,12 +136,14 @@ class SubprocessLauncher:
         self,
         executable: Path,
         *,
-        fixed_argument: str | None,
+        fixed_argument: str | tuple[str, ...] | None,
         working_directory: Path,
         environment: Mapping[str, str],
     ) -> int:
         command = [str(executable)]
-        if fixed_argument is not None:
+        if isinstance(fixed_argument, tuple):
+            command.extend(fixed_argument)
+        elif fixed_argument is not None:
             command.append(fixed_argument)
         process = subprocess.Popen(  # noqa: S603 - executable is pre-registered and hashed
             command,
@@ -219,7 +232,7 @@ class ProcessLaunchExecutor:
                 launch_attempted = True
                 pid = self._launcher.launch(
                     app.executable,
-                    fixed_argument=app.launch_argument,
+                    fixed_argument=(app.launch_argument or app.launch_arguments or None),
                     working_directory=app.executable.parent,
                     environment=self._minimal_environment(),
                 )

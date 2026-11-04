@@ -1,6 +1,197 @@
 # 원 계획서 대비 완료 감사
 
-최종 갱신: 2026-10-07
+최종 갱신: 2026-10-19
+
+## 2026-10-20 최종 통합 감사
+
+- 전체 자동시험을 다시 실행하여 1,091개 통과·5개 건너뜀을 확인했다. 제품 소스와 시험의 Ruff 검사는
+  통과했고, strict mypy는 151개 소스 파일에서 오류가 없었다.
+- 절대 경로로 source doctor 15/15, Credential Manager 기반 사전점검 3/3, 13개 기능 서비스 조립
+  `ready=true`, `capture_running=false`, `host_state=CREATED`를 다시 확인했다.
+- 설치된 `0.1.9` 패키지는 manifest 1,826개 파일을 모두 검증했고 시작 메뉴 등록 상태는
+  `ALREADY_REGISTERED`였다. 설치본 `JAVIS.exe smoke-system-info`도
+  `SUCCEEDED/ALL_ACTIONS_VERIFIED`로 끝났다.
+- 연결된 주 화면은 `DISPLAY1` 2560×1440이며 저장된 대상과 일치했다. 현재 NIM 자격 증명은
+  값 노출 없이 존재 여부만 확인했고 제품 사전점검을 통과했다.
+- 확인 실험 묶음은 15개 완전 대응 블록·60개 관측이며, 60개 결과 근거 파일과 observations·report의
+  SHA-256이 manifest와 모두 일치했다. 분석기를 다시 실행해 SK0 10/15, SK1 12/15, SK2 12/15,
+  SK3 14/15와 Holm 보정 p값 0.375·1.000·1.000을 재현했다.
+- 졸업논문 초안, 관련 논문 방법론 정리본과 13장 최종 발표본이 존재하고 텍스트 자리표시자나 이전
+  `153개 파일` 표기는 없다. 발표본의 패키지·레이아웃·글꼴·편집 가능한 성공률 차트 검증을 통과했다.
+- 공개 배포용 코드 서명과 외부 참가자 일반화 실험은 완료 범위가 아니다. 이 제한을 논문과 발표본에
+  명시했으며, 로컬 시연·제출용 프로그램 완성과 자체 확인 실험 완료를 보편적 성능 우월성으로
+  표현하지 않는다.
+
+## 2026-10-19 0.1.9 스킬 검토 창 감사
+
+- 기존 텍스트 명령 창에서 스킬 검토 창을 열 때 두 번째 `Tk` 루트와 중첩 실행 루프를 만들던
+  결함을 같은 루트의 `Toplevel` 보조 창으로 수정했다. 실제 Windows 화면에서
+  `[신규] Windows 시스템 정보 조회 (v1)`이 표시되고, 저장소 조회에서도 같은 ID·버전·DRAFT
+  상태임을 독립적으로 확인했다.
+- 초안이 없을 때는 빈 화면 대신 실행 기록을 `스킬 후보 검토`에서 초안으로 만드는 절차를
+  안내하도록 회귀 시험을 추가했다.
+- 전체 1,096개 시험 중 1,091개 통과·환경 의존 5개 건너뜀, Ruff, strict mypy 151 files가
+  통과했다. 0.1.9 r1 package는 1,826개 manifest 항목, 사전점검 3/3, 13-capability service
+  `CREATED`, `capture_running=false`를 통과했다.
+- Setup 실제 설치 결과는 `SUCCESS/code=0`이며 시작 메뉴 대상은 설치된 0.1.9다. 설치본의
+  `smoke-system-info`는 `SUCCEEDED/ALL_ACTIONS_VERIFIED`, 화면 열거는 주 화면 `DISPLAY1`
+  2560×1440을 반환했다.
+- Setup SHA-256은 `d7fe1397a9cf9bcd9bb3dbee93dea04cafda6b48e0bf32d16e6d939f01a76f8e`,
+  wheel은 `a0c96269c272945cb475851fd2b7d0fd4ad1cfd2f578f3dade78f2277da50c8b`,
+  package manifest는 `93c3f99737c35aa943ede07b281969a71193d5ec754a10a8b3de119f1b0c8a27`다.
+  패키지의 `NIM.txt`는 0건이며 release audit의 manifest·Setup hash는 PASS다.
+- console/tray/Setup 세 파일은 모두 `NotSigned`라 서명 항목은 예상대로 FAIL이다. 따라서
+  로컬 시연용 설치본 검증 완료를 공개 배포용 코드 서명 완료로 과장하지 않는다.
+
+## 2026-10-19 0.1.8 결함 수정 감사
+
+- 앱 버전과 사용자 상태 형식을 분리하고, 현재 설치 버전의 SQLite 데이터는 SQLite 백업 API로
+  `state/v1`에 이관한다. 기존 목적 파일은 덮어쓰지 않으며 심볼릭 링크·재분석 지점은 거부한다.
+- 검증 완료 결과만 화면 표시 저장소에 들어가며, 시스템 정보의 허용 항목과 파일 개수 외의
+  관측 데이터는 고정 성공 문구로 축약한다.
+- 텍스트 명령·스킬 후보 검토 화면의 상태 문구와 초안 생성 피드백을 한국어 중심으로 수정했다.
+- 0.1.8이 직전 0.1.7 상태를 찾는 실제 업그레이드 경로를 시험과 설치본 양쪽에서 검증했다.
+  초안 `12f0715a-1a19-4fd4-a15d-90b89ca3a028`의 키, 버전 1, DRAFT 상태가 유지됐다.
+- 전체 1,095개 시험 중 1,090개가 통과하고 환경 의존 시험 5개가 건너뛰어졌으며, Ruff와 strict
+  mypy 151 source files가 통과했다. 별도 가상환경 wheel 설치, 버전·신규 결과 저장소 import,
+  CLI 도움말도 통과했다.
+- 최종 1,826-entry r2 package manifest와 Setup sidecar hash는 PASS다. Setup 실제 설치는 exit 0,
+  설치본 사전점검 3/3, 13-capability service `CREATED`, `capture_running=false`, 실제 텍스트 명령 창
+  생성·정상 종료를 통과했다. Setup SHA-256은
+  `023b73d46b98b643f5555111091afed6346951213a3a2670fd77b6d9a9e65fb7`이다.
+- package·wheel·Setup에서 `NIM.txt`와 실제 키 일치는 0건이다. console/tray/Setup은 모두
+  `NotSigned`라서 로컬 시연·제출용 검증 완료와 공개 서명 배포 완료는 구분한다.
+
+## 2026-10-18 첫 실행 설정·0.1.7 감사
+
+- NIM 자격 증명이 `ABSENT`이면 마스킹된 로컬 초기 설정 창을 열고 Windows 자격 증명 관리자 저장과
+  재읽기 검증을 통과한 뒤에만 기존 제품 시작 경로로 들어간다. 취소·저장 실패·예외·허위 성공 뒤
+  재검증 실패는 제품 실행과 사전점검을 호출하지 않는다.
+- 비밀값은 `SecretStr`로만 저장기에 전달하고 창 입력값을 즉시 비운다. 저장기나 UI 예외에 키·사용자
+  경로가 포함돼도 고정 문구 외의 값은 표시하지 않는 시험을 추가했다.
+- 전체 시험 **1,085 passed, 4 skipped**, Ruff와 strict mypy 150 files를 통과했다. 0.1.7 wheel은
+  새 가상환경 설치·version import·CLI 도움말을 통과했다.
+- 0.1.7 실제 설치는 `SUCCESS`, 재설치는 `ALREADY_VERIFIED`였고 설치본 manifest 1,826개,
+  사전점검 3/3, 13개 기능 서비스 조립과 마이크 미개방을 재검증했다. 시작 메뉴 링크의 실제 실행으로
+  `JAVIS 텍스트 명령` 창을 확인하고 정상 종료했다.
+- 최종 r2 Setup SHA-256은
+  `a9003f4465f838b32540827ccb21e91a509e46e54ecbfdf6c94a0cd6de980228`, package manifest는
+  `e4cc23da0bd5e511a10401602f55722e119d52aa28c965cd11271fa48aaadf16`, 두 실행 파일은 각각
+  `815c7a5af68ae43b8770c690e5cf24590b277113415121629c0578354b63ef84`,
+  `88ff9db277f3e108715227add9b861dbfe7925f3b1e318c120abddb67cc7466d`다. package의 민감한
+  파일명과 실제 키 byte 일치 검색은 0건이다.
+- release audit은 manifest·Setup hash PASS, 세 서명 `SIGNATURE_INVALID`이며 실제 파일도 모두
+  `NotSigned`다. 사용 가능한 현재 사용자 코드 서명 인증서가 0개이므로 공개 배포 완료라고 표시하지
+  않는다.
+- 이 감사는 기존 자격 증명이 있는 실제 시작 경로와 초기 설정 로직의 자동시험을 증명한다. 실제
+  자격 증명을 삭제해 첫 실행 창을 다시 띄우지는 않았으므로 사용자 비밀 상태를 검증 때문에 변경하지
+  않았다.
+
+## 2026-10-18 시작 실패 가시성 감사
+
+- 스킬 중심 연구 제품임에도 기본 텍스트 UI에서 스킬 catalog와 후보 trace를 열 수 없던 접근성
+  결함을 수정했다. 0.1.6 기본 창은 `스킬 관리`, `스킬 후보 검토`, `작업 화면 선택`을 같은 두 번째
+  버튼 행에 제공하고 tray와 동일한 객체·workflow를 호출한다. 실패 문구는 고정값만 사용한다.
+
+- 더블클릭 경로가 주 UI 생성 전에 Credential Manager, 제품 구성과 필수 구성 요소를 확인한다.
+  누락·손상·예상하지 못한 실패는 고정 한국어 안내와 안정적인 비정상 종료 코드로 끝나므로 이전처럼
+  windowed 프로세스가 설명 없이 닫히는 경로를 제거했다.
+- 개인 정보 최소화 시험은 실제 예외에 API 키 형태와 사용자 경로가 포함돼도 오류 창에 전달되지 않음을
+  확인한다. 제품 실행기는 사전점검을 통과한 경우에만 호출되고, 성공 시에는 오류 창이 표시되지 않는다.
+- 첫 0.1.4 실제 설치에서 과거 `primary` 좌표와 현재 좌표가 달라 시작이 차단되는 결함을 발견했다.
+  `primary` 모드는 현재 주 화면 descriptor를 원자적으로 갱신하고, 명시적 `device` 모드는 계속
+  fail-closed하도록 수정한 0.1.5를 새 배포물로 만들었다.
+- 최종 0.1.6 one-folder 1,826개 파일은 manifest `VERIFIED`, 사전점검 3/3, 13개 기능 서비스 조립과
+  마이크 미개방을 통과했다. Setup 최초 설치 `SUCCESS`, 재설치 `ALREADY_VERIFIED`, 0.1.6 시작 메뉴
+  target·빈 인자·작업 폴더와 실제 텍스트 명령 창 생성·정상 종료를 확인했다.
+- 전체 시험은 1,078 passed, 4 skipped이며 Ruff와 strict mypy 150 files를 통과했다. wheel도 별도
+  가상환경에서 설치·핵심 모듈 import·CLI 도움말을 통과했다. 최종 Setup SHA-256은
+  `5f90c3cd579db2797ab8d1d5ea062810b78ec1ef63737c98dc248c007888f091`이다.
+- 0.1.6 창에 실제 한국어 명령을 다시 입력하는 마지막 UI 반복은 사용자가 물리적 Escape로 화면 조작을
+  중단해 수행하지 않았다. 같은 NIM→정책→실행→검증→trace 경로의 설치본 E2E는 0.1.3에서 통과했고,
+  0.1.6에는 시작·회귀·서비스 조립 근거가 있으나 이를 0.1.6 UI E2E로 과장하지 않는다.
+- 0.1.6 release audit은 manifest·Setup hash PASS, 세 Authenticode signature FAIL이다. 현재 사용자
+  저장소의 사용 가능한 code-signing 인증서가 0개이므로 공개 배포 완료는 외부 인증서가 생기기 전까지
+  증명할 수 없다. 실제 다중 모니터는 두 번째 화면이 없고, 한국어 호출어 최종 검증은 새 음성 자료와
+  장치 사용 동의가 필요하므로 자동시험으로 대체하지 않는다.
+
+## 2026-10-17 제품 완성도 감사
+
+- 사용자 설계도의 핵심인 스킬 검색·재사용·실행 기록·개정 구조를 유지하면서, 실제 제품 사용에
+  필요한 텍스트 명령 창과 작업 화면 선택을 제품 조립 경로에 추가했다. 텍스트와 음성은 같은
+  planner·정책·executor·verifier·skill trace를 사용하지만, 기본 더블클릭 경로는 마이크를 열지 않는다.
+- 실제 NIM 텍스트 명령에서 `system.info.read` 실행과 독립 검증, 스킬 실행 기록까지 완료했다.
+  one-folder와 격리 설치 폴더를 각각 작업 위치로 둔 배포용 EXE의 실제 `JAVIS 텍스트 명령` 창
+  생성, 현재 `DISPLAY1` 열거·선택, 13-capability 제품 서비스 조립을 각각 실행해 확인했다.
+- 설치된 0.1.3 기본 텍스트 창의 `작업 화면 선택` 버튼을 실제 화면에서 확인하고 클릭해 주 화면,
+  정확한 DISPLAY1, 전면 창 추적 선택지가 표시되는 것을 확인했다. 저장하지 않고 취소했으며
+  시험 창을 모두 닫아 사용자 설정을 변경하지 않았다.
+- 설치본 시작 메뉴부터 실제 한국어 텍스트 입력, NIM 계획, `system.info.read`, 독립 검증, 완료 화면,
+  스킬 후보 trace 저장까지 한 번의 실제 제품 동선으로 통과했다. 외부 감사 원장 5개 record의
+  hash chain도 직접 검증했다. 이는 이전의 소스 직접 호출 smoke보다 강한 설치본 E2E 근거다.
+- 전체 자동시험은 1,068 passed, 4 skipped이고 제품 소스·시험 Ruff 및 strict mypy 149 files를
+  통과했다. 4개 skip은 실행 환경 또는 선택 의존성이 있는 시험으로 실패를 성공으로 바꾸지 않았다.
+- 0.1.3 r1 one-folder 1,826개 파일과 설치본 manifest가 모두 `VERIFIED`다. 실제 현재 사용자
+  위치의 최초 설치는 `SUCCESS/code=0`, 동일 Setup 재설치는 `ALREADY_VERIFIED/code=0`이고
+  설치본의 화면 열거와 Credential 기반 제품 서비스 검사도 exit 0이었다. 기존 0.1.0~0.1.2는
+  덮지 않았다.
+- 설치기가 만든 현재 사용자 시작 메뉴 링크는 설치된 0.1.3의 windowed 실행 파일, 빈 인자, 정확한
+  작업 폴더·설명·아이콘을 다시 읽어 검증했다. 동일 부모 아래의 정확한 이전 버전 링크만 갱신하고
+  외부 링크는 거부한다. 실제 연속 업그레이드 뒤 링크를 실행해 0.1.3 hash의 새 process와
+  `JAVIS 텍스트 명령` 창을 확인했으며, 다른 대상의 기존 링크는 덮거나 제거하지 않는 시험도 통과했다.
+  package와 wheel의 API key 형태 검색은 0건이다.
+- 기능 완성 관점에서 텍스트 기반 로컬 스킬 에이전트는 시연 가능한 상태다. 다만 실행 파일 세 개가
+  `NotSigned`이고, 현재 PC가 단일 화면이므로 실제 다중 화면 이동 시험은 없으며, 음성 호출어 모델은
+  기존 실제 pilot 기준을 통과하지 못했다. 따라서 로컬 텍스트 시연 가능과 공개 배포·음성 완성을
+  구분한다.
+
+## 2026-10-17 발표 산출물 감사
+
+- 스킬 중심 연구 목표와 32블록·128관측 결과를 13장 졸업발표 자료에 반영했다.
+  표시한 조건별 성공 수, 시간·호출·토큰 감소율, Holm 보정 p값을 최신
+  `report.json`과 다시 계산해 일치함을 확인했다.
+- 최종 PPTX는 13장·1개 수정 가능 차트와 내장 workbook 자료를 포함하며, package·layout·font·
+  first-party import·native chart 검사를 통과했다. 모든 장을 렌더링하고 수정 장을
+  확대 검토해 잘림·겹침·낮은 대비를 수정했다. PPTX SHA-256은
+  `3572f3d3446efa147fb829729fe07274ab5f52fd42ab2025dab880c17f108358`이다.
+- 기존 권한·위험도 중심 교수님 정리본을 스킬 재사용·개정 중심으로 다시 써서
+  발표자료·연구계획·실제 결과 사이의 목적 불일치를 제거했다. 단일 개발자 예비실험,
+  실제 참가자 부재, 미서명 배포물은 미완료 사항으로 유지했다.
+- 실제 참가자 자료는 없지만, 운영안은 현재 코드의 `SK0~SK3` 일정·관측·분석 계약과 일치하도록
+  수정했다. 연구윤리 적용 확인, 자발적 동의, 무작위 ID, 개인정보 비수집, 가역적·격리 실행,
+  중단·철회·폐기 규칙을 자료 수집 전 필수 조건으로 고정했다.
+- 참가자 문서 초안 세 종을 추가했지만, `[확정 필요]` 항목과 연구윤리 확인이 남아 있으므로
+  참가자 실험 준비 완료나 실험 완료로 판정하지 않는다. 동의 원본에 개인 식별자가 포함되는 경우
+  실험 관측과 분리 보관하는 경계를 명시했다.
+
+## 2026-10-16 스킬 연구·배포 갱신
+
+- 연구 중심을 스킬 생성·검색·재사용·실행 기록·개정으로 고정한 뒤 파일 분류·PDF 열기·폴더 목록,
+  확장자별 파일 정리와 Explorer 폴더 열기에서 SK0~SK3 완전 대응 32블록·128관측을 수집했다.
+  SK0 26/32, SK1 24/32, SK2 30/32, SK3 32/32 성공했다. SK3 대 SK1의 Holm 보정 p값은
+  0.0234375지만 SK0 비교는 0.0625, SK2 비교는 0.5다. 이는 개발자 파일럿이며 사용자 연구나
+  일반적 우월성의 증거가 아니다.
+- 폴더 목록 최초 실행의 모델 출력 한도 기록 불일치를 발견해 원본과 통합 묶음을 무효 보관하고,
+  정확한 1,000-token 구성 hash로 3블록을 다시 수집했다. 무효 자료는 현재 통합 분석에 포함하지
+  않으며, 다섯 작업의 유효 관측 128개만 사용한다.
+- 최신 전체 회귀는 1,040 collected, 1,037 passed, 3 skipped다. 제품 소스·시험·열 개 검증 도구는
+  Ruff clean이고 strict mypy는 155 source files에서 통과했다.
+- 최신 소스 doctor 15/15, Credential preflight 3/3, 13-capability service `CREATED`와
+  `capture_running=false`를 재확인했다. 안전 평가는 8 PASS / 7 NOT_RUN이며 snapshot VM과
+  interactive actual 근거가 남아 `all_required_evidence_complete=false`다.
+- 같은 소스에서 S01 Chrome, S02 음량·복원, S03 메모리/PDF/Edge, Explorer exact-folder,
+  Settings display/sound/network/bluetooth와 tray actual reversible smoke를 다시 통과하고 각 창을
+  정리했다. 이는 현재 host 기능 근거이며 VM 50셀·참가자 연구의 대체 증거는 아니다.
+- 최신 package의 1,826-entry manifest는 source verifier에서 `VERIFIED`됐고 새 wheel은 깨끗한
+  가상환경 설치·핵심 import·CLI를 통과했다. 설치 결과 영수증을 추가한 r5 Setup은 격리 최초 설치,
+  source·설치본 manifest, frozen doctor 필수 항목, Credential preflight, 서비스 조립, 외부 state와
+  재설치 `ALREADY_VERIFIED`를 통과했다. 손상 설치 부정 시험은 `FAILED/code=13`과 비덮어쓰기를
+  확인했다. 직전 r3의 Code Integrity 차단은 r5에서 재현되지 않았고 현재 one-folder 직접 verifier도
+  통과했다. package와 Setup hash 감사도 통과했지만 세 실행 파일은 `NotSigned`이므로 공개 배포는
+  완료가 아니다.
+- 아래 2026-10-07 표와 수치는 원 계획의 안전 하네스 감사 기록이다. 최신 스킬 연구와 배포 수치는
+  `docs/STATUS.md`, `docs/SKILL_RESEARCH_PLAN.md`와 `docs/COMBINED_SKILL_STUDY_20261016.md`를
+  기준으로 한다.
 
 ## 2026-10-07 음성·사용자 검증 갱신
 
@@ -70,7 +261,7 @@
 | Structured audit | 완료(로컬 경계) | redaction, protected ACL, lock, rotation, fsync, SHA-256 chain 및 변조 탐지 | 현재 사용자 계정 침해에 견디는 별도 HMAC/서명 키 |
 | Semantic/episodic memory | 완료(기본 범위) | bounded SQLite/FTS5, 30일 retention, credential/HIGH 차단, ACL, 제품 `memory.search` executor와 독립 verifier, 승인 전 DB를 만들지 않는 lazy backend, 실제 DB smoke | 사용자 장기 선호·procedural memory는 P1/P2 |
 | 항상대기 통합 runtime | 부분 | 장기 frame pump와 비동기 planning/execution worker를 결합하고 작업 중 exact STOP만 동시 수락 | 실제 마이크 장시간 운용, 장치 복구와 STOP latency |
-| Voice feedback/TTS | 부분 | 고정 문구만 허용, SAPI probe, 실제 한국어 WAV·speaker 출력 PASS, 실행 중 STOP | 사용자 평점 3/5의 번역기 같은 말투 개선과 재평가 |
+| Voice feedback/TTS | 부분 | 고정 문구만 허용, SAPI probe, 실제 한국어 WAV·speaker 출력 PASS, 실행 중 STOP, 짧은 해요체 여섯 문장과 안전 차단/일반 실패 분리, 새 문장 여섯 개 실제 WAV 형식·hash PASS | 새 문장의 사용자 청취 자연스러움 재평가 |
 
 ## P0 대표 앱
 
@@ -94,7 +285,7 @@
 | RED 무승인 실행 0 | 부분 | policy/approval 단위·통합 계약에서 0 | 실제 VM 위험 scenario 반복 증거 |
 | recoverable failure 60% | 미검증 | fault injection 및 recovery metric 계약 | 실제 또는 VM UI failure 결과 |
 
-## 현재 릴리스 증거
+## 2026-10-07 당시 릴리스 증거
 
 - Python 전체: 843 passed, 3 skipped, line coverage 83%.
 - Ruff clean, mypy strict 128 source files.
@@ -129,3 +320,16 @@
 
 따라서 현재 코드는 안전 제어 prototype으로는 강한 증거가 있지만, 원 계획서가 말한 항상대기
 완성품과 졸업논문 실험 결과까지 완료됐다고 판정할 수 없다.
+
+## 2026-10-20 현재 연구 범위의 완료 판정
+
+이 문서 앞부분의 미완료 항목은 항상대기 음성 비서와 공개 배포까지 포함한 초기 확장 계획을 기준으로 한 것이다. 현재 졸업작품의 연구 범위는 스킬 생성·검색·재사용·개정, 제한된 Windows 기능 실행, 독립 결과 검증과 네 조건 대응 실험으로 확정하였다.
+
+- 연구용 로컬 프로그램: 완료. 설치본 0.1.9에서 텍스트 명령, 스킬 관리와 검토, 실행 기록, NIM 계획 호출, 13개 기능 조립과 독립 검증을 실행할 수 있다.
+- 자동 검증: 완료. 전체 1,096개 시험 중 1,091개 통과·5개 제외, Ruff 통과, 엄격 자료형 검사 151개 파일 통과, 기능 사전 점검 15/15 통과를 확인하였다.
+- 설치본 검증: 완료. 1,826개 파일의 패키지 무결성, 설치 파일 해시, 시작 메뉴 등록과 실제 시스템 정보 명령의 성공 및 완료 조건 검증을 확인하였다.
+- 연구 실험: 완료. 다섯 작업을 네 조건에서 세 번씩 실행한 15개 완전 대응 블록과 60개 관측값을 수집했고, 결과 파일과 보고서 해시를 전부 대조하였다.
+- 논문과 발표·포스터: 완료. 한국어 논문 제출본, 13장 발표본, A1 세로형 포스터의 PPTX와 PDF를 작성하고 렌더링 검사를 마쳤다.
+- 공개 상용 배포: 미완료. 실행 파일의 코드 서명과 외부 참가자·다른 PC를 이용한 일반화 검증은 현재 결과에 포함되지 않는다.
+
+따라서 현재 결과물은 졸업작품 시연과 논문 제출에 사용할 수 있는 연구용 완성본이다. 누구나 설치하는 공개 상용 제품이 완성되었다는 뜻은 아니다.

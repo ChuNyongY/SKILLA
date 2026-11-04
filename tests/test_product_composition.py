@@ -24,6 +24,12 @@ from javis_core.product_composition import (
     build_product_voice_stack,
 )
 from javis_core.product_host import load_product_host_config
+from javis_core.skill_runtime import LocalSkillCatalog, SkillAwarePlanner, SkillProposal
+from javis_core.skill_use_recording import (
+    CatalogSkillUseRecorder,
+    product_model_configuration_sha256,
+    product_tool_surface_sha256,
+)
 from javis_core.stt_bundle import LoadedSttBundle, SttBundleFiles, SttModelFile
 from javis_core.verifier import PredicateVerifier
 from javis_core.voice import AudioFrame, SpeechToText, VoicePipeline, WakeWordDetector
@@ -100,7 +106,7 @@ class SequencedVad:
 
 class FixedStt:
     def transcribe(self, _frames: tuple[AudioFrame, ...]) -> str:
-        return "자비스 시스템 정보 확인"
+        return "스킬라 시스템 정보 확인"
 
 
 class FiniteSource:
@@ -170,8 +176,10 @@ def test_voice_stack_builds_verified_components_without_opening_source(
         observed["rms"] = rms_threshold
         return Vad()
 
-    def make_source(*, frame_ms: int, queue_capacity: int) -> Source:
-        observed["frame"] = (frame_ms, queue_capacity)
+    def make_source(
+        *, device: int | None, frame_ms: int, queue_capacity: int
+    ) -> Source:
+        observed["frame"] = (device, frame_ms, queue_capacity)
         return source
 
     stack = build_product_voice_stack(
@@ -191,7 +199,7 @@ def test_voice_stack_builds_verified_components_without_opening_source(
         "wake_path": CONFIGURATION.wakeword_manifest,
         "stt_path": CONFIGURATION.stt_manifest,
         "rms": 500,
-        "frame": (80, 32),
+        "frame": (2, 80, 32),
     }
 
 
@@ -219,8 +227,10 @@ def test_bundle_failure_prevents_all_runtime_component_construction() -> None:
         calls.append(f"vad-{rms_threshold}")
         raise AssertionError("VAD factory must not run")
 
-    def unexpected_source(*, frame_ms: int, queue_capacity: int) -> Source:
-        calls.append(f"source-{frame_ms}-{queue_capacity}")
+    def unexpected_source(
+        *, device: int | None, frame_ms: int, queue_capacity: int
+    ) -> Source:
+        calls.append(f"source-{device}-{frame_ms}-{queue_capacity}")
         raise AssertionError("source factory must not run")
 
     with pytest.raises(ValueError, match="bundle invalid"):
@@ -397,6 +407,98 @@ def test_runtime_stack_executes_one_closed_loop_without_external_effects() -> No
     assert completed is not None and completed.reason == "ALL_ACTIONS_VERIFIED"
     assert len(executor.calls) == 1
     assert audit.of_type("TASK_FINISHED")
+    displayed_result = stack.runtime.status_snapshot().result
+    assert displayed_result is not None
+    assert displayed_result.capability_id == "system.info.read"
+    assert displayed_result.title == "확인된 컴퓨터 시스템 정보"
+
+
+def test_product_runtime_records_exact_selected_skill_use(tmp_path: Path) -> None:
+    action = Action(
+        capability_id="system.info.read",
+        purpose="read fixture system info",
+        expected_postconditions=(Postcondition(predicate="execution.success"),),
+    )
+    plan = Plan(goal="스킬라 시스템 정보 확인", steps=(action,))
+    intent_response = (
+        '{"intent_class":"COMMAND","addressed_confidence":0.99,'
+        '"intent_confidence":0.99,"target_confidence":0.99,'
+        '"quoted_command":false,"negated_command":false,"hypothetical":false}'
+    )
+    responses = [StaticTransport(intent_response), StaticTransport(plan.model_dump_json())]
+
+    def make_transport(api_key: SecretStr, model: str) -> StaticTransport:
+        del api_key, model
+        return responses.pop(0)
+
+    executor = MockExecutor({"system.info.read": lambda _action: {"fixture": True}})
+    capabilities = build_product_capability_stack(
+        {"system.info.read": executor},
+        {"system.info.read": PredicateVerifier()},
+    )
+    catalog = LocalSkillCatalog(
+        (tmp_path / "skills.sqlite3").resolve(),
+        capabilities.registry,
+    )
+    draft = catalog.propose(
+        SkillProposal(
+            key="system-check",
+            title="시스템 정보 확인",
+            description="현재 시스템 정보를 읽는다.",
+            triggers=("시스템 정보",),
+            procedure=("시스템 정보를 읽고 결과를 확인한다.",),
+            allowed_capabilities=("system.info.read",),
+        )
+    )
+    verified = catalog.approve(draft.skill_id)
+    language = build_product_language_stack(
+        CONFIGURATION,
+        SecretStr("nvapi-abcdefghijklmnopqrstuvwxyz"),
+        registry=capabilities.registry,
+        transport_factory=make_transport,
+        skill_catalog=catalog,
+    )
+    assert isinstance(language.planner, SkillAwarePlanner)
+    recorder = CatalogSkillUseRecorder(
+        catalog,
+        language.planner,
+        model_configuration_sha256=product_model_configuration_sha256(
+            CONFIGURATION.settings.nim_model
+        ),
+        tool_surface_sha256=product_tool_surface_sha256(capabilities.registry),
+    )
+    voice = ProductVoiceStack(
+        frame_source=FiniteSource(),
+        pipeline=VoicePipeline(
+            AlwaysWake(),
+            SequencedVad(),
+            FixedStt(),
+            end_silence_frames=5,
+        ),
+    )
+    stack = build_product_runtime_stack_from_capabilities(
+        voice,
+        language,
+        capabilities,
+        audit=InMemoryAuditSink(),
+        approval_presenter=NoApproval(),
+        policy_context_provider=lambda _action: PolicyContext(
+            addressed_confidence=0.99,
+            intent_confidence=0.99,
+            target_confidence=0.99,
+            target_matches_plan=True,
+        ),
+        approval_secret=b"a" * 32,
+        skill_use_observer=recorder,
+    )
+
+    assert stack.capture_pump.run(max_frames=20).tasks_started == 1
+    completed = stack.runtime.wait_for_idle(timeout_seconds=1)
+
+    assert completed is not None and completed.skill_use_recorded is True
+    summary = catalog.summarize_use(verified.skill_id)
+    assert summary.observations == 1
+    assert summary.succeeded == 1
 
 
 def test_runtime_stack_rejects_language_executor_capability_drift() -> None:

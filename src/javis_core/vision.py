@@ -313,8 +313,14 @@ class ForegroundMouseApi(Protocol):
 class WindowsForegroundWindowCaptureBackend:
     """Capture only the visible, non-minimized foreground window client area."""
 
-    def __init__(self, api: ForegroundCaptureApi | None = None) -> None:
+    def __init__(
+        self,
+        api: ForegroundCaptureApi | None = None,
+        *,
+        display_allowed: Callable[[CapturedWindow], bool] | None = None,
+    ) -> None:
         self._api = api or _PyWin32ForegroundCaptureApi()
+        self._display_allowed = display_allowed
 
     def capture_window(self, process_id: int) -> CapturedWindow:
         if type(process_id) is not int or process_id < 1:
@@ -322,6 +328,13 @@ class WindowsForegroundWindowCaptureBackend:
         capture = self._api.capture_foreground_client(process_id)
         if not isinstance(capture, CapturedWindow) or capture.process_id != process_id:
             raise RuntimeError("foreground capture identity mismatch")
+        if self._display_allowed is not None:
+            try:
+                allowed = self._display_allowed(capture) is True
+            except Exception:
+                allowed = False
+            if not allowed:
+                raise RuntimeError("foreground window is outside the selected display")
         return capture
 
 

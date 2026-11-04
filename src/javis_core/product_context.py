@@ -40,7 +40,10 @@ def build_windows_planner_context_provider(
     *,
     app_loader: PlannerAppLoader | None = None,
 ) -> PlannerContextProvider:
-    load_apps = app_loader or AppRegistryLoader(require_publisher=True).load
+    load_apps = app_loader or AppRegistryLoader(
+        require_publisher=True,
+        allow_signed_updates=True,
+    ).load
     apps = dict(load_apps(configuration.app_registry))
     if not apps:
         raise ValueError("planner context requires registered applications")

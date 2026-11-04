@@ -120,7 +120,10 @@ def test_service_wires_privacy_context_and_personal_memory_policy(
     tmp_path: Path,
 ) -> None:
     configuration = SimpleNamespace(
-        settings=SimpleNamespace(browser_allowed_hosts=("github.com",)),
+        settings=SimpleNamespace(
+            browser_allowed_hosts=("github.com",),
+            nim_model="z-ai/glm-5.3-flash",
+        ),
         hello_manifest=(tmp_path / "hello.json").resolve(),
     )
     capabilities = SimpleNamespace(registry=object())
@@ -134,6 +137,7 @@ def test_service_wires_privacy_context_and_personal_memory_policy(
         runtime=SimpleNamespace(close=lambda: None),
     )
     lifecycle = object()
+    display = SimpleNamespace(ensure_selection=lambda: object())
     observed: dict[str, object] = {}
 
     monkeypatch.setattr(
@@ -147,15 +151,21 @@ def test_service_wires_privacy_context_and_personal_memory_policy(
     monkeypatch.setattr(
         product_service,
         "build_windows_product_capabilities",
-        lambda received, _root: (
+        lambda received, _root, **kwargs: (
             observed.setdefault("capability_configuration", received),
+            observed.setdefault("capability_kwargs", kwargs),
             capabilities,
-        )[1],
+        )[2],
     )
     monkeypatch.setattr(
         product_service, "build_product_language_stack", lambda *_args, **_kw: language
     )
     monkeypatch.setattr(product_service, "build_product_voice_stack", lambda *_args: voice)
+    monkeypatch.setattr(
+        product_service,
+        "build_windows_display_controller",
+        lambda *_args: display,
+    )
     monkeypatch.setattr(product_service, "JsonlAuditSink", lambda *_args: audit)
     monkeypatch.setattr(product_service, "TkApprovalDialog", lambda: object())
     monkeypatch.setattr(product_service, "LocalApprovalPresenter", lambda *_args: object())
@@ -205,6 +215,9 @@ def test_service_wires_privacy_context_and_personal_memory_policy(
     )
 
     assert observed["capability_configuration"] is configuration
+    capability_kwargs = observed["capability_kwargs"]
+    assert isinstance(capability_kwargs, dict)
+    assert capability_kwargs["state_directory"] == (tmp_path / "state").resolve()
     assert observed["planner_configuration"] is configuration
     assert observed["policy_args"] == (
         (tmp_path.resolve(),),
@@ -216,5 +229,7 @@ def test_service_wires_privacy_context_and_personal_memory_policy(
     assert isinstance(runtime_kwargs, dict)
     assert runtime_kwargs["policy_context_provider"] is policy_provider
     assert runtime_kwargs["planner_context_provider"] is planner_provider
+    assert isinstance(runtime_kwargs["feedback"], product_service.VoiceFeedbackPresenter)
     assert service.lifecycle is lifecycle
+    assert service.display is display
     assert service.skills.search("아무 스킬") == ()

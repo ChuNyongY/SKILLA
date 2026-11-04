@@ -58,6 +58,7 @@ class Plan(FrozenModel):
     task_id: UUID = Field(default_factory=uuid4)
     goal: str = Field(min_length=1)
     steps: tuple[Action, ...] = Field(min_length=1)
+    continue_after_verification: bool = False
 
     @model_validator(mode="after")
     def unique_action_ids(self) -> Plan:
@@ -78,6 +79,7 @@ class CapabilitySpec(FrozenModel):
     reversible: bool
     external_effect: bool
     sensitive: bool
+    state_changing: bool = False
 
 
 class PolicyContext(FrozenModel):

@@ -20,6 +20,10 @@ class TrayCommand(IntEnum):
     SHOW_STATUS = 1001
     STOP_AGENT = 1002
     EXIT = 1003
+    REVIEW_SKILLS = 1004
+    REVIEW_TRACES = 1005
+    SELECT_DISPLAY = 1006
+    TEXT_COMMAND = 1007
 
 
 class TrayDispatchResult(FrozenModel):
@@ -40,7 +44,11 @@ class WindowsTrayController:
         show_status: TrayCallback,
         stop_agent: TrayCallback,
         exit_agent: TrayCallback,
-        tooltip: str = "JAVIS PC Agent",
+        review_skills: TrayCallback | None = None,
+        review_traces: TrayCallback | None = None,
+        select_display: TrayCallback | None = None,
+        text_command: TrayCallback | None = None,
+        tooltip: str = "SKILLA Local Skill Agent",
     ) -> None:
         if not tooltip or len(tooltip) > 63 or "\0" in tooltip:
             raise ValueError("tooltip must contain 1..63 non-NUL characters")
@@ -49,6 +57,14 @@ class WindowsTrayController:
             TrayCommand.STOP_AGENT: stop_agent,
             TrayCommand.EXIT: exit_agent,
         }
+        if review_skills is not None:
+            self._callbacks[TrayCommand.REVIEW_SKILLS] = review_skills
+        if review_traces is not None:
+            self._callbacks[TrayCommand.REVIEW_TRACES] = review_traces
+        if select_display is not None:
+            self._callbacks[TrayCommand.SELECT_DISPLAY] = select_display
+        if text_command is not None:
+            self._callbacks[TrayCommand.TEXT_COMMAND] = text_command
         if any(not callable(callback) for callback in self._callbacks.values()):
             raise TypeError("tray callbacks must be callable")
         self._tooltip = tooltip
@@ -64,8 +80,15 @@ class WindowsTrayController:
     def dispatch(self, command: TrayCommand) -> TrayDispatchResult:
         if not isinstance(command, TrayCommand):
             raise TypeError("command must be a TrayCommand")
+        callback = self._callbacks.get(command)
+        if callback is None:
+            return TrayDispatchResult(
+                command=command,
+                succeeded=False,
+                reason="TRAY_COMMAND_UNAVAILABLE",
+            )
         try:
-            self._callbacks[command]()
+            callback()
         except Exception:
             return TrayDispatchResult(
                 command=command,
@@ -124,6 +147,34 @@ class WindowsTrayController:
                                 TrayCommand.SHOW_STATUS.value,
                                 "상태 보기",
                             )
+                            if TrayCommand.REVIEW_SKILLS in self._callbacks:
+                                win32gui.AppendMenu(
+                                    menu,
+                                    win32con.MF_STRING,
+                                    TrayCommand.REVIEW_SKILLS.value,
+                                    "스킬 검토",
+                                )
+                            if TrayCommand.REVIEW_TRACES in self._callbacks:
+                                win32gui.AppendMenu(
+                                    menu,
+                                    win32con.MF_STRING,
+                                    TrayCommand.REVIEW_TRACES.value,
+                                    "실행 기록 검토",
+                                )
+                            if TrayCommand.SELECT_DISPLAY in self._callbacks:
+                                win32gui.AppendMenu(
+                                    menu,
+                                    win32con.MF_STRING,
+                                    TrayCommand.SELECT_DISPLAY.value,
+                                    "작업 화면 선택",
+                                )
+                            if TrayCommand.TEXT_COMMAND in self._callbacks:
+                                win32gui.AppendMenu(
+                                    menu,
+                                    win32con.MF_STRING,
+                                    TrayCommand.TEXT_COMMAND.value,
+                                    "텍스트 명령",
+                                )
                             win32gui.AppendMenu(
                                 menu,
                                 win32con.MF_STRING,
@@ -224,10 +275,10 @@ class WindowsTrayController:
 
 
 _STATE_MESSAGES = {
-    AlwaysOnState.IDLE: "JAVIS가 음성 명령을 기다리고 있습니다.",
-    AlwaysOnState.PLANNING: "JAVIS가 명령을 안전하게 검토하고 있습니다.",
-    AlwaysOnState.EXECUTING: "JAVIS가 승인된 작업을 실행하고 있습니다.",
-    AlwaysOnState.CLOSED: "JAVIS 런타임이 종료되었습니다.",
+    AlwaysOnState.IDLE: "SKILLA가 음성 명령을 기다리고 있습니다.",
+    AlwaysOnState.PLANNING: "SKILLA가 명령을 안전하게 검토하고 있습니다.",
+    AlwaysOnState.EXECUTING: "SKILLA가 승인된 작업을 실행하고 있습니다.",
+    AlwaysOnState.CLOSED: "SKILLA 런타임이 종료되었습니다.",
 }
 
 
@@ -245,7 +296,7 @@ def show_runtime_status_message(snapshot: RuntimeStatusSnapshot) -> None:
         win32gui.MessageBox(
             0,
             runtime_status_message(snapshot),
-            "JAVIS 상태",
+            "SKILLA 상태",
             win32con.MB_OK | win32con.MB_ICONINFORMATION,
         )
     except Exception as error:

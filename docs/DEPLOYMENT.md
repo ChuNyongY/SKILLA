@@ -113,14 +113,62 @@ python tools\build_windows_installer.py `
   --destination C:\absolute\build\JAVIS-candidate-Setup.exe
 ```
 
-현재 후보 one-folder는 1,826 manifest entry이며 source verifier로 exact manifest를 통과했다.
-package manifest SHA-256은 `ab95beca300eaf90b43a4e940dcbf588d4f16917a28fc47b36a6940efb56c087`다.
-Setup은 Microsoft 서명된 시스템 IExpress builder를 사용해 생성한 260,386,816바이트 per-user
-extractor이며 SHA-256은 `cb4edd33413732c7f69fc4662c848f22c1fcee7decb2d1caeed65bfd3fd428c5`이다.
+2026-10-16 최신 소스 후보 `dist/JAVIS-PC-0.1.0-skill-20261016-r3`는 1,826 manifest entry이며
+source verifier에서 `VERIFIED`됐다. manifest SHA-256은
+`446f6f95ef490de95fa5b3b85ba6cd8a6d8f6bcd62c9b66742a8625bddee7cbd`다. 같은 소스의 wheel은
+`dist/wheel-skill-20261016-r4/javis_pc_agent-0.1.0-py3-none-any.whl`이며 149개 항목,
+368,497바이트, SHA-256
+`906929d3c5a3f41a43e4d22b8ee088ad8cbe941717f0cc59447f26bfd3ffc27b`다. 새 격리 가상환경에서
+설치·핵심 모듈 import·CLI 실행을 통과했다.
+
+최신 Setup은 `dist/JAVIS-PC-0.1.0-skill-20261016-r5-Setup.exe`이며 260,702,208바이트, SHA-256
+`819f36a116b6bd03411af98b21fcbb4fd352a9c1c1f03da72cfede83349dd289`이고 sidecar와 일치한다.
+설치 script는 `%LOCALAPPDATA%/JAVIS-PC/install-result-0.1.0.txt`에 `schema_version`, `version`,
+`status`, `code`만 기록한다. `SUCCESS`는 staging `JAVIS.exe verify-package`와 최종 이동이 모두
+성공한 뒤에만 기록되고, 기존 검증 설치는 `ALREADY_VERIFIED`, 실패는 `FAILED`가 된다. IExpress의
+종료 코드만으로 설치 성공을 판정하지 말고 이 영수증, 설치 폴더와 manifest를 함께 확인해야 한다.
+`STARTED`는 최종 성공이 아니라 내부 cmd 진행 중이거나 비정상 종료된 미확정 상태다. 제한 시간 안에
+최종 상태가 나타나지 않으면 설치 실패로 다루고, `SUCCESS` 또는 `ALREADY_VERIFIED`도 manifest가
+별도로 `VERIFIED`된 경우에만 성공으로 인정한다.
+
+별도 `LOCALAPPDATA`의 r5 최초 설치는 `SUCCESS/code=0`, staging 0개, source·설치본 verifier의
+1,826-entry `VERIFIED`, frozen doctor 필수 항목, Credential preflight 3/3, 13-capability service
+`CREATED`, package 외부 state와 조립 후 manifest 재검증을 통과했다. 재실행은
+`ALREADY_VERIFIED/code=0`과 manifest `VERIFIED`였다. 손상된 격리 설치에 대한 부정 시험에서는
+Setup 프로세스 0과 무관하게 영수증이 `FAILED/code=13`으로 끝나고 기존 폴더를 덮어쓰지 않았다.
+r4의 임시 파일 `move` 교체가 `STARTED`에 머문 결함은 r5에서 고정 결과 파일 직접 쓰기로 고쳤다.
+
+직전 r3의 Code Integrity 차단은 r5에서 재현되지 않았고 r5 설치 시간대의 일치 이벤트는 0건이었다.
+같은 one-folder의 직접 verifier도
+이후 1,826-entry `VERIFIED`를 반환했다. 미서명 실행 정책의 변동 가능성 때문에 이 결과를 서명
+대체 증거로 사용하지 않는다.
+
+그러나 세 실행 파일은 모두 `NotSigned`이고 release audit은 `ready=false`로 닫힌다. 조직의 신뢰된
+인증서로 package 실행 파일과 Setup을 서명한 뒤 같은 설치·manifest·doctor·서비스 검증을 다시
+수행해야 공개 배포 관문이 닫힌다.
+
+2026-10-15 직전 후보 `dist/JAVIS-PC-0.1.0-skill-20261015-r2`는 1,826 manifest entry이며 source
+verifier와 설치본 verifier로 exact manifest를 통과했다. package manifest SHA-256은
+`0a7f6df25d721dc36a34973e3862bf094332fe1ad71f6a79eb55c0a49c3ad489`다. Setup은 Microsoft 서명된
+시스템 IExpress builder를 사용해 생성한 260,702,208바이트 per-user extractor이며 SHA-256은
+`811c747509a13a1c75a6cb09b89d2ce25178737e8b096735b57a7381a38152a7`이다. 함께 생성된 `.sha256`
+sidecar와 실제 Setup hash도 일치한다.
 내부 설치 진입부는
 PowerShell 실행정책을 우회하지 않고 Windows `cmd`, `certutil`, `tar`와 staged `JAVIS.exe
-verify-package`만 사용한다. 실제 최초 설치, 설치본 manifest 일치, Credential preflight와 서비스 조립을
-통과했다.
+verify-package`만 사용한다. 실제 사용자 설치 위치와 분리한 `LOCALAPPDATA`에서 최초 설치,
+설치본 manifest 일치, frozen doctor, Credential preflight와 13-capability 서비스 조립을 통과했다.
+검증용 설치 폴더는 검증 후 제거했다.
+
+설치본의 가변 상태는 설치 폴더에 쓰지 않는다. manifest가 검증된 package root에서는
+`%LOCALAPPDATA%/JAVIS-PC/state/<version>`에 스킬·trace·감사·메모리·이동 journal을 저장한다.
+소스 checkout은 개발 호환을 위해 `<root>/state`를 사용한다. 격리 설치본에서 서비스를 조립한 뒤에도
+설치 폴더 manifest 1,826개가 다시 `VERIFIED`였고 설치 폴더 아래 `state`는 생성되지 않았다.
+
+같은 소스에서 만든 `dist/wheel-skill-20261015-r3/javis_pc_agent-0.1.0-py3-none-any.whl`은 149개 항목,
+368,328바이트이며 SHA-256은
+`2c298b5df42edbc7e5a5c7fab833dd68dc0d0e6ab2a9af300d6bea2a6a8c2455`다. system site package를
+사용하지 않는 새 가상환경에 wheel과 의존성을 설치해 스킬 작성·검토·실행 기록 검토 모듈 import와
+`javis --help`를 확인했다. wheel에는 `.env`, `NIM.txt`, `.pem`, `.key` 파일이 없다.
 
 Setup은 `%LOCALAPPDATA%\JAVIS-PC\0.1.0`이 비어 있을 때만 새로 설치하고, payload SHA-256과 내부
 package manifest를 모두 확인한다. 같은 경로가 이미 있으면 verified 동일 설치만 성공으로 보고,
@@ -131,7 +179,8 @@ Manager에 별도 저장한다. 자동 시작은 `install-autostart-credential <
 `remove-autostart-credential`과 `remove-nim-credential`을 각각 명시적으로 실행하고 사용자 `state`
 보존 여부를 결정해야 하므로 자동 silent uninstall은 제공하지 않는다.
 
-시스템 IExpress 원본은 Microsoft Authenticode `Valid`였지만 생성된 Setup은 현재 `NotSigned`다.
+시스템 IExpress 원본은 Microsoft Authenticode `Valid`였지만 생성된 Setup과 내부 `JAVIS.exe`,
+`JAVIS-Tray.exe`는 현재 모두 `NotSigned`다.
 따라서 이 파일은 manifest 감사용 산출물이며, 외부 배포 및 현재 정책 환경에서 실행하기 전에 조직의
 신뢰된 코드 서명 인증서로 두 실행 파일과 Setup을 서명하고 서명 후 manifest/SHA-256, frozen doctor,
 preflight와 설치·제거 smoke를 다시 생성·기록해야 한다. Smart App Control을 끄는 방식은 검증 절차가

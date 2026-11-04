@@ -11,16 +11,19 @@ from javis_core import (
     CaptureStatus,
     ExecutionResult,
     InMemoryAuditSink,
+    InMemoryVerifiedResultObserver,
     IntentClass,
     IntentEvidence,
     MockExecutor,
     Orchestrator,
+    OrchestratorRoundRunner,
     Plan,
     PolicyContext,
     PolicyDecision,
     PolicyEngine,
     Postcondition,
     PredicateVerifier,
+    TaskOutcome,
     VoiceCaptureResult,
     VoiceCommandCoordinator,
     default_registry,
@@ -47,6 +50,7 @@ class Classifier:
     def __init__(self, confidence: float = 0.99) -> None:
         self.calls = 0
         self.confidence = confidence
+        self.sources: list[InputSource] = []
 
     def classify(
         self,
@@ -57,6 +61,7 @@ class Classifier:
         source: InputSource = "MIC",
     ) -> IntentEvidence:
         self.calls += 1
+        self.sources.append(source)
         return IntentEvidence(
             transcript=transcript,
             wake_confidence=wake_confidence,
@@ -64,7 +69,7 @@ class Classifier:
             intent_confidence=self.confidence,
             target_confidence=self.confidence,
             intent_class=IntentClass.COMMAND,
-            explicit_wake_word=True,
+            explicit_wake_word=explicit_wake_word,
             source=source,
         )
 
@@ -159,6 +164,8 @@ def runtime_with_executor(
     planner_context_provider: Callable[[], Mapping[str, object]] | None = None,
     classifier_confidence: float = 0.99,
     policy: PolicyEngine | None = None,
+    trace_observer: object | None = None,
+    use_observer: object | None = None,
 ) -> tuple[AlwaysOnAgentRuntime, Classifier, Planner]:
     classifier = Classifier(classifier_confidence)
     selected_planner = planner or Planner()
@@ -187,10 +194,98 @@ def runtime_with_executor(
                 target_matches_plan=True,
             ),
             planner_context_provider=planner_context_provider,
+            skill_trace_observer=trace_observer,  # type: ignore[arg-type]
+            skill_use_observer=use_observer,  # type: ignore[arg-type]
         ),
         classifier,
         selected_planner,
     )
+
+
+class TraceObserver:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.calls = 0
+        self.observed: list[tuple[Plan, TaskOutcome]] = []
+
+    def observe(self, plan: Plan, outcome: TaskOutcome) -> None:
+        self.calls += 1
+        self.observed.append((plan, outcome))
+        if self.fail:
+            raise RuntimeError("private trace detail")
+
+
+class UseObserver:
+    def __init__(self, *, selected: bool = True, fail: bool = False) -> None:
+        self.selected = selected
+        self.fail = fail
+        self.calls = 0
+        self.elapsed: list[int] = []
+
+    def observe(self, plan: Plan, outcome: TaskOutcome, *, elapsed_ms: int) -> bool:
+        del plan, outcome
+        self.calls += 1
+        self.elapsed.append(elapsed_ms)
+        if self.fail:
+            raise RuntimeError("private skill use detail")
+        return self.selected
+
+
+def test_runtime_reports_nonfatal_skill_trace_observer_result() -> None:
+    observer = TraceObserver()
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        trace_observer=observer,
+    )
+    runtime.submit_capture(capture("작업"))
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+    assert completed is not None and completed.skill_trace_recorded is True
+    assert observer.calls == 1
+    assert runtime.status_snapshot().skill_trace_recorded is True
+
+    failing = TraceObserver(fail=True)
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        trace_observer=failing,
+    )
+    runtime.submit_capture(capture("작업"))
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+    assert completed is not None and completed.event_type is RuntimeEventType.TASK_COMPLETED
+    assert completed.skill_trace_recorded is False
+    assert "private" not in completed.model_dump_json()
+
+
+def test_runtime_reports_nonfatal_skill_use_recording_result() -> None:
+    observer = UseObserver()
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        use_observer=observer,
+    )
+    runtime.submit_capture(capture("작업"))
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+    assert completed is not None and completed.skill_use_recorded is True
+    assert observer.calls == 1 and observer.elapsed[0] >= 0
+    assert runtime.status_snapshot().skill_use_recorded is True
+
+    no_selection = UseObserver(selected=False)
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        use_observer=no_selection,
+    )
+    runtime.submit_capture(capture("작업"))
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+    assert completed is not None and completed.skill_use_recorded is None
+
+    failing = UseObserver(fail=True)
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        use_observer=failing,
+    )
+    runtime.submit_capture(capture("작업"))
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+    assert completed is not None and completed.event_type is RuntimeEventType.TASK_COMPLETED
+    assert completed.skill_use_recorded is False
+    assert "private" not in completed.model_dump_json()
 
 
 def test_runtime_caps_policy_confidence_at_accepted_voice_gate() -> None:
@@ -201,7 +296,7 @@ def test_runtime_caps_policy_confidence_at_accepted_voice_gate() -> None:
         policy=policy,
     )
 
-    runtime.submit_capture(capture("자비스 시스템 정보 확인"))
+    runtime.submit_capture(capture("스킬라 시스템 정보 확인"))
     completed = runtime.wait_for_idle(timeout_seconds=1)
 
     assert completed is not None and completed.event_type is RuntimeEventType.TASK_COMPLETED
@@ -214,7 +309,7 @@ def test_runtime_caps_policy_confidence_at_accepted_voice_gate() -> None:
 def test_active_task_accepts_exact_stop_without_classifier_or_planner() -> None:
     executor = BlockingExecutor()
     runtime, classifier, planner = runtime_with_executor(executor)
-    started = runtime.submit_capture(capture("자비스 시스템 정보 확인"))
+    started = runtime.submit_capture(capture("스킬라 시스템 정보 확인"))
     assert started.event_type is RuntimeEventType.TASK_STARTED
     assert executor.started.wait(timeout=1)
     calls = (classifier.calls, planner.calls)
@@ -229,6 +324,66 @@ def test_active_task_accepts_exact_stop_without_classifier_or_planner() -> None:
     assert completed is not None
     assert completed.event_type is RuntimeEventType.TASK_ABORTED
     assert completed.reason == "LOCAL_STOP"
+    assert runtime.state is AlwaysOnState.IDLE
+
+
+def test_trusted_text_uses_same_execution_and_skill_recording_path() -> None:
+    trace = TraceObserver()
+    use = UseObserver()
+    runtime, classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        trace_observer=trace,
+        use_observer=use,
+    )
+
+    started = runtime.submit_text("  시스템 정보 확인  ")
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+
+    assert started.event_type is RuntimeEventType.TASK_STARTED
+    assert completed is not None
+    assert completed.event_type is RuntimeEventType.TASK_COMPLETED
+    assert completed.skill_trace_recorded is True
+    assert completed.skill_use_recorded is True
+    assert classifier.sources == ["TRUSTED_TEXT"]
+    assert planner.calls == 1
+    assert trace.calls == 1 and use.calls == 1
+    assert "시스템 정보 확인" not in started.model_dump_json()
+    assert "시스템 정보 확인" not in completed.model_dump_json()
+    assert "시스템 정보 확인" not in runtime.status_snapshot().model_dump_json()
+
+
+def test_text_stop_while_busy_bypasses_classifier_and_planner() -> None:
+    executor = BlockingExecutor()
+    runtime, classifier, planner = runtime_with_executor(executor)
+    runtime.submit_text("시스템 정보 확인")
+    assert executor.started.wait(timeout=1)
+    calls = (classifier.calls, planner.calls)
+
+    busy = runtime.submit_text("다른 작업")
+    stopped = runtime.submit_text("멈춰")
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+
+    assert busy.event_type is RuntimeEventType.BUSY_IGNORED
+    assert stopped.event_type is RuntimeEventType.STOP_ACCEPTED
+    assert (classifier.calls, planner.calls) == calls
+    assert completed is not None and completed.reason == "LOCAL_STOP"
+
+
+def test_text_input_rejects_empty_long_or_control_characters() -> None:
+    runtime, classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}})
+    )
+
+    for invalid in ("", "   ", "x" * 2_001, "명령\n둘째 줄", "명령\0"):
+        try:
+            runtime.submit_text(invalid)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid text was accepted")
+
+    assert classifier.calls == 0
+    assert planner.calls == 0
     assert runtime.state is AlwaysOnState.IDLE
 
 
@@ -248,6 +403,100 @@ def test_completed_runtime_accepts_next_task_with_fresh_token() -> None:
     assert classifier.calls == 2
     assert planner.calls == 2
     assert len(executor.calls) == 2
+
+
+def test_runtime_executes_verified_observation_continuation_round() -> None:
+    class ContinuePlanner(Planner):
+        def plan(
+            self,
+            goal: str,
+            *,
+            trusted_context: Mapping[str, object] | None = None,
+            untrusted_context: str | None = None,
+        ) -> Plan:
+            self.calls += 1
+            capability = "file.list" if self.calls == 1 else "system.info.read"
+            return Plan(
+                goal=goal,
+                steps=(
+                    Action(
+                        capability_id=capability,
+                        purpose="observe then finish",
+                        expected_postconditions=(
+                            Postcondition(predicate="execution.success"),
+                        ),
+                    ),
+                ),
+                continue_after_verification=self.calls == 1,
+            )
+
+    planner = ContinuePlanner()
+    classifier = Classifier()
+    executor = MockExecutor(
+        {
+            "file.list": lambda _action: {"entries": ["a.txt"]},
+            "system.info.read": lambda _action: {"os": "Windows"},
+        }
+    )
+    tokens = ApprovalTokenService(b"r" * 32)
+    trace_observer = TraceObserver()
+
+    def coordinator_factory(token: CancellationToken) -> VoiceCommandCoordinator:
+        return VoiceCommandCoordinator(classifier, planner, token)
+
+    def orchestrator_factory(token: CancellationToken) -> Orchestrator:
+        return Orchestrator(
+            policy=PolicyEngine(default_registry()),
+            executor=executor,
+            verifier=PredicateVerifier(),
+            audit=InMemoryAuditSink(),
+            approvals=tokens,
+            cancellation=token,
+        )
+
+    def round_runner_factory(
+        token: CancellationToken,
+        context_provider: Callable[[Action], PolicyContext],
+    ) -> OrchestratorRoundRunner:
+        def observed(observer: InMemoryVerifiedResultObserver) -> Orchestrator:
+            return Orchestrator(
+                policy=PolicyEngine(default_registry()),
+                executor=executor,
+                verifier=PredicateVerifier(),
+                audit=InMemoryAuditSink(),
+                approvals=tokens,
+                cancellation=token,
+                verified_result_observer=observer,
+            )
+
+        return OrchestratorRoundRunner(observed, context_provider)
+
+    runtime = AlwaysOnAgentRuntime(
+        coordinator_factory=coordinator_factory,
+        orchestrator_factory=orchestrator_factory,
+        policy_context_provider=lambda _action: PolicyContext(
+            addressed_confidence=1.0,
+            intent_confidence=1.0,
+            target_confidence=1.0,
+            target_matches_plan=True,
+        ),
+        observation_planner=planner,
+        observation_registry=default_registry(),
+        observation_round_runner_factory=round_runner_factory,
+        skill_trace_observer=trace_observer,  # type: ignore[arg-type]
+    )
+    runtime.submit_capture(capture("자료 확인"))
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+    assert completed is not None
+    assert completed.event_type is RuntimeEventType.TASK_COMPLETED
+    assert completed.reason == "GOAL_POSTCONDITIONS_VERIFIED"
+    assert completed.completed_actions == 2
+    assert completed.skill_trace_recorded is True
+    assert planner.calls == 2
+    assert len(trace_observer.observed) == 1
+    trace_plan, trace_outcome = trace_observer.observed[0]
+    assert len(trace_plan.steps) == 2
+    assert trace_outcome.completed_actions == 2
 
 
 def test_close_cancels_active_task_and_rejects_new_capture() -> None:
@@ -271,7 +520,7 @@ def test_exact_stop_during_planning_prevents_executor_start() -> None:
     started = runtime.submit_capture(capture("긴 계획"))
     assert planner.started.wait(timeout=1)
 
-    stopped = runtime.submit_capture(capture("자비스 스톱"))
+    stopped = runtime.submit_capture(capture("스킬라 스톱"))
     planner.release.set()
     completed = runtime.wait_for_idle(timeout_seconds=1)
 
@@ -355,6 +604,36 @@ def test_stop_bypasses_blocked_context_and_prevents_model_calls() -> None:
     assert classifier.calls == 0
     assert planner.calls == 0
     assert executor.calls == ()
+
+
+def test_ui_stop_cancels_active_task_without_closing_runtime() -> None:
+    planner = BlockingPlanner()
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        planner=planner,
+    )
+    runtime.submit_capture(capture("작업"))
+    assert planner.started.wait(timeout=1)
+
+    stopped = runtime.cancel_current_task()
+    planner.release.set()
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+
+    assert stopped.event_type is RuntimeEventType.STOP_ACCEPTED
+    assert completed is not None and completed.reason == "PLANNING_CANCELLED"
+    assert runtime.state is AlwaysOnState.IDLE
+
+
+def test_ui_stop_while_idle_keeps_runtime_available() -> None:
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}})
+    )
+
+    event = runtime.cancel_current_task()
+
+    assert event.event_type is RuntimeEventType.ROUTED
+    assert event.reason == "NO_ACTIVE_TASK"
+    assert runtime.state is AlwaysOnState.IDLE
 
 
 def test_context_failure_is_redacted_and_prevents_model_calls() -> None:

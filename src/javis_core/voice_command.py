@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -80,12 +81,55 @@ class VoiceCommandCoordinator:
                 status=VoiceCommandStatus.FAILED,
                 reason="INVALID_VOICE_CAPTURE",
             )
+        return self._process_transcript(
+            capture.transcript,
+            wake_confidence=capture.wake_confidence,
+            explicit_wake_word=True,
+            source="MIC",
+            task_active=task_active,
+            trusted_context=trusted_context,
+        )
+
+    def process_text(
+        self,
+        text: str,
+        *,
+        task_active: bool,
+        trusted_context: Mapping[str, object] | None = None,
+    ) -> VoiceCommandDecision:
+        """Route explicit local UI text through the same typed planning boundary."""
+        try:
+            normalized = validate_trusted_text_command(text)
+        except ValueError:
+            return VoiceCommandDecision(
+                status=VoiceCommandStatus.FAILED,
+                reason="INVALID_TRUSTED_TEXT",
+            )
+        return self._process_transcript(
+            normalized,
+            wake_confidence=1.0,
+            explicit_wake_word=False,
+            source="TRUSTED_TEXT",
+            task_active=task_active,
+            trusted_context=trusted_context,
+        )
+
+    def _process_transcript(
+        self,
+        transcript: str,
+        *,
+        wake_confidence: float,
+        explicit_wake_word: bool,
+        source: InputSource,
+        task_active: bool,
+        trusted_context: Mapping[str, object] | None,
+    ) -> VoiceCommandDecision:
         try:
             evidence = self._classifier.classify(
-                capture.transcript,
-                wake_confidence=capture.wake_confidence,
-                explicit_wake_word=True,
-                source="MIC",
+                transcript,
+                wake_confidence=wake_confidence,
+                explicit_wake_word=explicit_wake_word,
+                source=source,
             )
             gate_result = self._gate.evaluate(evidence, task_active=task_active)
         except Exception:
@@ -123,3 +167,16 @@ class VoiceCommandCoordinator:
             gate=gate_result,
             plan=plan,
         )
+
+
+def validate_trusted_text_command(text: str, *, max_characters: int = 2_000) -> str:
+    if not isinstance(text, str) or not 1 <= max_characters <= 10_000:
+        raise ValueError("invalid trusted text command")
+    normalized = text.strip()
+    if (
+        not normalized
+        or len(normalized) > max_characters
+        or any(unicodedata.category(character) == "Cc" for character in normalized)
+    ):
+        raise ValueError("invalid trusted text command")
+    return normalized

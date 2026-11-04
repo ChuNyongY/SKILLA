@@ -1,0 +1,112 @@
+[
+  {
+    "case_id": "positive.weekly-file-sort.01",
+    "query": "이번 주 과제 자료를 과목별로 정리해 줘",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "positive.weekly-file-sort.02",
+    "query": "다운로드 폴더에 쌓인 이번 주 숙제 파일을 과목별 폴더로 옮겨 줘",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "positive.weekly-file-sort.03",
+    "query": "이번 주 파일 정리 부탁해",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "positive.meeting-pdf-open.01",
+    "query": "회의 PDF 열어 줘",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "positive.meeting-pdf-open.02",
+    "query": "지난 회의에서 받은 PDF 문서를 찾아서 열어 줘",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "positive.meeting-pdf-open.03",
+    "query": "회의 자료 폴더에 있는 문서를 보고 싶어",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "positive.volume-control.01",
+    "query": "소리 크기를 30으로 바꿔 줘",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "positive.volume-control.02",
+    "query": "컴퓨터 소리를 조금 줄여 줘",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "positive.volume-control.03",
+    "query": "현재 볼륨이 얼마인지 확인해 줘",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "positive.system-check.01",
+    "query": "시스템 정보 알려 줘",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "positive.system-check.02",
+    "query": "내 PC 정보 확인해 줘",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "positive.system-check.03",
+    "query": "운영체제와 컴퓨터 사양을 보고 싶어",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "positive.browser-navigation.01",
+    "query": "학교 웹사이트 열어 줘",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "positive.browser-navigation.02",
+    "query": "깃허브 주소를 브라우저에서 열어 줘",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "positive.browser-navigation.03",
+    "query": "허용된 사이트에 접속해 줘",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "negative.weather.01",
+    "query": "오늘 부산 날씨와 기온을 알려 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "negative.cooking.01",
+    "query": "김치찌개 만드는 법을 설명해 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "negative.greeting.01",
+    "query": "친구에게 생일 축하 문장을 작성해 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "negative.schedule.01",
+    "query": "내일 오전 일정을 알려 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "negative.translation.01",
+    "query": "영어 문장을 한국어로 번역해 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "ambiguous.work-bundle.01",
+    "query": "업무 묶음 처리해 줘",
+    "expected_skill_key": "work-bundle-archive"
+  },
+  {
+    "case_id": "ambiguous.work-bundle.02",
+    "query": "이 업무 묶음을 처리해 줘",
+    "expected_skill_key": "work-bundle-share"
+  }
+]

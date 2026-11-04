@@ -10,15 +10,18 @@ from javis_core.always_on_runtime import (
     RuntimeStatusSnapshot,
 )
 from javis_core.status_surface import RuntimeStatusDisplay, RuntimeStatusPresenter
+from javis_core.voice import VoicePipelineDiagnostics
 
 
 class FakeView:
     def __init__(self) -> None:
         self.on_stop: Callable[[], None] | None = None
         self.on_hide: Callable[[], None] | None = None
+        self.on_exit: Callable[[], None] | None = None
         self.rendered: list[RuntimeStatusDisplay] = []
         self.scheduled: list[tuple[int, Callable[[], None]]] = []
         self.closed = False
+        self.minimized = False
         self.ran = False
 
     def bind_handlers(
@@ -26,9 +29,11 @@ class FakeView:
         *,
         on_stop: Callable[[], None],
         on_hide: Callable[[], None],
+        on_exit: Callable[[], None],
     ) -> None:
         self.on_stop = on_stop
         self.on_hide = on_hide
+        self.on_exit = on_exit
 
     def render(self, display: RuntimeStatusDisplay) -> None:
         self.rendered.append(display)
@@ -38,6 +43,9 @@ class FakeView:
 
     def close(self) -> None:
         self.closed = True
+
+    def minimize(self) -> None:
+        self.minimized = True
 
     def run(self) -> None:
         self.ran = True
@@ -66,6 +74,7 @@ def test_presenter_polls_coarse_status_and_hide_does_not_stop_agent() -> None:
 
     presenter = RuntimeStatusPresenter(
         status_provider=snapshot,
+        request_task_stop=lambda: calls.append("task"),
         request_capture_stop=stop_capture,
         request_runtime_stop=lambda: calls.append("runtime"),
         view=view,
@@ -78,11 +87,12 @@ def test_presenter_polls_coarse_status_and_hide_does_not_stop_agent() -> None:
 
     assert view.on_hide is not None
     view.on_hide()
-    assert view.closed
+    assert view.minimized
+    assert not view.closed
     assert calls == []
 
 
-def test_explicit_stop_requests_capture_then_runtime_shutdown() -> None:
+def test_stop_cancels_only_current_task_and_explicit_exit_stops_runtime() -> None:
     view = FakeView()
     calls: list[str] = []
 
@@ -91,7 +101,8 @@ def test_explicit_stop_requests_capture_then_runtime_shutdown() -> None:
         return True
 
     presenter = RuntimeStatusPresenter(
-        status_provider=lambda: snapshot(AlwaysOnState.CLOSED, reason="RUNTIME_CLOSED"),
+        status_provider=lambda: snapshot(AlwaysOnState.IDLE),
+        request_task_stop=lambda: calls.append("task"),
         request_capture_stop=stop_capture,
         request_runtime_stop=lambda: calls.append("runtime"),
         view=view,
@@ -101,14 +112,20 @@ def test_explicit_stop_requests_capture_then_runtime_shutdown() -> None:
     assert view.on_stop is not None
     view.on_stop()
 
-    assert calls == ["capture", "runtime"]
-    assert view.rendered[-1].stop_enabled is False
+    assert calls == ["task"]
+    assert view.rendered[-1].stop_enabled is True
+
+    assert view.on_exit is not None
+    view.on_exit()
+    assert calls == ["task", "capture", "runtime"]
+    assert view.closed
 
 
 def test_unknown_reason_and_provider_failure_do_not_leak_details() -> None:
     view = FakeView()
     presenter = RuntimeStatusPresenter(
         status_provider=lambda: snapshot(reason="COMMAND_DECISION_INVALID"),
+        request_task_stop=lambda: None,
         request_capture_stop=lambda: False,
         request_runtime_stop=lambda: None,
         view=view,
@@ -124,6 +141,7 @@ def test_unknown_reason_and_provider_failure_do_not_leak_details() -> None:
 
     RuntimeStatusPresenter(
         status_provider=fail,
+        request_task_stop=lambda: None,
         request_capture_stop=lambda: False,
         request_runtime_stop=lambda: None,
         view=failing_view,
@@ -133,11 +151,53 @@ def test_unknown_reason_and_provider_failure_do_not_leak_details() -> None:
     assert "private" not in rendered
 
 
+def test_idle_voice_display_distinguishes_started_capture_from_no_frames() -> None:
+    no_frames = RuntimeStatusPresenter._display(
+        snapshot(),
+        VoicePipelineDiagnostics(
+            frame_count=0,
+            speech_frame_count=0,
+            max_wake_confidence=0.0,
+            wake_detected=False,
+        ),
+    )
+    receiving = RuntimeStatusPresenter._display(
+        snapshot(),
+        VoicePipelineDiagnostics(
+            frame_count=12,
+            speech_frame_count=0,
+            max_wake_confidence=0.0,
+            wake_detected=False,
+        ),
+    )
+
+    assert no_frames.voice_label == "마이크 시작 중 · 입력 신호를 기다리고 있습니다"
+    assert receiving.voice_label == "마이크 수신 중 · 입력 프레임 12"
+
+
+def test_non_wake_background_speech_does_not_show_garbled_transcript() -> None:
+    display = RuntimeStatusPresenter._display(
+        snapshot(),
+        VoicePipelineDiagnostics(
+            frame_count=0,
+            speech_frame_count=0,
+            max_wake_confidence=0.0,
+            wake_detected=False,
+            last_transcript="잘못 인식된 주변 소리",
+            recognition_reason="WAKE_WORD_NOT_FOUND",
+        ),
+    )
+
+    assert display.voice_label == "주변 음성 무시 · '스킬라'를 기다리는 중"
+    assert "잘못" not in display.voice_label
+
+
 def test_presenter_rejects_invalid_poll_interval() -> None:
     for invalid in (99, 5_001, True):
         with pytest.raises(ValueError, match="poll_interval_ms"):
             RuntimeStatusPresenter(
                 status_provider=snapshot,
+                request_task_stop=lambda: None,
                 request_capture_stop=lambda: False,
                 request_runtime_stop=lambda: None,
                 view=FakeView(),

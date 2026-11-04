@@ -11,6 +11,7 @@ from pytest import MonkeyPatch
 
 from javis_core import (
     NimChatTransport,
+    NimTransportMetrics,
     PlannerError,
     TypedPlanner,
     default_registry,
@@ -25,6 +26,41 @@ class FakeTransport:
     def complete(self, system_prompt: str, user_prompt: str) -> str:
         self.calls.append((system_prompt, user_prompt))
         return self.response
+
+
+class SequenceTransport:
+    def __init__(self, responses: tuple[str, ...]) -> None:
+        self.responses = list(responses)
+        self.calls: list[tuple[str, str]] = []
+
+    def complete(self, system_prompt: str, user_prompt: str) -> str:
+        self.calls.append((system_prompt, user_prompt))
+        return self.responses.pop(0)
+
+
+class MetricsTransport(FakeTransport):
+    def metrics_snapshot(self) -> NimTransportMetrics:
+        return NimTransportMetrics(
+            requests=3,
+            successful_requests=3,
+            input_tokens=120,
+            output_tokens=30,
+            responses_without_usage=0,
+        )
+
+
+def test_typed_planner_exposes_optional_transport_metrics() -> None:
+    without_metrics = TypedPlanner(FakeTransport(plan_json()), default_registry())
+    with_metrics = TypedPlanner(MetricsTransport(plan_json()), default_registry())
+
+    assert without_metrics.metrics_snapshot() is None
+    assert with_metrics.metrics_snapshot() == NimTransportMetrics(
+        requests=3,
+        successful_requests=3,
+        input_tokens=120,
+        output_tokens=30,
+        responses_without_usage=0,
+    )
 
 
 def plan_json(
@@ -68,6 +104,78 @@ def test_typed_planner_accepts_contract_valid_json() -> None:
     assert "untrusted_context_data_only" in user_prompt
 
 
+def test_typed_planner_repairs_one_invalid_response_without_relaxing_validation() -> None:
+    transport = SequenceTransport(("```json\n{}\n```", plan_json()))
+    plan = TypedPlanner(transport, default_registry()).plan("시스템 정보 확인")
+    assert plan.steps[0].capability_id == "system.info.read"
+    assert len(transport.calls) == 2
+    repair_document = json.loads(transport.calls[1][1])
+    assert repair_document["invalid_plan_data_only"].startswith("```json")
+    assert "Never combine read-only observation" in repair_document["repair_instruction"]
+    assert "must be a JSON object" in repair_document["repair_instruction"]
+
+
+def test_typed_planner_rejects_mixed_observation_and_state_change_plan() -> None:
+    response = json.dumps(
+        {
+            "schema_version": "1.0",
+            "goal": "inspect then move",
+            "steps": [
+                {
+                    "capability_id": "file.list",
+                    "arguments": {"path": "C:\\fixture"},
+                    "purpose": "inspect",
+                    "expected_postconditions": [
+                        {"predicate": "execution.success", "arguments": {}}
+                    ],
+                    "target_identity": "C:\\fixture",
+                },
+                {
+                    "capability_id": "file.move",
+                    "arguments": {
+                        "source": "C:\\fixture\\a.txt",
+                        "destination": "C:\\fixture\\done\\a.txt",
+                    },
+                    "purpose": "move",
+                    "expected_postconditions": [
+                        {"predicate": "file.moved", "arguments": {}}
+                    ],
+                    "target_identity": "C:\\fixture\\a.txt",
+                },
+            ],
+            "continue_after_verification": False,
+        }
+    )
+    planner = TypedPlanner(
+        FakeTransport(response),
+        default_registry(),
+        max_repair_attempts=0,
+    )
+
+    with pytest.raises(PlannerError, match="invalid typed plan"):
+        planner.plan("inspect then move")
+
+
+def test_typed_planner_rejects_state_change_continuation_plan() -> None:
+    response = json.loads(
+        plan_json(
+            "file.move",
+            {"source": "C:\\fixture\\a.txt", "destination": "C:\\fixture\\b.txt"},
+            "C:\\fixture\\a.txt",
+            "file.moved",
+        )
+    )
+    response["continue_after_verification"] = True
+    planner = TypedPlanner(
+        FakeTransport(json.dumps(response)),
+        default_registry(),
+        max_repair_attempts=0,
+    )
+
+    with pytest.raises(PlannerError, match="invalid typed plan"):
+        planner.plan("move")
+
+
 def test_planner_prompt_includes_all_capability_specific_postconditions() -> None:
     transport = FakeTransport(plan_json())
     TypedPlanner(transport, default_registry()).plan("계약 확인")
@@ -93,6 +201,8 @@ def test_planner_prompt_includes_all_capability_specific_postconditions() -> Non
         "snapshot.restore.verified",
     ):
         assert predicate in system_prompt
+    assert "file-sha256:<sha256> for file.open" in system_prompt
+    assert "exactly default-audio-render-endpoint" in system_prompt
 
 
 def test_markdown_wrapped_json_is_rejected() -> None:
@@ -225,7 +335,12 @@ def test_nim_transport_extracts_content_from_valid_envelope(
     monkeypatch: MonkeyPatch,
 ) -> None:
     content = plan_json()
-    envelope = json.dumps({"choices": [{"message": {"content": content}}]}).encode()
+    envelope = json.dumps(
+        {
+            "choices": [{"message": {"content": content}}],
+            "usage": {"prompt_tokens": 123, "completion_tokens": 45},
+        }
+    ).encode()
     captured: dict[str, Any] = {}
 
     def fake_urlopen(request: urllib.request.Request, timeout: float) -> FakeHttpResponse:
@@ -254,6 +369,12 @@ def test_nim_transport_extracts_content_from_valid_envelope(
     assert request_document["model"] == "z-ai/glm-5.3"
     assert request_document["reasoning_effort"] == "low"
     assert request_document["chat_template_kwargs"] == {"clear_thinking": True}
+    metrics = transport.metrics_snapshot()
+    assert metrics.requests == 1
+    assert metrics.successful_requests == 1
+    assert metrics.input_tokens == 123
+    assert metrics.output_tokens == 45
+    assert metrics.responses_without_usage == 0
 
 
 def test_non_glm_transport_omits_model_specific_reasoning_fields(
@@ -282,6 +403,7 @@ def test_non_glm_transport_omits_model_specific_reasoning_fields(
     request_document = json.loads(request.data)
     assert "reasoning_effort" not in request_document
     assert "chat_template_kwargs" not in request_document
+    assert transport.metrics_snapshot().responses_without_usage == 1
 
 
 def test_nim_transport_rejects_oversized_response(monkeypatch: MonkeyPatch) -> None:
@@ -296,3 +418,6 @@ def test_nim_transport_rejects_oversized_response(monkeypatch: MonkeyPatch) -> N
 
     with pytest.raises(PlannerError, match="size limit"):
         transport.complete("system", "user")
+    metrics = transport.metrics_snapshot()
+    assert metrics.requests == 1
+    assert metrics.successful_requests == 0

@@ -35,10 +35,12 @@ class ProductHostConfig(FrozenModel):
         max_length=128,
         pattern=r"^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]+$",
     )
+    wakeword_mode: Literal["openwakeword", "whisper_korean"] = "openwakeword"
     wake_threshold: StrictFloat = Field(ge=0.5, le=0.99)
     vad_rms_threshold: StrictInt = Field(ge=1, le=32_767)
     end_silence_frames: StrictInt = Field(ge=1, le=50)
     max_capture_frames: StrictInt = Field(ge=10, le=1_500)
+    microphone_device_index: StrictInt | None = Field(default=None, ge=0, le=255)
     microphone_frame_ms: StrictInt = Field(ge=10, le=200)
     microphone_queue_capacity: StrictInt = Field(ge=4, le=256)
     hud_poll_interval_ms: StrictInt = Field(ge=100, le=5_000)

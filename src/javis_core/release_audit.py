@@ -59,8 +59,8 @@ def audit_windows_release(
     else:
         items.append(_item("package.manifest", True, "OK"))
     for component, name in (
-        ("package.console-signature", "JAVIS.exe"),
-        ("package.tray-signature", "JAVIS-Tray.exe"),
+        ("package.console-signature", "SKILLA.exe"),
+        ("package.tray-signature", "SKILLA-Tray.exe"),
     ):
         try:
             executable = _trusted_file(package / name, "PACKAGE_EXECUTABLE_INVALID")

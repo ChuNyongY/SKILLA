@@ -57,8 +57,8 @@ def load_stt_bundle(
     manifest_path: Path,
     *,
     max_manifest_bytes: int = 16 * 1024,
-    max_file_bytes: int = 90 * 1024 * 1024,
-    max_total_bytes: int = 100 * 1024 * 1024,
+    max_file_bytes: int = 500 * 1024 * 1024,
+    max_total_bytes: int = 510 * 1024 * 1024,
 ) -> LoadedSttBundle:
     if min(max_manifest_bytes, max_file_bytes, max_total_bytes) < 1:
         raise ValueError("bundle limits must be positive")

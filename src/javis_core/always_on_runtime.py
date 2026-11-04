@@ -4,6 +4,7 @@ from collections import deque
 from collections.abc import Callable
 from enum import StrEnum
 from threading import Lock, Thread
+from time import perf_counter_ns
 from typing import Protocol
 from uuid import UUID
 
@@ -13,14 +14,28 @@ from .agent_session import (
     OrchestratorFactory,
     PlannerContextProvider,
     PolicyContextProvider,
+    SkillTraceObserver,
+    SkillUseObserver,
 )
 from .cancellation import CancellationToken
 from .intent import LocalStopDetector
 from .models import ActionStatus, FrozenModel, Plan
+from .observation_loop import (
+    BoundedObservationAgent,
+    ObservationLoopStatus,
+    ObservationRoundRunner,
+)
 from .policy_context import gate_scoped_policy_context_provider
+from .registry import CapabilityRegistry
 from .runtime_models import TaskOutcome
+from .skill_runtime import PlanProposer
+from .user_visible_result import UserVisibleResultSnapshot, UserVisibleResultStore
 from .voice import CaptureStatus, VoiceCaptureResult
-from .voice_command import VoiceCommandCoordinator, VoiceCommandStatus
+from .voice_command import (
+    VoiceCommandCoordinator,
+    VoiceCommandStatus,
+    validate_trusted_text_command,
+)
 from .voice_feedback import VoiceFeedbackPresenter
 
 
@@ -52,6 +67,8 @@ class RuntimeEvent(FrozenModel):
     task_id: UUID | None = None
     completed_actions: int = Field(default=0, ge=0)
     feedback_delivered: bool | None = None
+    skill_trace_recorded: bool | None = None
+    skill_use_recorded: bool | None = None
 
 
 class RuntimeStatusSnapshot(FrozenModel):
@@ -65,11 +82,19 @@ class RuntimeStatusSnapshot(FrozenModel):
     )
     completed_actions: int = Field(default=0, ge=0)
     feedback_delivered: bool | None = None
+    skill_trace_recorded: bool | None = None
+    skill_use_recorded: bool | None = None
+    result: UserVisibleResultSnapshot | None = None
     sequence: int = Field(default=0, ge=0)
 
 
 class RuntimeCoordinatorFactory(Protocol):
     def __call__(self, cancellation: CancellationToken) -> VoiceCommandCoordinator: ...
+
+
+ObservationRoundRunnerFactory = Callable[
+    [CancellationToken, PolicyContextProvider], ObservationRoundRunner
+]
 
 
 class AlwaysOnAgentRuntime:
@@ -85,6 +110,12 @@ class AlwaysOnAgentRuntime:
         stop_detector: LocalStopDetector | None = None,
         planner_context_provider: PlannerContextProvider | None = None,
         thread_factory: Callable[..., Thread] = Thread,
+        skill_trace_observer: SkillTraceObserver | None = None,
+        skill_use_observer: SkillUseObserver | None = None,
+        observation_planner: PlanProposer | None = None,
+        observation_registry: CapabilityRegistry | None = None,
+        observation_round_runner_factory: ObservationRoundRunnerFactory | None = None,
+        user_visible_results: UserVisibleResultStore | None = None,
     ) -> None:
         self._coordinator_factory = coordinator_factory
         self._orchestrator_factory = orchestrator_factory
@@ -93,6 +124,21 @@ class AlwaysOnAgentRuntime:
         self._stop_detector = stop_detector or LocalStopDetector()
         self._planner_context_provider = planner_context_provider
         self._thread_factory = thread_factory
+        self._skill_trace_observer = skill_trace_observer
+        self._skill_use_observer = skill_use_observer
+        observation_components = (
+            observation_planner,
+            observation_registry,
+            observation_round_runner_factory,
+        )
+        if any(item is None for item in observation_components) and any(
+            item is not None for item in observation_components
+        ):
+            raise ValueError("observation loop components must be configured together")
+        self._observation_planner = observation_planner
+        self._observation_registry = observation_registry
+        self._observation_round_runner_factory = observation_round_runner_factory
+        self._user_visible_results = user_visible_results
         self._lock = Lock()
         self._state = AlwaysOnState.IDLE
         self._task_token: CancellationToken | None = None
@@ -107,14 +153,59 @@ class AlwaysOnAgentRuntime:
 
     def status_snapshot(self) -> RuntimeStatusSnapshot:
         """Return a privacy-minimized status without consuming the event queue."""
+        result = (
+            None
+            if self._user_visible_results is None
+            else self._user_visible_results.snapshot()
+        )
         with self._lock:
-            return self._status.model_copy()
+            return self._status.model_copy(update={"result": result}, deep=True)
 
     def submit_capture(
         self,
         capture: VoiceCaptureResult,
         *,
         trusted_context: dict[str, object] | None = None,
+    ) -> RuntimeEvent:
+        if not isinstance(capture, VoiceCaptureResult):
+            raise TypeError("capture must be a VoiceCaptureResult")
+        return self._submit_input(capture, trusted_context=trusted_context)
+
+    def submit_text(
+        self,
+        text: str,
+        *,
+        trusted_context: dict[str, object] | None = None,
+    ) -> RuntimeEvent:
+        """Submit explicit local text without opening or imitating a microphone."""
+        normalized = validate_trusted_text_command(text)
+        return self._submit_input(normalized, trusted_context=trusted_context)
+
+    def cancel_current_task(self) -> RuntimeEvent:
+        """Cancel only the active task; keep the microphone and runtime available."""
+        with self._lock:
+            if (
+                self._state in {AlwaysOnState.PLANNING, AlwaysOnState.EXECUTING}
+                and self._task_token is not None
+            ):
+                self._task_token.cancel("LOCAL_STOP")
+                event = RuntimeEvent(
+                    event_type=RuntimeEventType.STOP_ACCEPTED,
+                    reason="LOCAL_STOP_ACCEPTED",
+                )
+            else:
+                event = RuntimeEvent(
+                    event_type=RuntimeEventType.ROUTED,
+                    reason="NO_ACTIVE_TASK",
+                )
+            self._record_status_locked(event)
+            return event
+
+    def _submit_input(
+        self,
+        command: VoiceCaptureResult | str,
+        *,
+        trusted_context: dict[str, object] | None,
     ) -> RuntimeEvent:
         with self._lock:
             if self._state is AlwaysOnState.CLOSED:
@@ -125,15 +216,17 @@ class AlwaysOnAgentRuntime:
                 self._record_status_locked(event)
                 return event
             if self._state in {AlwaysOnState.PLANNING, AlwaysOnState.EXECUTING}:
-                return self._handle_busy_capture_locked(capture)
+                return self._handle_busy_input_locked(command)
             token = CancellationToken()
+            if self._user_visible_results is not None:
+                self._user_visible_results.clear()
             self._task_token = token
             self._state = AlwaysOnState.PLANNING
             try:
                 worker = self._thread_factory(
                     target=self._plan_and_run,
                     args=(
-                        capture,
+                        command,
                         None if trusted_context is None else dict(trusted_context),
                         token,
                     ),
@@ -206,10 +299,13 @@ class AlwaysOnAgentRuntime:
             self._record_status_locked(event)
         return event
 
-    def _handle_busy_capture_locked(self, capture: VoiceCaptureResult) -> RuntimeEvent:
-        transcript = capture.transcript
+    def _handle_busy_input_locked(
+        self,
+        command: VoiceCaptureResult | str,
+    ) -> RuntimeEvent:
+        transcript = command if isinstance(command, str) else command.transcript
         if (
-            capture.status is CaptureStatus.TRANSCRIBED
+            (isinstance(command, str) or command.status is CaptureStatus.TRANSCRIBED)
             and transcript is not None
             and self._stop_detector.matches(transcript)
             and self._task_token is not None
@@ -230,10 +326,11 @@ class AlwaysOnAgentRuntime:
 
     def _plan_and_run(
         self,
-        capture: VoiceCaptureResult,
+        command: VoiceCaptureResult | str,
         trusted_context: dict[str, object] | None,
         token: CancellationToken,
     ) -> None:
+        task_started_ns = perf_counter_ns()
         if trusted_context is None:
             try:
                 trusted_context = (
@@ -254,11 +351,19 @@ class AlwaysOnAgentRuntime:
             )
             return
         try:
-            decision = self._coordinator_factory(token).process(
-                capture,
-                task_active=False,
-                trusted_context=trusted_context,
-            )
+            coordinator = self._coordinator_factory(token)
+            if isinstance(command, str):
+                decision = coordinator.process_text(
+                    command,
+                    task_active=False,
+                    trusted_context=trusted_context,
+                )
+            else:
+                decision = coordinator.process(
+                    command,
+                    task_active=False,
+                    trusted_context=trusted_context,
+                )
         except Exception:
             self._finish_worker(token, self._failed("COMMAND_COORDINATION_FAILED"))
             return
@@ -314,18 +419,30 @@ class AlwaysOnAgentRuntime:
                 }
             )
 
-        self._run_task(plan, token, policy_context_provider)
+        self._run_task(
+            plan,
+            token,
+            policy_context_provider,
+            task_started_ns=task_started_ns,
+        )
 
     def _run_task(
         self,
         plan: Plan,
         token: CancellationToken,
         policy_context_provider: PolicyContextProvider,
+        *,
+        task_started_ns: int,
     ) -> None:
         try:
-            outcome = self._orchestrator_factory(token).run(
+            outcome, trace_plan = self._execute_plan(
+                plan, token, policy_context_provider
+            )
+            skill_trace_recorded = self._record_skill_trace(trace_plan, outcome)
+            skill_use_recorded = self._record_skill_use(
                 plan,
-                policy_context_provider,
+                outcome,
+                elapsed_ms=(perf_counter_ns() - task_started_ns) // 1_000_000,
             )
             feedback_delivered = self._deliver_feedback(outcome, token)
             event = RuntimeEvent(
@@ -338,6 +455,8 @@ class AlwaysOnAgentRuntime:
                 task_id=outcome.task_id,
                 completed_actions=outcome.completed_actions,
                 feedback_delivered=feedback_delivered,
+                skill_trace_recorded=skill_trace_recorded,
+                skill_use_recorded=skill_use_recorded,
             )
         except Exception:
             event = RuntimeEvent(
@@ -346,6 +465,83 @@ class AlwaysOnAgentRuntime:
                 task_id=plan.task_id,
             )
         self._finish_worker(token, event)
+
+    def _execute_plan(
+        self,
+        plan: Plan,
+        token: CancellationToken,
+        policy_context_provider: PolicyContextProvider,
+    ) -> tuple[TaskOutcome, Plan]:
+        if not plan.continue_after_verification:
+            return (
+                self._orchestrator_factory(token).run(plan, policy_context_provider),
+                plan,
+            )
+        if (
+            self._observation_planner is None
+            or self._observation_registry is None
+            or self._observation_round_runner_factory is None
+        ):
+            return (
+                TaskOutcome(
+                    task_id=plan.task_id,
+                    status=ActionStatus.ABORTED,
+                    completed_actions=0,
+                    reason="OBSERVATION_LOOP_UNAVAILABLE",
+                ),
+                plan,
+            )
+        loop = BoundedObservationAgent(
+            self._observation_planner,
+            self._observation_round_runner_factory(token, policy_context_provider),
+            None,
+            self._observation_registry,
+        ).run(plan.goal, initial_plan=plan)
+        outcome = TaskOutcome(
+            task_id=plan.task_id,
+            status=(
+                ActionStatus.SUCCEEDED
+                if loop.status is ObservationLoopStatus.COMPLETED
+                else ActionStatus.ABORTED
+            ),
+            completed_actions=len(loop.observations),
+            reason=loop.reason,
+        )
+        trace_plan = Plan(
+            task_id=plan.task_id,
+            goal=plan.goal,
+            steps=tuple(
+                action
+                for executed_plan in loop.executed_plans
+                for action in executed_plan.steps
+            ),
+        )
+        return outcome, trace_plan
+
+    def _record_skill_trace(self, plan: Plan, outcome: TaskOutcome) -> bool | None:
+        if self._skill_trace_observer is None:
+            return None
+        try:
+            self._skill_trace_observer.observe(plan, outcome)
+        except Exception:
+            return False
+        return True
+
+    def _record_skill_use(
+        self,
+        plan: Plan,
+        outcome: TaskOutcome,
+        *,
+        elapsed_ms: int,
+    ) -> bool | None:
+        if self._skill_use_observer is None:
+            return None
+        try:
+            return True if self._skill_use_observer.observe(
+                plan, outcome, elapsed_ms=elapsed_ms
+            ) else None
+        except Exception:
+            return False
 
     def _deliver_feedback(
         self,
@@ -388,6 +584,8 @@ class AlwaysOnAgentRuntime:
             last_reason=event.reason,
             completed_actions=event.completed_actions,
             feedback_delivered=event.feedback_delivered,
+            skill_trace_recorded=event.skill_trace_recorded,
+            skill_use_recorded=event.skill_use_recorded,
             sequence=self._status.sequence + 1,
         )
 

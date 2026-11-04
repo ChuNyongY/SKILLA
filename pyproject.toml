@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "javis-pc-agent"
-version = "0.1.0"
-description = "Safety execution-control core for a Windows PC agent"
+version = "0.1.9"
+description = "Skill-based Windows PC agent for reusable and verifiable repeated tasks"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -44,6 +44,7 @@ packages = ["src/javis_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-q"
 
 [tool.ruff]

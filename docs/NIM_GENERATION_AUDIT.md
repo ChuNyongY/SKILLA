@@ -1,5 +1,71 @@
 # NIM 생성 및 감사 기록
 
+## 2026-10-18 첫 실행 자격 증명 설정 초안 요청
+
+- NIM `z-ai/glm-5.3-flash`에 기존 `nim_credential_status`와 `provision_nim_credential`을 사용하는
+  마스킹 Tk 초기 설정, 저장 후 재검증, 의존성 주입 시험의 초안을 요청했다. 요청에는 실제 API 키나
+  사용자 경로를 넣지 않았다.
+- 초안의 상태 구분과 마스킹 방향을 참고했지만 새 저장소나 의존성을 추가하지 않았다. Codex가 현재
+  Windows Credential Manager 계약, frozen 작업자 선분기와 제품 사전점검에 연결하고, 저장 즉시
+  입력값 삭제·취소 시 중복 오류창 방지·예외 redaction을 구현했다.
+- 전체 회귀, Ruff, strict mypy, frozen package와 실제 설치·시작 메뉴 실행으로 감사했다. NIM 초안을
+  그대로 채택한 것이 아니라 기존 코드 계약과 배포 동작에 맞게 수정한 결과다.
+
+## 2026-10-14 안전 파일 정리 폐루프 파일럿
+
+- NIM `z-ai/glm-5.3-flash`가 재현 도구 초안을 작성했지만 현재 공개 API와 다른 생성자·메서드를
+  다수 사용하고 Markdown fence도 포함했으므로 그대로 채택하지 않았다. Codex가 현재 실행기·검증기
+  계약과 대조해 `tools/run_safe_file_sort_pilot.py`로 교정했다.
+- 수정 전 실제 실행은 NIM API 응답 2회가 모두 성공했지만 typed plan 검증에서 닫혔다. 입력
+  2,961-token, 출력 1,354-token, usage 누락 0회였으며 파일 이동은 0건이다. 모델이 한 계획에
+  `file.list`와 `file.move`를 섞고 `observed.contains.values`에 객체 대신 배열을 넣었으며, 복구
+  응답도 같은 오류를 반복했다.
+- Codex 감사로 읽기 전용 관찰과 상태 변경을 한 계획에 섞지 못하게 하고, 상태 변경 계획에
+  `continue_after_verification=true`를 허용하지 않는 typed phase 검증을 추가했다. 복구 prompt에는
+  두 단계 분리와 `observed.contains` 객체 계약을 명시하고 회귀시험 2건을 추가했다.
+- 수정 후 새 임시 sandbox의 실제 실행은 `COMPLETED` / `GOAL_POSTCONDITIONS_VERIFIED`였다. 2회
+  round, 검증 관찰 3건, NIM 요청·성공 각 3회, 입력 4,077-token, 출력 1,098-token, usage 누락
+  0회였다. 두 이동은 각각 `PREPARED -> COMMITTED`로 journal에 남았다.
+- 실행기와 별도의 완료 probe가 `english/english_week1.txt="essay"`와
+  `math/math_week1.txt="algebra"`만 남고 원본 두 파일이 사라진 것을 확인했다. 이 결과는 하나의
+  유계 안전 파일럿 성공만 증명하며, SK0~SK3 효율 또는 통계적 우월성의 근거로 사용하지 않는다.
+- 위 감사 문단의 최초 한국어 초안도 NIM에 요청했다. 첫 응답은 Windows CP949 출력에서 실패했고,
+  UTF-8로 재요청해 수신한 뒤 Codex가 실제 실행 JSON과 수치를 다시 대조해 반영했다.
+
+## 2026-10-14 SK0~SK3 파일럿 수집 도구 초안 요청
+
+- NIM에 실제 `SkillStudyCollector`와 파일 정리 폐루프를 묶는 코드 초안을 요청했다. 첫 응답은 저장소
+  API 서명을 알 수 없는 상태에서 이름을 지어내지 않겠다며 필요한 서명 목록을 반환했다. 이를 코드로
+  채택하지 않았다.
+- 실제 생성자·자료형·계측 API 서명을 제공한 두 번째 요청은 60초 read timeout으로 끝나 코드가
+  생성되지 않았다. 따라서 Codex가 동일 제약으로 구현하고 실제 4-condition run, 원장 재개,
+  단위시험·Ruff·strict mypy로 감사했다. NIM의 거부나 timeout을 코드 생성 성공으로 기록하지 않는다.
+- 완성된 1블록 결과는 SK0 0/1, SK1 0/1, SK2 1/1, SK3 1/1이다. p-value는 모두 1.0으로,
+  파일럿 자료를 일반적인 스킬 효율 주장으로 확대하지 않는다.
+- Codex 재검사에서 관측의 evidence hash에 대응하는 별도 파일이 없음을 발견해, 조건별 종료 코드,
+  NIM 계측, 이동 journal과 경로 비의존 최종 파일 hash를 evidence JSON으로 저장하도록 보강했다.
+  새 1블록을 다시 실행해 네 evidence 파일의 실제 SHA-256과 관측값이 모두 일치함을 확인했다.
+  이 재실행은 이전 파일럿과 코드 버전·식별자가 같으므로 표본 수를 2로 부풀리지 않는다.
+
+## 2026-10-14 개정 후보 평가 관문 초안 요청
+
+- 기존 스킬과 개정 후보의 대응 성공·시간·토큰을 비교하되 자동 승인하지 않는 Pydantic 계약과
+  순수 평가 함수 초안을 NIM `z-ai/glm-5.3-flash`에 요청했다. 요청은 60초 read timeout으로 끝나
+  생성 코드를 받지 못했다.
+- Codex가 동일 모델·도구·초기 상태 강제, 최소 표본, 성공 회귀와 시간·토큰 비율 관문을 구현했다.
+  출력은 `READY_FOR_HUMAN_REVIEW`까지만 가능하며 카탈로그 승인 함수를 호출하지 않는다. 단위시험과
+  Ruff·strict mypy로 검증했고 NIM timeout을 작성 성공으로 기록하지 않는다.
+- 이어서 실제 카탈로그 쌍과 runner를 묶는 초안을 요청해 응답을 받았다. 응답은 잘못된 Pydantic
+  import, 존재하지 않는 `baseline_first` 필드, 실행되지 않는 placeholder, 현재 평가 함수에 없는
+  catalog 인자를 포함해 그대로 채택하지 않았다. 블록 ID 명시와 교차 실행 방향만 참고했다.
+- Codex는 측정값 자체에 스킬 ID·버전·블록 ID를 결합하고, 직접 다음 revision·상태·capability
+  부분집합을 확인하며 블록별 실행 순서를 교차하는 조립부를 구현했다. 평가 후에도 기존 VERIFIED와
+  후보 DRAFT가 유지되는 시험, 잘못 결합된 측정과 권한 확대 거부 시험으로 감사했다.
+- 실제 파일 정리 v1/v2를 각 3회 실행한 결과 v1 0/3, v2 3/3이었다. v2 평균 시간은 31,196.3 ms,
+  평균 token은 6,349.7로 v1의 53,342.7 ms·8,395.3-token보다 낮았다. 여섯 NIM 실행 근거 파일의
+  SHA-256과 trial 결합을 재확인했고, 후보는 `READY_FOR_HUMAN_REVIEW` 이후에도 DRAFT로 남았다.
+  이는 단일 fixture의 후보 관문 smoke이며 일반적 효율 또는 통계적 우월성 근거가 아니다.
+
 ## 2026-09-29 audio.volume.read 초안 요청
 
 - `z-ai/glm-5.3`에 read-only `audio.volume.read`의 코드·테스트·한국어 문서 초안을 700-token으로
@@ -1576,3 +1642,438 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   실제 key 일치, `NIM.txt`, Vosk 모델/native 파일은 모두 0건이다. frozen manifest 검증, 비동의
   capture 무생성, Credential preflight 3/3과 13-capability service 조립을 재현했다. 세 실행 파일은
   인증서가 없어 `NotSigned`다.
+
+# 2026-10-13 스킬 연구 기준 반영 요청
+
+- Windows 반복 작업용 스킬의 동적 입력·판단 규칙·검증 규칙, 실행 비용 기록, 개정 판정과 SK0~SK3
+  실험 분석기의 코드·테스트·한국어 문서 초안을 NIM에 요청했다.
+- `z-ai/glm-5.3` 요청은 120초 read timeout으로 실패했다. 더 작은 요청을
+  `meta/llama-3.1-70b-instruct`에 재시도했으나 endpoint가 HTTP 410을 반환했다.
+- 생성된 응답이 없으므로 NIM 코드는 채택하지 않았다. 최종 구현은 Codex가 제공 자료와 기존 계약을
+  기준으로 작성하고 pytest, Ruff와 mypy로 별도 감사한다. NIM 실패를 구현 성공으로 계산하지 않는다.
+
+# 2026-10-13 스킬 작성 경로 NIM 재검증
+
+- NVIDIA 공식 모델 목록에서 `z-ai/glm-5.3-flash`가 현재 Free Endpoint로 제공되는 것을 다시
+  확인했다.
+- Windows Credential Manager의 키를 표준 `NimChatTransport`로 읽어 30초 제한, 32-token
+  health 요청을 보냈고 약 3초 안에 정확한 `{"status":"OK"}` JSON 응답을 받았다. 키는 명령행,
+  출력과 감사 문서에 노출하지 않았다.
+- 사용자 선택 trace를 최초·개정 스킬 DRAFT로 만드는 CLI 기본 모델을 제품 설정과 같은
+  `z-ai/glm-5.3-flash`로 맞췄다. 이 health 응답은 작성 품질이나 연구 성능을 증명하지 않는다.
+- 이어서 스킬 trace 대기열과 상태별 스킬 목록 코드의 보안·정합성 검토를 900-token으로 요청했으나
+  45초 read timeout으로 종료됐다. 따라서 이 요청에서 NIM 검토 결과는 채택하지 않았고, 로컬
+  단위시험·정적 검사·직접 감사로 검증을 계속했다.
+- NIM 전송기에 누적 요청 수, 성공 응답 수, 입력·출력 토큰과 usage 누락 횟수 계측을 추가한 뒤
+  `z-ai/glm-5.3-flash`에 32-token metric probe를 실행했다. 응답은
+  `{"metric_probe":"OK"}`였고 API usage는 요청 1회, 성공 1회, 입력 29-token, 출력 8-token,
+  usage 누락 0회로 읽혔다. 이 값은 계측 경로 smoke이며 연구 성능 관측에는 포함하지 않는다.
+
+# 2026-10-14 스킬 환경 변화 감지 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 스킬 실행의 모델 구성·도구 표면 SHA-256 기록, 최근 동일 버전 실행만
+  사용하는 환경 변화 판정, SQLite 호환 이행, CLI와 시험 초안을 요청했다. 요청 1회가 성공했고 API
+  usage는 입력 376-token, 출력 1,530-token이었다. 키와 실제 사용자 경로·파일 내용은 보내지 않았다.
+- 최근 N회와 반복 실패 우선순위, 환경 지문 누락을 근거 부족으로 처리하는 방향은 채택했다. 그러나
+  초안은 현재 프로젝트가 사용하지 않는 Click CLI를 만들고, 실제 `record_use()` 인자와 UUID·버전
+  자료형 및 대문자 상태 코드를 바꾸며 생략 기호가 든 미완성 코드를 제안했으므로 그대로 사용하지
+  않았다. Codex가 현재 argparse·Pydantic·SQLite 계약에 맞춰 구현하고 회귀시험으로 감사했다.
+- 한국어 문서 초안 요청도 1회 성공했으며 API usage는 입력 403-token, 출력 636-token이었다. Windows
+  콘솔 인코딩으로 본문이 손상되어 문장을 복원하거나 채택하지 않았다. 요청에 명시한 문서 구조만
+  참고하고, 구현된 판정 코드와 시험을 다시 대조해 문서를 작성했다.
+
+# 2026-10-14 스킬 검색 평가 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 결정론적 검색, 동점 시 안전한 기본 계획 전환, 운영 검색기와 같은 정답
+  자료 평가기 및 argparse CLI 초안을 요청했다. 첫 응답은 생성됐지만 Windows CP949 출력 단계에서
+  UnicodeEncodeError가 발생해 내용을 채택하지 않았다. UTF-8 출력으로 다시 요청한 1회는 성공했고
+  API usage는 입력 170-token, 출력 1,557-token이었다. 키·사용자 파일·실제 요청 기록은 보내지 않았다.
+- 생산 경로와 평가기가 같은 검색 함수를 사용하고 동점을 `AMBIGUOUS`로 처리하는 방향은 채택했다.
+  그러나 초안은 존재하지 않는 `SkillRecord.trigger_phrase`, 잘못된 `pydantic.FrozenModel` import,
+  현재 하이픈 키 규칙과 다른 예시 및 프로젝트 CLI와 다른 선택 인자를 제안했으므로 그대로 사용하지
+  않았다. Codex가 실제 자료형·argparse·카탈로그 계약에 맞춰 구현하고 단위시험과 CLI smoke로 감사했다.
+
+# 2026-10-14 제품 스킬 사용 자동 기록 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 선택 스킬과 Plan ID의 제한된 일회성 결합, 제품 실행 결과 자동 기록,
+  정규 JSON 환경 지문과 비치명적 기록 실패 처리의 코드·시험 초안을 요청했다. 요청 1회가 성공했고
+  API usage는 입력 368-token, 출력 1,382-token이었다. 키·사용자 발화·파일 내용은 보내지 않았다.
+- LLM Plan에 스킬 신원을 넣지 않는 내부 결합과 one-time claim, canonical JSON SHA-256 방향은
+  채택했다. 초안은 현재 코드에 없는 `SkillSelection.sha256`과 `ContinuationContext`, 실제
+  `record_use()`에 없는 `verified_skill` 인자, capability에 없는 `name`·`version` 필드를 사용하고
+  실패와 단순 미선택을 모두 `False`로 합쳤으므로 그대로 사용하지 않았다.
+- Codex가 실제 `SkillRecord`, `task_id`, `ActionStatus`, `CapabilitySpec` 계약에 맞춰 구현했다. 미선택은
+  `null`, 저장 성공은 `true`, 내부 오류는 `false`로 구분하며 오류 원문은 노출하지 않는다. 상시 실행,
+  단발 세션과 제품 음성 파이프라인을 각각 시험해 작업 결과와 기록 상태가 독립임을 감사했다.
+
+# 2026-10-14 제품 스킬별 NIM usage 결합 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 `TypedPlanner`의 선택적 누적 계측, Plan 전후 차이, 동시 호출 분리,
+  usage 누락 품질 표시와 카탈로그 자동 기록의 코드·시험 초안을 요청했다. 요청 1회가 성공했고 API
+  usage는 입력 299-token, 출력 1,042-token이었다. 키와 사용자 자료는 보내지 않았다.
+- 전후 차이와 계획 호출 직렬화는 채택했다. 초안은 계측 미지원이면 스킬 실행 기록 자체를 건너뛰고,
+  기존 bounded task 결합 대신 단일 `_last_selection`을 제안해 여러 대기 작업을 잃을 수 있으며,
+  현재 모델에 없는 `skill_sha256`을 전제했으므로 그대로 사용하지 않았다.
+- 실제 구현은 결과 기록과 계측 품질을 분리한다. 계측이 없거나 usage가 누락돼도 성공·실패 기록은
+  보존하되 `planner_usage_complete=false`와 누락 수를 저장한다. 1회·2회 요청, 미지원, usage 누락,
+  one-time claim과 8-thread 직렬화 시험을 추가했다.
+- 실제 Credential의 NIM으로 시스템 정보 스킬 Plan을 생성하되 실행하지 않는 smoke에서 선택 v1,
+  계획 호출 1회, 입력 2,611-token, 출력 128-token, usage 누락 0, complete=true가 결합됐고 계획
+  capability는 `system.info.read` 하나였다. 이는 계측 연결 증거이며 성능 결과가 아니다.
+
+# 2026-10-14 고정 스킬 검색 파일럿 초안 감사
+
+- NIM `z-ai/glm-5.3`에 고정 한국어 라벨 자료, 별도 카탈로그, 배타적 결과 저장, SHA-256 manifest와
+  시험의 코드·문서 구조 초안을 요청했다. 첫 요청은 120초 read timeout으로 실패했다. 범위를 줄여
+  재시도한 1회는 성공했고 API usage는 입력 244-token, 출력 595-token, usage 누락 0회였다. 키와
+  사용자 요청 기록·파일 내용은 전송하지 않았다.
+- 라벨 유형 분리, 비어 있지 않은 출력 폴더 거부, 해시 재검증과 일반 사용자 성능 주장 금지는
+  채택했다. 초안의 별도 `pilot/` 패키지와 기존 카탈로그 `--db` 입력은 현재 제품 구조 및 고정 조건과
+  맞지 않아 채택하지 않았다. 초안은 SQLite를 읽기 전용으로 열면서 같은 파일을 결과물로 저장하라는
+  상충된 제안도 포함했다.
+- Codex가 운영 `LocalSkillCatalog.retrieve()`와 평가기를 그대로 사용하는 독립 runner로 수정했다.
+  호출 문구 복사만으로 구성하지 않은 개발자 라벨 22건을 결과 확인 전에 고정했고, 별도 카탈로그의
+  7개 스킬을 모두 VERIFIED로 만든 뒤 평가했다. 스킬 실행과 NIM 호출은 없으며 `skill_uses`는 0이다.
+- 실제 결과는 18/22 정답, 거짓 양성 0, 거짓 음성 1, 잘못 선택 0, 모호 판정 3으로 정확도 81.8%다.
+  자연어 긍정 사례 두 건에서 검색 실패·동점이 나타났으며 자료를 사후 수정하지 않았다. 이는
+  개발자 작성 자료에 대한 검색 경로 파일럿이고 사용자 모집단이나 전체 에이전트 성능 근거가 아니다.
+
+# 2026-10-14 한국어 조사 검색 개선 초안 감사
+
+- NIM `z-ai/glm-5.3`에 조사 처리 알고리즘과 보류자료 25건을 함께 요청한 첫 실행은 대화 전환 중
+  실행 손잡이가 사라져 결과를 확인할 수 없었다. 범위를 줄인 재요청은 180초 read timeout으로
+  실패했다. `z-ai/glm-5.3-flash`에 코드만 다시 요청한 1회는 성공했고 API usage는 입력 183-token,
+  출력 800-token, usage 누락 0회였다. 출력은 토큰 상한에서 잘렸지만 핵심 함수와 설계 원칙은 확인했다.
+- NIM은 조사 화이트리스트와 “조사를 제거한 어간이 등록 어휘에 정확히 있을 때만 인정”하는 방식을
+  제안했다. 이 보수적 조건과 exact 우선·동점 보류 원칙을 채택했다. 예시 함수는 현재 자료형과 다른
+  dict 목록 및 title token만 전제하고 완결되지 않았으므로 그대로 사용하지 않았다. Codex가 실제
+  `SkillRecord`의 제목·설명·호출 문구 전체 어휘와 bounded query token 계약에 맞춰 구현했다.
+- NIM에 보류자료 JSON만 요청한 별도 호출은 120초 read timeout으로 실패했다. 따라서 Codex가 기존
+  개발문장과 겹치지 않는 25건을 작성하고 코드 변경 전에 SHA-256
+  `8dd0bc9e090efbaf3e3f72a9f3e3f4a041a5770f92ffcc31eae02ce3d14721fd`로 고정했다.
+- 결과 문서는 측정값만 제공해 NIM `z-ai/glm-5.3-flash`가 초안을 작성했다. 요청 1회가 성공했고 API
+  usage는 입력 359-token, 출력 544-token, usage 누락 0회였다. 개발자료 18→19/22, 보류자료
+  14→21/25, 두 자료의 거짓 양성 0이라는 수치와 일반화 금지 문구를 채택했다. Codex가 실제 report와
+  manifest 해시를 다시 대조하고 남은 네 실패와 보류자료 재튜닝 금지를 보완했다.
+
+# 2026-10-14 PDF 열기 SK0~SK3 runner 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 실제 PDF 열기 조건 runner의 코드·시험 초안을 요청한 첫 실행은 90초
+  read timeout으로 실패했다. 범위를 줄인 재요청 1회는 성공했고 API usage는 입력 187-token,
+  출력 500-token, usage 누락 0회였다. 출력은 토큰 상한에서 잘렸다.
+- 동일 PDF hash, 조건별 context 분리, append-only ledger, 정확한 새 창 종료와 fake 시험 방향은
+  채택했다. 초안은 현재에 없는 `TaskResult`, `ledger.append` API를 만들고 실제 signature와 다른
+  `TypedPlanner.plan("file.open", path=...)` 호출을 제안했다. 또한 검증된 HWND가 아닌 PID 전체를
+  `taskkill`로 종료하고 첫 작업의 evidence hash를 재사용하라고 해 격리·근거 계약에 맞지 않았다.
+- Codex가 기존 `SkillStudyCollector`, `SkillTrialObservation`, `RegisteredPdfOpenExecutor`,
+  `PdfOpenedVerifier`와 정상 창 종료 함수를 조립했다. 이 과정에서 NIM system prompt는 file.open의
+  target을 경로로 안내하지만 실행기는 `file-sha256:<sha256>`을 요구하는 불일치를 찾아 typed contract와
+  prompt를 함께 수정했다.
+- 실제 결과값만 제공한 NIM 문서 초안 요청은 성공했고 API usage는 입력 326-token, 출력 491-token,
+  usage 누락 0회였다. 네 조건 1/1 성공, 시간·token, evidence와 창 종료 결과, 단일 표본 일반화 금지
+  문장을 채택했다. Codex가 원장 hash와 경로 비노출을 실제 파일에서 다시 확인하고 상세 문서를 썼다.
+
+# 2026-10-14 다중 작업 스킬 연구 증거 묶음 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 둘 이상의 관측·근거를 자기완결형 묶음으로 만드는 코드·시험 초안을
+  요청한 첫 실행은 90초 read timeout으로 실패했다. 줄인 요청 1회는 성공했고 API usage는 입력
+  163-token, 출력 450-token, usage 누락 0회였다. 출력은 토큰 상한에서 잘렸다.
+- NIM의 해시 검증, 중복 셀 거부, 원본 절대경로 비기록 방향은 채택했다. 그러나 실패 관측을 거부하는
+  시험 제안은 연구 결과를 편향시키므로 제외했다. 비어 있는지 확인하기 전에 `copytree`를 실행하는
+  골격, 현재 없는 generic `evaluate()`와 `load_strict()`도 그대로 쓰지 않았다.
+- Codex가 기존 strict observation loader와 `evaluate_skill_study()`를 재사용하고 성공·실패를 모두
+  보존했다. 각 evidence의 실제 SHA-256과 내부 identity를 검사한 뒤 배타 복사하며, 출처별 관측과
+  통합 관측·보고서 hash를 manifest에 기록한다. 실제 2블록·8관측·8근거에서 모든 hash가 일치했다.
+- 통합 수치의 NIM 문서 초안 첫 요청은 90초 read timeout이었다. 축약 재요청은 성공했고 API usage는
+  입력 220-token, 출력 350-token, usage 누락 0회였다. 수치와 일반화 금지는 채택했지만 두 독립
+  작업을 “복합 과제”라고 표현한 부분과 잘린 결말은 쓰지 않았다. Codex가 작업별 이질성과 모든
+  McNemar/Holm p=1.0을 실제 report에서 다시 확인해 문서를 작성했다.
+
+# 2026-10-14 제품 스킬 검토 화면 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 DRAFT 목록·전체 내용 표시, 승인·거절 재확인, 오래된 선택의 안전한
+  거부, Tk 표시 계층과 판단 계층 분리 및 fake 단위시험 초안을 요청했다. 첫 응답은 도착했으나
+  CP949 출력이 특수문자를 기록하지 못해 본문과 usage를 회수하지 못했다. UTF-8로 같은 범위를 다시
+  요청한 1회는 성공했고 API usage는 입력 225-token, 출력 2,436-token, usage 누락 0회였다. 키,
+  실제 스킬 DB, 사용자 요청과 로컬 경로는 전송하지 않았다.
+- 표시 계층과 presenter 분리, 확인 callback 주입, 상태 변경 직전 DRAFT 재확인, 오류 원문 비노출
+  방향은 채택했다. 그러나 초안은 존재하지 않는 `skills.catalog`와 `SkillStatus.ACTIVE`를 사용하고,
+  정수 버전을 문자열로 바꾸며, 불변 `SkillRecord`를 직접 수정했다. Tk callback 연결도 완성되지
+  않았으므로 제안 코드를 그대로 사용하지 않았다.
+- Codex가 실제 `LocalSkillCatalog`와 `SkillRecord` 계약에 맞춰 구현했다. 선택할 때와 확인창이 닫힌
+  뒤에 skill ID·버전·수정 시각·DRAFT 상태를 다시 검사하고, 성공 반환 상태도 VERIFIED 또는
+  RETIRED인지 확인한다. 제품 tray의 `스킬 검토` 메뉴에 연결했으며, 실제 Windows 창 생성·빈 상태
+  렌더링·정리 smoke와 전체 회귀 970 passed, 3 skipped, Ruff, strict mypy 148 files를 통과했다.
+
+# 2026-10-14 실행 기록 검토·NIM 초안 생성 화면 감사
+
+- NIM `z-ai/glm-5.3-flash`에 최소화 실행 기록 검토, 명시적 전송 확인, single-flight, worker/UI thread
+  분리, 작성 실패 시 기록 보존과 소비 실패 시 DRAFT 회수의 코드 구조를 요청했다. 요청 1회가
+  성공했고 API usage는 입력 247-token, 출력 2,177-token, usage 누락 0회였다. 키·실제 trace·사용자
+  자료·로컬 경로는 보내지 않았다.
+- dispatcher와 presenter 분리, queue 기반 UI 복귀, 소비 실패 보상 방향은 채택했다. 초안은 UI 복귀를
+  placeholder로 남겼고 새로 정의한 dispatcher 계약 안에서 다시 `submit()`하는 불완전한 흐름을
+  제안했다. 작성기는 NIM 응답을 받은 뒤 즉시 SQLite에 DRAFT를 저장하므로 “UI 복귀 전에 artifact가
+  사라진다”는 설명도 실제 동작과 달라 그대로 채택하지 않았다.
+- Codex가 실제 `LocalSkillTraceStore`, `SkillDraftAuthor`, `LocalSkillCatalog`를 조정하는 workflow와
+  Tk-free presenter, queue dispatcher를 구현했다. worker는 queue 쓰기만 하고 UI thread poll에서만
+  callback을 실행한다. 작성 실패·소비 실패 회수·회수 실패·오래된 선택·중복 요청·명시적 폐기를
+  단위시험했다.
+- 첫 실제 합성 trace smoke는 120초 NIM 제한으로 `AUTHORING_FAILED`가 됐고 trace 보존을 확인했다.
+  작은 합성 기록 재시도는 NIM 요청은 성공했지만 Markdown JSON 울타리 때문에 엄격한 parser가
+  거부했다(입력 627, 출력 297-token, DRAFT 0, pending 1). 별도 진단 응답도 같은 울타리였으며 입력
+  627, 출력 366-token이었다.
+- 울타리를 임의 제거해 수용하지 않고 invalid output을 data-only JSON으로 전달하는 형식 복구를
+  최대 한 번 추가했다. 최종 실제 smoke는 요청 2회, 입력 1,572-token, 출력 649-token, usage 누락
+  0회였고 DRAFT 1건·pending 0건이 됐다. 허용 capability는 근거에 있던 `system.info.read` 하나였다.
+  전체 회귀는 987 passed, 3 skipped, Ruff clean, strict mypy 150 files이며 제품 서비스 조립도
+  13 capability, `ready=true`, `CREATED`를 유지했다.
+
+# 2026-10-14 NIM 개정 DRAFT 제품 화면 감사
+
+- NIM `z-ai/glm-5.3-flash`에 VERIFIED·`PROPOSE_REVISION` 대상 제한, trace와 대상의 명시적 선택·확인,
+  worker 재검증, 기존 버전 유지와 소비 실패 보상을 기존 화면에 확장하는 초안을 요청했다. 요청
+  1회가 성공했고 API usage는 입력 290-token, 출력 1,273-token, usage 누락 0회였다. 키·실제 사용자
+  trace·로컬 경로는 보내지 않았다.
+- NIM이 정리한 상태·버전·판정 재검증, 원본 VERIFIED 유지, DRAFT·capability 부분집합·supersedes
+  검증 불변식은 채택했다. 그러나 현재 코드에 없는 `Reservation`, `WorkerResult`, `TypedPolicyError`를
+  만들고 UUID와 정수 버전을 문자열로 바꾸며 UI 복귀를 구현하지 않은 골격은 사용하지 않았다.
+- Codex가 기존 workflow와 queue dispatcher를 확장했다. 이미 개정 DRAFT가 있는 원본은 목록에서
+  제외하고, 화면 선택·확인 직후·worker 실행 직전에 대상 스냅샷과 정책을 재검사한다. 결과가 정확한
+  다음 버전, 동일 key, 기존 capability 부분집합, 직접 supersedes가 아니면 새 DRAFT를 회수한다.
+- 실제 임시 카탈로그에서 v1에 실패 2회·성공 1회를 기록하고 합성 실패 trace로 NIM을 실행했다.
+  요청 1회, 입력 827-token, 출력 307-token, usage 누락 0회로 v2 DRAFT가 생성됐다. v1은 VERIFIED,
+  supersedes는 일치, pending trace는 0, capability는 `system.info.read` 하나였다. 전체 회귀는
+  994 passed, 3 skipped, Ruff clean, strict mypy 150 files이며 제품 서비스 조립도 `ready=true`다.
+# 2026-10-16 세 번째 연구 runner 감사
+
+- 폴더 목록 SK0~SK3 runner와 통합 결과 문서의 코드·문서 수정 초안을 NIM에 요청했다. 첫 요청은
+  60초 응답 읽기 timeout, 축약 재요청은 내용 없는 응답으로 실패했으며 어느 응답도 코드나 문서에
+  반영하지 않았다.
+- Codex 독립 감사에서 runner의 실제 `max_tokens=1000`과 공용 `MODEL_CONFIGURATION`의 1,800 값이
+  달라 관측에 잘못된 구성 hash가 기록된 사실을 발견했다. 해당 3블록과 이를 포함한 묶음은
+  `archive-invalid-...-model-config-mismatch`로 분리했다.
+- runner 전용 모델 구성을 추가하고 단위시험·Ruff·strict mypy를 통과한 뒤 3블록을 다시 수집했다.
+  새 12관측의 기록된 구성 hash가 실제 1,000-token 구성 hash와 모두 일치하고, evidence hash와
+  완료 원장 재개 불변성도 통과했다. NIM의 무응답은 성공한 코드 초안이나 감사로 계산하지 않는다.
+
+# 2026-10-16 확장자별 파일 정리 runner·결과 문서 감사
+
+- NIM `z-ai/glm-5.3-flash`에 `file.list`와 `file.move`만 사용하는 확장자별 파일 정리 runner와
+  시험 구조 초안을 요청했다. 첫 응답은 도착했지만 CP949 출력 오류로 본문을 회수하지 못했다.
+  UTF-8로 재요청한 응답은 입력 229-token, 출력 1,296-token, usage 누락 0회였다. 키, 실제 사용자
+  파일과 로컬 경로는 전송하지 않았다.
+- 임시 sandbox, exact 확장자 매핑, observe-first, no-repeat, 독립 hash 검증 방향은 채택했다. 그러나
+  초안이 제안한 별도 append JSONL은 기존 `SkillStudyCollector`와 중복되고, 대문자 확장자를 exact
+  규칙으로 처리하라는 문장은 자체 모순이라 제외했다. Codex가 기존 수집기·승인 broker·이동 journal·
+  관찰 loop를 실제 계약에 맞게 조립하고 잘못된 목적지와 symlink escape를 시험했다.
+- 첫 1블록 smoke에서 근거의 구체적 중단 이유가 `RESULT_MISMATCH`로 덮이는 진단 손실을 찾아 원래
+  안전 이유 코드를 보존하도록 수정했다. 새 3블록은 12관측·40 NIM 요청·입력 59,783-token·출력
+  17,514-token이며 SK0·SK1·SK2 각 2/3, SK3 3/3이었다. 모든 evidence·모델 구성·도구·초기 상태
+  hash, 성공 실행의 승인·journal, 절대경로 비노출과 완료 원장 재실행 불변성을 별도 감사했다.
+- 검증된 수치만 전달한 한국어 결과 문서 초안 요청은 입력 609-token, 출력 1,094-token, usage 누락
+  0회로 성공했다. Codex가 실제 report와 다시 대조해 기술통계와 한계를 작성했으며, NIM의 “검정력이
+  제한적” 표현은 표본 설계 근거 없이 정량화하지 않고 작은 개발자 파일럿이라는 한계로만 기록했다.
+
+# 2026-10-16 Explorer 폴더 열기 runner·결과 문서 감사
+
+- NIM `z-ai/glm-5.3-flash`에 기존 Explorer 실행기·verifier·정확한 HWND 종료를 SK0~SK3 수집기에
+  연결하는 코드·시험 구조를 요청했다. 응답은 입력 303-token, 출력 1,347-token, usage 누락 0회로
+  성공했다. 임시 fixture, 단일 capability, exact plan guard, 검증된 HWND만 닫는 방향을 채택했다.
+- NIM 초안의 임시 경로 기반 root ID는 경로 비노출과 조건 동일성을 위해 고정 논리 ID `fixture`로
+  바꿨다. verifier가 새 창을 직접 확인하므로 HWND를 근거에 저장하라는 제안도 제외했다. Codex가
+  실제 `ExplorerFolderOpenExecutor`, `ExplorerFolderVerifier`, 등록 앱과 resolver를 조립하고 잘못된
+  목표·인자·identity·postcondition·추가 action·continuation을 거부하는 시험을 추가했다.
+- 기존 Explorer actual smoke와 새 runner 단위시험·Ruff·strict mypy를 통과한 뒤 3블록·12관측을
+  수집했다. 네 조건 모두 3/3 성공했고 총 요청 12회, 입력 14,047-token, 출력 2,441-token이었다.
+  모든 evidence hash, 모델·도구·초기 상태 hash, 정확한 폴더·프로세스·새 HWND 검증, 정확한 HWND
+  종료, marker hash와 완료 원장 재실행 불변, 절대경로·키 비노출을 별도 확인했다.
+- 검증된 5작업 통합 수치만 전달한 문서 수정 초안은 입력 609-token, 출력 1,130-token, usage 누락
+  0회로 성공했다. 수치는 실제 report와 일치했다. 다만 다섯 작업 전체를 “GUI 자동화”라고 부른
+  제목은 범위를 잘못 표현하므로 버리고 “Windows 반복작업 스킬” 연구 제목을 유지했다.
+
+# 2026-10-16 자연스러운 한국어 고정 TTS 문구 감사
+
+- 사용자 3/5 평가에서 지적된 번역기 같은 말투를 줄이기 위해 NIM `z-ai/glm-5.3-flash`에 여섯
+  상태의 짧은 구어체 문구와 시험 초안을 요청했다. 응답은 입력 289-token, 출력 923-token, usage
+  누락 0회였다. 키·사용자 발화·오류 원문은 전송하지 않았다.
+- NIM의 짧은 해요체와 상태별 의미 고정 방향은 채택했다. `PLAN_READY`에서 “이제 실행할게요”라고
+  약속한 문장은 승인 대기 가능성을 무시하므로 `작업 순서를 정했어요.`로 고쳤다. 기존 코드에서
+  `FAILED` 문구가 정의됐지만 일반 실패도 모두 안전 중단으로 읽던 결함을 함께 발견했다.
+- Codex는 STOP·취소, 승인 필요, 정책 차단·잘못된 승인, 일반 실행 실패를 stable reason code로
+  구분하고 모든 문구의 exact text·40자 상한·공백·제어문자 비포함을 시험했다. 이는 코드와 무음
+  렌더링 품질 검증 대상이며 실제 자연스러움 개선은 사용자 청취 재평가 전까지 주장하지 않는다.
+
+# 2026-10-16 최신 배포 후보 문서 감사
+
+- 최신 시험·package·wheel·Setup·서명·격리 설치 사실만 전달해 NIM에 한국어 구현 상태 글머리표
+  초안을 요청했다. 첫 `z-ai/glm-5.3` 요청은 120초 응답 timeout으로 실패했고 문서에 반영하지
+  않았다. `z-ai/glm-5.3-flash` 재요청은 입력 389-token, 출력 318-token, usage 누락 0회로
+  성공했다. 키·사용자 파일·로컬 원문 경로는 보내지 않았다.
+- NIM이 설치 성공을 주장하지 않고 `NotSigned`, `ready=false`, Code Integrity 3033·3077과 서명 후
+  재검증 필요성을 분리한 방향을 채택했다. Codex가 실제 manifest·파일 hash·sidecar·Authenticode,
+  설치 폴더 부재와 이벤트 로그를 다시 대조하고, 미서명 frozen verifier·doctor는 통과하지 않았다는
+  한계를 명시했다.
+- 이어서 최신 소스 doctor·Credential·preflight·서비스 조립과 안전 평가 수치의 한 문장 초안을
+  요청했다. 입력 150-token, 출력 106-token, usage 누락 0회였으며 7개 NOT_RUN과
+  `all_required_evidence_complete=false`를 성공으로 바꾸지 않은 문구만 채택했다.
+
+# 2026-10-16 설치 결과 영수증·r5 Setup 감사
+
+- IExpress가 내부 cmd 실패 코드를 전달하지 않을 수 있는 문제를 주고 NIM에 설치 결과 영수증 코드와
+  시험 초안을 요청했다. 입력 318-token, 출력 1,200-token, usage 누락 0회였다. 고정 필드와 성공
+  기록 순서 방향은 채택했지만, 기존 manifest 대신 가짜 `.verified` 파일을 신뢰하고 staging을
+  `%TEMP%`로 옮기며 기존 실패 코드를 바꾼 초안은 폐기했다.
+- Codex는 기존 `%LOCALAPPDATA%/JAVIS-PC` staging과 `JAVIS.exe verify-package` 계약을 보존하고,
+  schema·version·status·code만 임시 파일에서 고정 영수증으로 이동하도록 구현했다. `SUCCESS`가
+  검증과 최종 이동 뒤에만 나타나고 비밀·절대경로·가짜 검증 표식이 없음을 시험했다.
+- 새 실제 결과를 전달한 문서 초안은 입력 456-token, 출력 487-token, usage 누락 0회로 성공했다.
+  Codex가 전체 회귀 1,037 passed, 3 skipped, r4 Setup hash, 영수증, source·설치본 verifier, doctor,
+  제품 조립, 재설치와 Code Integrity 이벤트를 다시 대조했다. r3에서 발생한 차단은 과거 실패로,
+  r4의 실제 설치 성공은 현재 증거로 구분했고 미서명 공개 배포는 완료로 바꾸지 않았다.
+- 이어서 actual reversible smoke 결과의 문서 초안을 요청했다. 입력 200-token, 출력 229-token,
+  usage 누락 0회였다. S01·S02·S03·Explorer·Settings 4페이지·tray PASS와 정리 사실은 채택하고,
+  snapshot VM 50셀 또는 사용자 연구를 대신하지 않는다는 한계를 유지했다.
+- r4 영수증 부정 시험에서 최종 `FAILED/code=13` 임시 파일은 생성됐지만 기존 결과 교체가 실패해
+  `STARTED`가 남는 결함을 발견했다. 고정 결과 파일 직접 쓰기로 바꾼 r5 결과를 다시 NIM에 주었고
+  입력 325-token, 출력 303-token, usage 누락 0회였다.
+- Codex는 새 격리 루트의 r5 최초 설치 `SUCCESS/code=0`, 1,826-entry 설치본 검증, frozen doctor,
+  제품 조립·외부 state·조립 후 manifest와 재설치 `ALREADY_VERIFIED`를 다시 확인했다. 별도 손상
+  설치 부정 시험은 `FAILED/code=13`, 비덮어쓰기와 시험 표식 보존을 확인한 뒤 표식과 r4의 stale
+  임시 결과만 제거하고 manifest를 복구했다. 세 파일의 미서명 상태는 완료로 바꾸지 않았다.
+
+# 2026-10-16 추가 개발자 batch 사전 고정 감사
+
+- 결과 확인 전 추가 수집 범위를 NIM에 문서화하도록 요청했다. 입력 233-token, 출력 235-token,
+  usage 누락 0회였다. `developer09`, seed `2026101609`, 다섯 작업 각각 3회, SK0~SK3 완전 대응,
+  실패 포함과 ledger 재개 조건을 채택했다. 이는 선택 수집이 아니며 사용자 연구를 대체하지 않는다.
+- 사전 고정한 15블록·60관측을 모두 수집한 뒤 기존 유효 자료와 합친 32블록·128관측 수치만 NIM에
+  전달해 결과 문서 초안을 요청했다. 입력 605-token, 출력 707-token, usage 누락 0회였다. NIM의
+  기술통계와 McNemar·Holm 수치는 실제 report와 일치했다. “Windows 반복작업 5회”라는 표현은
+  다섯 종류의 작업을 뜻하도록 고쳤고, SK3 대 SK1만 보정 p<0.05이며 SK0·SK2는 유의하지 않다는
+  구분과 실제 참가자 부재 한계를 유지했다.
+
+# 2026-10-16 최신 발표자료·정리본 문구 감사
+
+- NIM `z-ai/glm-5.3-flash`에 13장 발표자료의 현재 구현, 실험 설계, 예비 결과,
+  예상 질문, 결론 문구 초안을 요청했다. 입력 464-token, 출력 868-token,
+  usage 누락 0회였다. 실제 파일 원문과 로컬 경로, 비밀키는 전송하지 않았다.
+- NIM이 제안한 32개 짝 비교 묶음, 128개 실행 관측값, 조건별 성공률과 SK3·SK0
+  비교 수치는 결합 연구 보고서와 일치했다. Codex는 “안정성을 확인했다”는 범위가 넓은
+  표현을 자동시험·설치시험 통과로 구체화했다. SK1 성능 저하의 원인을 초기 스킬 오류로
+  단정하지 않고 “최초 스킬이 항상 도움이 되지는 않았다”로 한정했다.
+- 교수님 발표 정리본을 스킬 중심 연구 목표에 맞게 전면 개편했다. 이전의 권한·위험도
+  분석 중심 설명은 보조 안전장치로 재분류했고, 실제 참가자 부재·단일 개발 환경·미서명
+  배포물의 한계를 유지했다. 정리본 장문 초안을 위한 추가 NIM 요청은 60초 timeout으로
+  실패했으며 반영하지 않았다.
+
+# 2026-10-17 SK0~SK3 참가자 실험 운영안 감사
+
+- 과거 안전 하네스 조건 `B0/B1/P1/P2`를 사용하던 참가자 운영안을 발견하고, NIM
+  `z-ai/glm-5.3-flash`에 현재 스킬 연구 계약을 사용한 재작성 초안을 요청했다. 입력
+  561-token, 출력 1,800-token, usage 누락 0회였다. 요청에는 개인정보, 실제 참가자
+  자료, 로컬 경로와 비밀키를 포함하지 않았다.
+- NIM 초안의 동의·철회·개인정보 최소화·사전 고정·중단 방향은 채택했다. 다만 SK1~SK3의
+  정보량이 같다는 주장은 개정 조건의 차이와 모순되므로 폐기했다. 라틴 스퀘어로 단정한 부분은
+  실제 `build-skill-study-schedule`의 고정 seed 최초 순서 섞기·블록별 순환 계약으로 고쳤다.
+- 분석을 혼합효과 모형으로 임의 확장하지 않고, 현재 코드가 구현한 조건별 기술통계·Wilson 95%
+  신뢰구간·SK3 대 SK0/SK1/SK2 exact McNemar·Holm 보정으로 고정했다. 불완전 대응 블록을
+  임의 결측처리하지 않고 분석기가 입력 전체를 거부하는 현재 계약을 반영했다.
+
+# 2026-10-17 모집문·동의서·철회 안내문 초안 감사
+
+- NIM `z-ai/glm-5.3-flash`에 스킬 참가자 실험의 모집문, 동의서와 철회 안내문 초안을
+  요청했다. 입력 507-token, 출력 1,571-token, usage 누락 0회였다. NIM에는 실제 참가자
+  자료, 음성·화면·경로, 계정 정보와 비밀키를 전송하지 않았다.
+- NIM 초안은 분석 자료에 이름·학번 등을 수집하지 않는다면서 참가자 서명을 받는다고 써
+  두 적용 범위가 모호했다. Codex는 학교가 서명·전자동의를 요구하는 경우 그 원본을
+  개인정보로 다루고 실험 관측과 분리해 보관하도록 고쳤다.
+- 보관 기간·보상·문의처·연구윤리 확인·철회 후 집계값 처리는 임의로 채우지 않고
+  `[확정 필요]`로 두었다. 하나라도 남아 있으면 모집·동의에 사용하지 말라는 경고를 세
+  문서에 고정했다. 실제 모집과 자료 수집은 아직 시작하지 않았다.
+
+# 2026-10-17 제품 화면 선택·텍스트 명령·배포 안내 감사
+
+- NIM `z-ai/glm-5.3-flash`에 다중 화면 선택 모듈 초안을 요청했다. 입력 223-token,
+  출력 2,600-token, usage 누락 0회였고 응답은 길이 제한으로 끝부분이 잘렸다. 제안된
+  ctypes 구현은 Windows 구조체·오류 경계가 불완전해 그대로 쓰지 않았다. Codex가 pywin32로
+  화면 이름·주 화면 여부·좌표·해상도를 읽고, 선택 화면의 교체·해상도 변화·경계 이탈을
+  fail-closed하는 `DisplayTargetController`와 시험을 구현했다.
+- 텍스트 명령 경로 초안의 첫 요청은 Windows CP949 출력 중 `UnicodeEncodeError`로 결과를
+  확보하지 못했다. UTF-8 재요청은 입력 240-token, 출력 1,049-token, usage 누락 0회였다.
+  NIM 초안의 coordinator/runtime/UI 분리 방향은 채택했지만 존재하지 않는 API와 영문 `STOP`
+  문구는 폐기했다. Codex가 신뢰된 로컬 텍스트 입력, 기존 planner·policy·executor·verifier·
+  skill trace 경로 재사용, 정확한 한국어 중단 문구, 원문 비저장, 마이크 미개방 계약을 구현했다.
+- NIM 분류기가 실제 텍스트 명령에서 addressedness 0.9, intent 0.85, target 0.8을 반환해 기존
+  음성 관문의 0.9 임계값에 막히는 것을 발견했다. 로컬 명령 창 입력 자체를 addressedness
+  근거로 취급하되 intent·target이 0.75 미만이면 거부하고, 0.9 미만의 불확실성은 정책의 R2
+  승인으로 올리는 방식으로 수정했다. 실제 `system.info.read`는 독립 검증과 스킬 실행 기록까지
+  `ALL_ACTIONS_VERIFIED`로 완료됐고 capture와 microphone은 시작하지 않았다.
+- 자동 갱신 앱 등록부 초안은 입력 190-token, 출력 1,500-token, usage 누락 0회였으며 끝부분이
+  잘렸다. 설치된 `apps.json`을 런타임에 다시 쓰라는 제안은 package manifest 무결성을 깨므로
+  채택하지 않았다. Codex는 제품 경로에서만 동일 절대 경로·유효 Authenticode·정확한 기존
+  발행자를 모두 확인한 경우 현재 hash를 메모리에서 수용하고, 연구·benchmark loader의 고정
+  hash 계약은 유지하도록 구현했다.
+- 한국어 배포 안내문 초안은 입력 171-token, 출력 607-token, usage 누락 0회였다. NIM이 만든
+  존재하지 않는 `preflight`, `check` 축약 명령은 실제 CLI 이름인
+  `preflight-product-host-credential`, `check-product-service-credential`로 바로잡았다. 텍스트
+  창의 기본 실행, 화면 선택, 음성 모드는 명시 실행일 때만 마이크를 연다는 경계를 문서화했다.
+
+# 2026-10-17 시작 메뉴·0.1.x 업그레이드 감사
+
+- 설치 후 실행 위치가 깊은 문제를 해결하기 위해 NIM `z-ai/glm-5.3-flash`에 현재 사용자 시작 메뉴
+  바로가기 모듈과 시험 초안을 요청했다. 첫 요청은 프로세스가 정상 종료했지만 실행 도구의 출력
+  세션을 회수하지 못해 내용·usage를 반영하지 않았다. 동일 범위의 재요청은 입력 192-token,
+  출력 1,200-token, usage 누락 0회였고 출력 한도에서 끝부분이 잘렸다.
+- NIM 초안의 COM backend 분리, 정확한 target, 다른 target의 기존 링크 비덮어쓰기, 생성 후 재검증
+  방향을 채택했다. 경로를 포함한 예외 문구, non-strict `resolve`, target만 비교하는 검증은 폐기했다.
+  Codex는 고정 오류 코드와 target·빈 arguments·working directory·description·icon 전체 비교,
+  실패 시 새 placeholder만 정리하는 소유권 경계와 create/status/remove CLI를 구현했다.
+- 기존 설치를 발견한 뒤 같은 버전의 새 package가 안전하게 덮어쓰기를 거부하는 것을 확인했다.
+  또한 새 버전의 정상 링크도 다른 target으로만 보아 갱신을 막는 결함을 발견했다. Codex는 동일
+  설치 부모 아래의 정확한 semantic-version 폴더, tray 이름, 빈 인자, 작업 폴더, 설명, 아이콘을
+  모두 만족한 링크만 이전 소유 버전으로 인정해 다음 버전으로 교체하도록 고쳤다.
+- package builder·installer builder·Python metadata·한국어 안내를 최종 0.1.3으로 함께 올리고 버전
+  불일치를 막는 시험을 추가했다. 실제 0.1.1→0.1.2→0.1.3 설치, 이전 링크 갱신, 시작 메뉴 링크
+  실행, 재설치 `ALREADY_VERIFIED`와 이전 버전 비덮어쓰기를 Codex가 독립 검증했다. 기본 텍스트
+  창에는 사용자가 CLI 없이 화면을 바꿀 수 있는 `작업 화면 선택` callback도 연결했다.
+
+# 2026-10-17 설치본 텍스트 명령 E2E 문구 감사
+
+- 설치본 0.1.3의 실제 시작 메뉴 실행, 한국어 읽기 전용 명령, 약 10초 뒤 완료 화면, GREEN 정책부터
+  `ALL_ACTIONS_VERIFIED`까지 5개 감사 record, hash chain PASS와 스킬 후보 trace 1건이라는 검증
+  사실만 NIM `z-ai/glm-5.3-flash`에 전달했다. 입력 240-token, 출력 164-token, usage 누락 0회였다.
+  로컬 경로·task/event ID·시스템 정보 값·사용자 명령 원문·API key는 보내지 않았다.
+- NIM의 세 문장은 실제 UI 캡처, 감사 JSONL, SQLite row count와 일치했다. `이번 세션`이라는 표현은
+  범위가 모호해 문서에는 텍스트 제품 경로가 microphone capture를 시작하지 않았다고 구체화했다.
+
+# 2026-10-18 windowed 시작 실패 안내 초안 감사
+
+- NIM 모델: `z-ai/glm-5.3-flash`
+- 전달 범위: 실제 키·경로·설정 값 없이, PyInstaller windowed 앱의 시작 오류를 고정 한국어 문구와
+  안정적인 종료 코드로 처리해야 한다는 추상 요구만 전달했다.
+- NIM 역할: 의존성 없는 시작 wrapper 구조, 고정 안내 문구, 단위시험과 문서 한 줄의 초안을 작성했다.
+- Codex 감사: 제안의 새 `keyring` 의존성은 현재 제품 계약과 다르고, `sys._MEIPASS` 가정은 현재
+  one-folder 설치 구조와 맞지 않으며, worker token을 일반 UI launcher로 넘긴다는 설명도 실제
+  entrypoint와 달라 채택하지 않았다. 기존 Windows Credential Manager, 기존 제품 사전점검 보고서,
+  설치 폴더의 exact config 경로를 재사용했다.
+- 검증: 비밀·경로가 포함된 예외가 고정 안내에 섞이지 않는 시험, 실패 종류별 종료 코드, 성공 시
+  exact 설치 경로 전달, dialog 자체 실패 시 fail-closed 동작을 추가했다.
+
+# 2026-10-18 주 화면 좌표 변경 복구 초안 감사
+
+- NIM에는 실제 장치명·사용자 경로 없이 `PRIMARY`와 `DEVICE` 모드의 의미 및 1920×1080에서
+  2560×1440으로 바뀐 추상 사례만 전달했다.
+- NIM은 `PRIMARY`를 현재 OS 주 화면 역할로 해석해 원자적으로 descriptor를 갱신하고, `DEVICE`는
+  정확한 장치 고정으로 유지해 누락·좌표 변화 시 상태를 바꾸지 않고 차단하라고 제안했다.
+- Codex는 기존 `DisplaySelectionStore.save()`의 임시 파일·fsync·replace 계약을 재사용했다. NIM이
+  제안한 별도 자료형·저장 함수와 아직 제품에 없는 migration log는 추가하지 않았다.
+
+# 2026-10-18 기본 텍스트 창 스킬 접근 UI 초안 감사
+
+- NIM에는 실제 skill 내용·경로·키 없이, tray에만 있던 catalog review와 pending trace review를 기본
+  텍스트 창에서도 열어야 한다는 UI 요구만 전달했다.
+- NIM의 두 번째 버튼 행과 기존 callback 재사용 방향을 채택했다. callback이 없을 때 동작하지 않는
+  버튼도 표시하라는 제안은 제외하고, 실제 callback이 있는 기능만 표시하도록 했다.
+- callback 예외는 내부 내용을 포함하지 않는 기능별 고정 한국어 안내로 바꾸고, 호출·redaction·
+  microphone 미개방 wiring을 Codex가 시험했다.

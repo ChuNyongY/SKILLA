@@ -25,7 +25,7 @@ def fixed_worker_command(module: str, frozen_token: str) -> list[str]:
         return [sys.executable, "-I", "-m", module]
     try:
         current = Path(sys.executable).resolve(strict=True)
-        console = current.with_name("JAVIS.exe")
+        console = current.with_name("SKILLA.exe")
         if console.is_symlink():
             raise OSError("worker executable is a symlink")
         console = console.resolve(strict=True)

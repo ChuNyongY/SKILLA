@@ -56,6 +56,15 @@ class Replanner(Protocol):
     ) -> Action | None: ...
 
 
+class VerifiedResultObserver(Protocol):
+    def observe(
+        self,
+        action: Action,
+        execution: ExecutionResult,
+        verification: VerificationResult,
+    ) -> None: ...
+
+
 class DenyAllApprovalBroker:
     def approve_yellow(
         self,
@@ -87,6 +96,7 @@ class Orchestrator:
         retry_budget: RetryBudget | None = None,
         cancellation: CancellationToken | None = None,
         replanner: Replanner | None = None,
+        verified_result_observer: VerifiedResultObserver | None = None,
     ) -> None:
         self._policy = policy
         self._executor = executor
@@ -97,6 +107,7 @@ class Orchestrator:
         self._budget = retry_budget or RetryBudget()
         self._cancellation = cancellation or CancellationToken()
         self._replanner = replanner
+        self._verified_result_observer = verified_result_observer
 
     def run(self, plan: Plan, context_provider: ContextProvider) -> TaskOutcome:
         completed = 0
@@ -170,6 +181,18 @@ class Orchestrator:
                     },
                 )
                 if verification.success:
+                    if self._verified_result_observer is not None:
+                        try:
+                            self._verified_result_observer.observe(
+                                action, result, verification
+                            )
+                        except Exception:
+                            return self._abort(
+                                current_plan,
+                                action,
+                                completed,
+                                "OBSERVATION_RECORDING_FAILED",
+                            )
                     action_succeeded = True
                     completed += 1
                     break

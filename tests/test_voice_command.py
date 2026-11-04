@@ -35,6 +35,7 @@ class Classifier:
         self.intent_class = intent_class
         self.confidence = confidence
         self.calls = 0
+        self.sources: list[InputSource] = []
 
     def classify(
         self,
@@ -45,6 +46,7 @@ class Classifier:
         source: InputSource = "MIC",
     ) -> IntentEvidence:
         self.calls += 1
+        self.sources.append(source)
         return IntentEvidence(
             transcript=transcript,
             wake_confidence=wake_confidence,
@@ -53,7 +55,7 @@ class Classifier:
             target_confidence=self.confidence,
             intent_class=self.intent_class,
             explicit_wake_word=explicit_wake_word,
-            source="MIC",
+            source=source,
         )
 
 
@@ -88,7 +90,7 @@ class Planner:
 
 
 def capture(
-    transcript: str | None = "자비스 시스템 정보 확인",
+    transcript: str | None = "스킬라 시스템 정보 확인",
     *,
     status: CaptureStatus = CaptureStatus.TRANSCRIBED,
 ) -> VoiceCaptureResult:
@@ -113,9 +115,28 @@ def test_command_routes_to_typed_plan_with_minimized_context() -> None:
     assert decision.status is VoiceCommandStatus.PLAN_READY
     assert decision.plan is not None
     assert planner.calls == [
-        ("자비스 시스템 정보 확인", {"foreground_app_id": "notepad"})
+        ("스킬라 시스템 정보 확인", {"foreground_app_id": "notepad"})
     ]
     assert not token.is_cancelled
+
+
+def test_trusted_text_uses_text_source_without_faking_microphone_evidence() -> None:
+    classifier = Classifier(IntentClass.COMMAND)
+    planner = Planner()
+
+    decision = VoiceCommandCoordinator(
+        classifier,
+        planner,
+        CancellationToken(),
+    ).process_text(
+        "  시스템 정보 확인  ",
+        task_active=False,
+        trusted_context={"foreground_app_id": "notepad"},
+    )
+
+    assert decision.status is VoiceCommandStatus.PLAN_READY
+    assert classifier.sources == ["TRUSTED_TEXT"]
+    assert planner.calls == [("시스템 정보 확인", {"foreground_app_id": "notepad"})]
 
 
 def test_aborted_capture_never_reaches_classifier_or_planner() -> None:
@@ -224,7 +245,7 @@ def test_voice_to_intent_to_plan_to_orchestrator_closed_loop() -> None:
     decision = coordinator.process(capture(), task_active=False)
     assert decision.status is VoiceCommandStatus.PLAN_READY
     assert decision.plan is not None
-    assert decision.plan.goal == "자비스 시스템 정보 확인"
+    assert decision.plan.goal == "스킬라 시스템 정보 확인"
 
     executor = MockExecutor({"system.info.read": lambda _action: {}})
     outcome = Orchestrator(
@@ -275,7 +296,7 @@ class BlockingCancelableExecutor:
 def test_local_stop_interrupts_active_executor_without_planner() -> None:
     token = CancellationToken()
     executor = BlockingCancelableExecutor()
-    plan = Planner().plan("자비스 시스템 정보 확인")
+    plan = Planner().plan("스킬라 시스템 정보 확인")
     orchestrator = Orchestrator(
         policy=PolicyEngine(default_registry()),
         executor=executor,

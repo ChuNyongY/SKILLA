@@ -310,7 +310,7 @@ def test_console_readiness_requires_exact_korean_acknowledgement() -> None:
 
     assert readiness(plan().samples[0])
     assert not readiness(plan().samples[1])
-    assert "헤이 자비스" in output.getvalue()
+    assert "스킬라" in output.getvalue()
     assert "거리 미지정, 소음 미지정, 세션 미지정" in output.getvalue()
 
 

@@ -1,16 +1,29 @@
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
 
 from javis_core.package_manifest import PackageManifestError
+from tools.build_windows_installer import VERSION as INSTALLER_VERSION
 from tools.build_windows_installer import (
     InstallerBuildError,
     create_payload_archive,
     render_install_script,
     resolve_installer_paths,
 )
+from tools.build_windows_package import VERSION as PACKAGE_VERSION
+
+
+def test_release_version_is_consistent_across_builders_and_metadata() -> None:
+    metadata = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+
+    assert PACKAGE_VERSION == INSTALLER_VERSION == "0.1.9"
+    assert metadata["project"]["version"] == PACKAGE_VERSION
+    assert Path("docs/PACKAGE_README.ko.txt").read_text(encoding="utf-8").startswith(
+        f"SKILLA-PC {PACKAGE_VERSION} "
+    )
 
 
 def test_install_template_never_enables_startup_or_embeds_secret(tmp_path: Path) -> None:
@@ -28,12 +41,64 @@ def test_install_template_never_enables_startup_or_embeds_secret(tmp_path: Path)
     assert "certutil.exe" in rendered
     assert "tar.exe" in rendered
     assert ".installing-" in rendered
+    assert "install-result-%version%.txt" in rendered
+    assert "status=STARTED" not in rendered
+    assert "echo status=%~1" in rendered
+    assert "SKILLA.exe.verified" not in rendered
+    assert 'SKILLA.exe" install-start-menu "%destination%"' in rendered
+
+
+def test_install_template_records_success_only_after_verify_and_move(tmp_path: Path) -> None:
+    destination = tmp_path / "install.cmd"
+    render_install_script(
+        Path("packaging/install_package.cmd"),
+        destination,
+        "a" * 64,
+    )
+
+    rendered = destination.read_text(encoding="utf-8")
+    verify_index = rendered.index('"%staging%\\SKILLA.exe" verify-package')
+    move_index = rendered.index('move "%staging%" "%destination%"')
+    shortcut_index = rendered.index(
+        '"%destination%\\SKILLA.exe" install-start-menu "%destination%"',
+        move_index,
+    )
+    success_index = rendered.index("call :write_result SUCCESS 0")
+
+    assert verify_index < move_index < shortcut_index < success_index
+    assert "call :write_result ALREADY_VERIFIED 0" in rendered
+    assert "call :write_result FAILED 13" in rendered
+    assert "call :write_result FAILED %failure%" in rendered
+    assert ":fail_verify\nset \"failure=18\"" in rendered
+    assert ":fail_move\nset \"failure=19\"" in rendered
+    assert ":fail_shortcut\nset \"failure=20\"" in rendered
+
+
+def test_install_result_contains_only_fixed_non_secret_fields(tmp_path: Path) -> None:
+    destination = tmp_path / "install.cmd"
+    render_install_script(
+        Path("packaging/install_package.cmd"),
+        destination,
+        "a" * 64,
+    )
+
+    rendered = destination.read_text(encoding="utf-8")
+    result_block = rendered.split("\n:write_result\n", maxsplit=1)[1]
+
+    assert "echo schema_version=1" in result_block
+    assert "echo version=%version%" in result_block
+    assert "echo status=%~1" in result_block
+    assert "echo code=%~2" in result_block
+    assert '"%resultTemporary%"' not in result_block
+    assert "echo %destination%" not in result_block
+    assert "echo %payload%" not in result_block
+    assert "nvapi-" not in result_block
 
 
 def test_payload_archive_requires_a_verified_package(tmp_path: Path) -> None:
     package = tmp_path / "package"
     package.mkdir()
-    (package / "JAVIS.exe").write_bytes(b"not-manifested")
+    (package / "SKILLA.exe").write_bytes(b"not-manifested")
 
     with pytest.raises(PackageManifestError):
         create_payload_archive(package, tmp_path / "payload.zip")
@@ -68,16 +133,16 @@ def test_installer_paths_accept_verified_custom_package_and_destination(
     resolved_package, setup, checksum = resolve_installer_paths(
         repository,
         package=package,
-        destination=output / "JAVIS-Candidate.exe",
+        destination=output / "SKILLA-Candidate.exe",
     )
 
     assert resolved_package == package.resolve()
-    assert setup == output.resolve() / "JAVIS-Candidate.exe"
-    assert checksum == output.resolve() / "JAVIS-Candidate.exe.sha256"
+    assert setup == output.resolve() / "SKILLA-Candidate.exe"
+    assert checksum == output.resolve() / "SKILLA-Candidate.exe.sha256"
     assert observed == [package.resolve()]
 
 
-@pytest.mark.parametrize("existing_name", ["JAVIS.exe", "JAVIS.exe.sha256"])
+@pytest.mark.parametrize("existing_name", ["SKILLA.exe", "SKILLA.exe.sha256"])
 def test_installer_paths_never_overwrite_existing_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -98,7 +163,7 @@ def test_installer_paths_never_overwrite_existing_output(
         resolve_installer_paths(
             repository,
             package=package,
-            destination=output / "JAVIS.exe",
+            destination=output / "SKILLA.exe",
         )
 
 
@@ -119,5 +184,5 @@ def test_installer_paths_reject_invalid_custom_destination(
         resolve_installer_paths(
             repository,
             package=package,
-            destination=tmp_path / "missing" / "JAVIS.zip",
+            destination=tmp_path / "missing" / "SKILLA.zip",
         )

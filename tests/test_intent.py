@@ -11,7 +11,7 @@ from javis_core import (
 
 def evidence(intent_class: IntentClass, **overrides: object) -> IntentEvidence:
     values: dict[str, object] = {
-        "transcript": "자비스 크롬 열어",
+        "transcript": "스킬라 크롬 열어",
         "wake_confidence": 0.99,
         "addressed_confidence": 0.99,
         "intent_confidence": 0.99,
@@ -78,6 +78,43 @@ def test_uncertain_command_requires_clarification() -> None:
     assert not result.accepted
 
 
+def test_explicit_trusted_text_accepts_uncertain_command_for_policy_review() -> None:
+    result = IntentGate().evaluate(
+        evidence(
+            IntentClass.COMMAND,
+            source="TRUSTED_TEXT",
+            explicit_wake_word=False,
+            wake_confidence=1.0,
+            addressed_confidence=0.1,
+            intent_confidence=0.85,
+            target_confidence=0.8,
+        ),
+        task_active=False,
+    )
+
+    assert result.route is GateRoute.PLAN
+    assert result.accepted
+    assert result.confidence == 0.8
+    assert result.reason == "TRUSTED_TEXT_COMMAND_ACCEPTED"
+
+
+def test_trusted_text_still_rejects_low_target_confidence() -> None:
+    result = IntentGate().evaluate(
+        evidence(
+            IntentClass.COMMAND,
+            source="TRUSTED_TEXT",
+            explicit_wake_word=False,
+            addressed_confidence=1.0,
+            intent_confidence=0.95,
+            target_confidence=0.7,
+        ),
+        task_active=False,
+    )
+
+    assert result.route is GateRoute.IGNORE
+    assert not result.accepted
+
+
 def test_low_command_confidence_is_ignored() -> None:
     result = IntentGate().evaluate(
         evidence(IntentClass.COMMAND, addressed_confidence=0.5),
@@ -112,7 +149,7 @@ def test_approval_requires_pending_task_and_high_confidence() -> None:
 
 @pytest.mark.parametrize(
     "text",
-    ["멈춰", " 멈춰! ", "자비스, 스톱", "취소.", "중지"],
+    ["멈춰", " 멈춰! ", "스킬라, 스톱", "취소.", "중지"],
 )
 def test_local_stop_detector_exact_phrases(text: str) -> None:
     assert LocalStopDetector().matches(text)

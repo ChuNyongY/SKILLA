@@ -11,9 +11,9 @@ from uuid import uuid4
 
 from javis_core.package_manifest import verify_package_manifest
 from javis_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
+from javis_core.version import VERSION
 
-VERSION = "0.1.0"
-PAYLOAD_NAME = "JAVIS-PC-payload.zip"
+PAYLOAD_NAME = "SKILLA-PC-payload.zip"
 
 
 class InstallerBuildError(RuntimeError):
@@ -131,13 +131,13 @@ def resolve_installer_paths(
     destination: Path | None = None,
 ) -> tuple[Path, Path, Path]:
     root = repository.resolve(strict=True)
-    package_candidate = package or root / "dist" / f"JAVIS-PC-{VERSION}"
+    package_candidate = package or root / "dist" / f"SKILLA-PC-{VERSION}"
     if package_candidate.is_symlink() or not package_candidate.is_dir():
         raise InstallerBuildError("PACKAGE_INVALID")
     package_root = package_candidate.resolve(strict=True)
     verify_package_manifest(package_root)
 
-    setup_candidate = destination or root / "dist" / f"JAVIS-PC-{VERSION}-Setup.exe"
+    setup_candidate = destination or root / "dist" / f"SKILLA-PC-{VERSION}-Setup.exe"
     if setup_candidate.is_symlink() or setup_candidate.suffix.lower() != ".exe":
         raise InstallerBuildError("INSTALLER_DESTINATION_INVALID")
     try:
@@ -191,7 +191,7 @@ SourceFiles0=%SourceDirectory%
 InstallPrompt=
 FinishMessage=
 TargetName="{setup}"
-FriendlyName="JAVIS-PC {VERSION} per-user installer"
+FriendlyName="SKILLA-PC {VERSION} per-user installer"
 AppLaunched="cmd.exe /d /c call install.cmd"
 SourceDirectory="{source_value}"
 FILE0="{PAYLOAD_NAME}"

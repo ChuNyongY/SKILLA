@@ -17,7 +17,7 @@ from .voice import CaptureStatus, VoiceCaptureResult
 from .windows_hello import load_windows_hello_verifier
 
 _MICROPHONE_SECONDS = 10
-_TTS_PHRASE = "자비스 음성 안내 품질을 확인합니다."
+_TTS_PHRASE = "스킬라 음성 안내 품질을 확인합니다."
 
 
 class HumanAssessment(Protocol):
@@ -137,7 +137,7 @@ class WindowsUserValidationRunners:
             self._configuration.hello_manifest,
             self._root,
         )
-        result = verifier.request_verification("JAVIS 사용자 참여 검증")
+        result = verifier.request_verification("SKILLA 사용자 참여 검증")
         return ValidationMeasurement(
             passed=result is ConsentResult.VERIFIED,
             code="HELLO_VERIFIED"

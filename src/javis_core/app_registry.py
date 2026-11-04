@@ -35,6 +35,9 @@ class AppRegistration(FrozenModel):
     )
     document_launch_mode: Literal["path-only", "browser-new-window"] = "path-only"
     launch_argument: Literal["--new-window"] | None = None
+    launch_arguments: tuple[
+        Literal["--launch-product=valorant", "--launch-patchline=live"], ...
+    ] = ()
 
     @model_validator(mode="after")
     def runtime_identity_must_be_complete(self) -> AppRegistration:
@@ -52,6 +55,14 @@ class AppRegistration(FrozenModel):
             raise ValueError("browser document launch requires single-instance handoff")
         if self.launch_argument is not None and not self.single_instance_handoff:
             raise ValueError("fixed launch argument requires single-instance handoff")
+        if self.launch_argument is not None and self.launch_arguments:
+            raise ValueError("single and multiple fixed launch arguments cannot be combined")
+        if self.launch_arguments != (
+            "--launch-product=valorant",
+            "--launch-patchline=live",
+        ):
+            if self.launch_arguments:
+                raise ValueError("unsupported fixed launch arguments")
         return self
 
 
@@ -138,6 +149,7 @@ class AppRegistryLoader:
         *,
         publisher_verifier: PublisherVerifier | None = None,
         require_publisher: bool = False,
+        allow_signed_updates: bool = False,
         max_bytes: int = 1_000_000,
         max_apps: int = 100,
     ) -> None:
@@ -145,6 +157,7 @@ class AppRegistryLoader:
             raise ValueError("registry limits must be positive")
         self._publisher_verifier = publisher_verifier or PowerShellAuthenticodeVerifier()
         self._require_publisher = require_publisher
+        self._allow_signed_updates = allow_signed_updates
         self._max_bytes = max_bytes
         self._max_apps = max_apps
 
@@ -170,7 +183,7 @@ class AppRegistryLoader:
         return loaded
 
     def _validate_registration(self, registration: AppRegistration) -> RegisteredApp:
-        resolved = self._validate_file_identity(
+        resolved, actual_sha256 = self._validate_file_identity(
             registration.executable,
             registration.sha256,
             registration.publisher,
@@ -179,25 +192,28 @@ class AppRegistryLoader:
         runtime_path: Path | None = None
         if registration.runtime_executable is not None:
             assert registration.runtime_sha256 is not None
-            runtime_path = self._validate_file_identity(
+            runtime_path, runtime_sha256 = self._validate_file_identity(
                 registration.runtime_executable,
                 registration.runtime_sha256,
                 registration.runtime_publisher,
                 label="registered runtime executable",
             )
+        else:
+            runtime_sha256 = None
         return RegisteredApp(
             app_id=registration.app_id,
             executable=resolved,
-            sha256=registration.sha256,
+            sha256=actual_sha256,
             publisher=registration.publisher,
             runtime_executable=runtime_path,
-            runtime_sha256=registration.runtime_sha256,
+            runtime_sha256=runtime_sha256,
             runtime_publisher=registration.runtime_publisher,
             direct_launch=registration.direct_launch,
             single_instance_handoff=registration.single_instance_handoff,
             window_class=registration.window_class,
             document_launch_mode=registration.document_launch_mode,
             launch_argument=registration.launch_argument,
+            launch_arguments=registration.launch_arguments,
         )
 
     def _validate_file_identity(
@@ -207,7 +223,7 @@ class AppRegistryLoader:
         publisher: str | None,
         *,
         label: str,
-    ) -> Path:
+    ) -> tuple[Path, str]:
         if not executable.is_absolute() or executable.is_symlink():
             raise AppRegistryError(f"{label} must be an absolute non-symlink path")
         try:
@@ -217,13 +233,18 @@ class AppRegistryLoader:
         if not resolved.is_file():
             raise AppRegistryError(f"{label} must be a file")
         actual = RegisteredApp.from_path("identity-check", resolved)
-        if actual.sha256 != expected_sha256:
-            raise AppRegistryError(f"{label} hash mismatch")
         if self._require_publisher and publisher is None:
             raise AppRegistryError(f"{label} publisher is required")
-        if publisher is not None and not self._publisher_verifier.verify(resolved, publisher):
-            raise AppRegistryError(f"{label} publisher verification failed")
-        return resolved
+        publisher_verified = False
+        if publisher is not None:
+            publisher_verified = self._publisher_verifier.verify(resolved, publisher)
+            if not publisher_verified:
+                raise AppRegistryError(f"{label} publisher verification failed")
+        if actual.sha256 != expected_sha256 and not (
+            self._allow_signed_updates and publisher_verified
+        ):
+            raise AppRegistryError(f"{label} hash mismatch")
+        return resolved, actual.sha256
 
 
 def serialize_registry(document: AppRegistryDocument) -> str:

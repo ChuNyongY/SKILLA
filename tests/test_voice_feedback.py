@@ -33,9 +33,18 @@ class FakeSpeechSink:
         (ActionStatus.SUCCEEDED, "ALL_ACTIONS_VERIFIED", FeedbackCode.TASK_SUCCEEDED),
         (ActionStatus.ABORTED, "GLOBAL_STOP", FeedbackCode.CANCELLED),
         (ActionStatus.ABORTED, "CANCELLED_BY_USER", FeedbackCode.CANCELLED),
+        (ActionStatus.ABORTED, "PLANNING_CANCELLED", FeedbackCode.CANCELLED),
+        (ActionStatus.ABORTED, "STOP_REQUESTED_AFTER_INPUT", FeedbackCode.CANCELLED),
         (ActionStatus.ABORTED, "RED_APPROVAL_REQUIRED", FeedbackCode.APPROVAL_REQUIRED),
         (ActionStatus.ABORTED, "STRONG_AUTH_REQUIRED", FeedbackCode.APPROVAL_REQUIRED),
-        (ActionStatus.ABORTED, "PRIVATE_FAILURE_DETAIL", FeedbackCode.TASK_ABORTED),
+        (
+            ActionStatus.ABORTED,
+            "POLICY_DENIED:PROMPT_INJECTION_SUSPECTED",
+            FeedbackCode.TASK_ABORTED,
+        ),
+        (ActionStatus.ABORTED, "INVALID_APPROVAL", FeedbackCode.TASK_ABORTED),
+        (ActionStatus.ABORTED, "PRIVATE_FAILURE_DETAIL", FeedbackCode.FAILED),
+        (ActionStatus.FAILED, "EXECUTION_FAILED", FeedbackCode.FAILED),
     ],
 )
 def test_outcome_maps_to_bounded_feedback(
@@ -59,6 +68,31 @@ def test_presenter_speaks_only_fixed_phrase_and_forwards_stop_token() -> None:
 
     code = VoiceFeedbackPresenter(sink).present_outcome(outcome, cancellation=token)
 
-    assert code is FeedbackCode.TASK_ABORTED
-    assert sink.calls == [("안전을 위해 작업을 중단했습니다.", token)]
+    assert code is FeedbackCode.FAILED
+    assert sink.calls == [("작업을 마치지 못했어요.", token)]
     assert "PRIVATE_MODEL_FAILURE" not in sink.calls[0][0]
+
+
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        (FeedbackCode.PLAN_READY, "작업 순서를 정했어요."),
+        (FeedbackCode.TASK_SUCCEEDED, "작업을 마쳤고, 결과도 확인했어요."),
+        (FeedbackCode.TASK_ABORTED, "안전을 위해 여기서 멈췄어요."),
+        (FeedbackCode.APPROVAL_REQUIRED, "계속하려면 화면에서 승인해 주세요."),
+        (FeedbackCode.CANCELLED, "작업을 취소했어요."),
+        (FeedbackCode.FAILED, "작업을 마치지 못했어요."),
+    ],
+)
+def test_every_feedback_phrase_is_fixed_short_spoken_korean(
+    code: FeedbackCode,
+    expected: str,
+) -> None:
+    sink = FakeSpeechSink()
+
+    VoiceFeedbackPresenter(sink).present(code)
+
+    assert sink.calls == [(expected, None)]
+    assert len(expected) <= 40
+    assert expected == expected.strip()
+    assert not any(character in expected for character in "\0\r\n\t")

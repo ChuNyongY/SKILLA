@@ -14,8 +14,8 @@ from javis_core.product_policy import build_windows_policy_context_provider
         ("system.info.read", {}, "system"),
         ("process.launch", {"app_id": "notepad"}, "notepad"),
         ("settings.open", {"page_id": "sound"}, "settings"),
-        ("audio.volume.read", {}, "default-render-endpoint"),
-        ("audio.volume.set", {"percent": 30}, "default-render-endpoint"),
+        ("audio.volume.read", {}, "default-audio-render-endpoint"),
+        ("audio.volume.set", {"percent": 30}, "default-audio-render-endpoint"),
         ("storage.status.read", {"root_id": "workspace"}, "storage:workspace"),
         ("cleanup.suggest", {"root_id": "workspace"}, "storage:workspace"),
         (

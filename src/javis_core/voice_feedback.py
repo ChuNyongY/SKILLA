@@ -18,13 +18,20 @@ class FeedbackCode(StrEnum):
 
 
 _FIXED_KOREAN_MESSAGES: dict[FeedbackCode, str] = {
-    FeedbackCode.PLAN_READY: "실행 계획을 준비했습니다.",
-    FeedbackCode.TASK_SUCCEEDED: "요청한 작업을 확인하고 완료했습니다.",
-    FeedbackCode.TASK_ABORTED: "안전을 위해 작업을 중단했습니다.",
-    FeedbackCode.APPROVAL_REQUIRED: "계속하려면 화면에서 승인이 필요합니다.",
-    FeedbackCode.CANCELLED: "작업을 중지했습니다.",
-    FeedbackCode.FAILED: "요청을 안전하게 처리하지 못했습니다.",
+    FeedbackCode.PLAN_READY: "작업 순서를 정했어요.",
+    FeedbackCode.TASK_SUCCEEDED: "작업을 마쳤고, 결과도 확인했어요.",
+    FeedbackCode.TASK_ABORTED: "안전을 위해 여기서 멈췄어요.",
+    FeedbackCode.APPROVAL_REQUIRED: "계속하려면 화면에서 승인해 주세요.",
+    FeedbackCode.CANCELLED: "작업을 취소했어요.",
+    FeedbackCode.FAILED: "작업을 마치지 못했어요.",
 }
+
+_SAFETY_ABORT_REASONS = frozenset(
+    {
+        "INVALID_APPROVAL",
+        "REPLAN_REUSED_ACTION_ID",
+    }
+)
 
 
 class SpeechSink(Protocol):
@@ -67,8 +74,15 @@ def feedback_code_for_outcome(outcome: TaskOutcome) -> FeedbackCode:
     if outcome.status is ActionStatus.SUCCEEDED:
         return FeedbackCode.TASK_SUCCEEDED
     reason = outcome.reason.upper()
-    if reason in {"GLOBAL_STOP", "LOCAL_STOP"} or reason.startswith("CANCEL"):
+    if (
+        reason in {"GLOBAL_STOP", "LOCAL_STOP"}
+        or reason.startswith("CANCEL")
+        or reason.endswith("_CANCELLED")
+        or reason.startswith("STOP_REQUESTED")
+    ):
         return FeedbackCode.CANCELLED
     if "APPROVAL_REQUIRED" in reason or reason == "STRONG_AUTH_REQUIRED":
         return FeedbackCode.APPROVAL_REQUIRED
-    return FeedbackCode.TASK_ABORTED
+    if reason.startswith("POLICY_DENIED:") or reason in _SAFETY_ABORT_REASONS:
+        return FeedbackCode.TASK_ABORTED
+    return FeedbackCode.FAILED

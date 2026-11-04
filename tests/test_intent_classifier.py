@@ -34,25 +34,71 @@ def proposal(**overrides: object) -> str:
 
 
 def test_classifier_builds_evidence_with_local_wake_values() -> None:
-    transport = Transport(proposal())
+    transport = Transport(proposal(addressed_confidence=0.1))
     evidence = TypedIntentClassifier(transport).classify(
-        " 자비스 메모장 열어 ", wake_confidence=0.91, explicit_wake_word=True
+        " 스킬라 메모장 열어 ", wake_confidence=0.91, explicit_wake_word=True
     )
     assert evidence.intent_class is IntentClass.COMMAND
-    assert evidence.transcript == "자비스 메모장 열어"
+    assert evidence.transcript == "스킬라 메모장 열어"
     assert evidence.wake_confidence == 0.91
+    assert evidence.addressed_confidence == 1.0
     assert evidence.explicit_wake_word
-    assert json.loads(transport.calls[0][1]) == {"transcript": "자비스 메모장 열어"}
+    assert json.loads(transport.calls[0][1]) == {"transcript": "스킬라 메모장 열어"}
+
+
+def test_text_without_local_wake_keeps_proposed_addressed_confidence() -> None:
+    evidence = TypedIntentClassifier(
+        Transport(proposal(addressed_confidence=0.42))
+    ).classify(
+        "메모장 열어",
+        wake_confidence=1.0,
+        explicit_wake_word=False,
+        source="TRUSTED_TEXT",
+    )
+
+    assert evidence.addressed_confidence == 0.42
 
 
 def test_exact_local_stop_bypasses_transport() -> None:
     transport = Transport("not used")
     evidence = TypedIntentClassifier(transport).classify(
-        " 자비스, 스톱! ", wake_confidence=0.0, explicit_wake_word=False
+        " 스킬라, 스톱! ", wake_confidence=0.0, explicit_wake_word=False
     )
     assert evidence.intent_class is IntentClass.CANCEL
     assert evidence.intent_confidence == 1.0
     assert transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "transcript",
+    (
+        "스킬라, 내 컴퓨터 시스템 정보를 확인해 줘",
+        "내 컴퓨터 시스템 정보를 확인하죠",
+        "윈도우 정보 보여 줘",
+    ),
+)
+def test_known_read_only_command_bypasses_transport(transcript: str) -> None:
+    transport = Transport("not used")
+    evidence = TypedIntentClassifier(transport).classify(
+        transcript,
+        wake_confidence=0.91,
+        explicit_wake_word=True,
+    )
+
+    assert evidence.intent_class is IntentClass.COMMAND
+    assert evidence.intent_confidence == 1.0
+    assert transport.calls == []
+
+
+def test_unrelated_command_still_uses_transport() -> None:
+    transport = Transport(proposal())
+    TypedIntentClassifier(transport).classify(
+        "스킬라 메모장 열어",
+        wake_confidence=0.91,
+        explicit_wake_word=True,
+    )
+
+    assert len(transport.calls) == 1
 
 
 def test_untrusted_content_is_redacted_and_bypasses_transport() -> None:

@@ -72,6 +72,7 @@ def create_root(tmp_path: Path) -> tuple[Path, Path]:
                 "vad_rms_threshold": 500,
                 "end_silence_frames": 5,
                 "max_capture_frames": 1500,
+                "microphone_device_index": 2,
                 "microphone_frame_ms": 80,
                 "microphone_queue_capacity": 32,
                 "hud_poll_interval_ms": 250,
@@ -88,6 +89,7 @@ def test_config_loader_resolves_only_declared_project_artifacts(tmp_path: Path) 
     loaded = load_product_host_config(config.resolve(), root)
 
     assert loaded.settings.nim_model == "z-ai/glm-5.3"
+    assert loaded.settings.microphone_device_index == 2
     assert loaded.settings.browser_allowed_hosts == ("github.com",)
     assert loaded.app_registry == (root / "config" / "apps.json").resolve()
     assert "secret" not in loaded.settings.model_dump_json()

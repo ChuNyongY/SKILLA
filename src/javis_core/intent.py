@@ -118,6 +118,13 @@ class IntentGate:
                     confidence,
                     "LOW_COMMAND_CONFIDENCE",
                 )
+            if evidence.source == "TRUSTED_TEXT":
+                return self._result(
+                    GateRoute.PLAN,
+                    True,
+                    confidence,
+                    "TRUSTED_TEXT_COMMAND_ACCEPTED",
+                )
             if confidence < 0.90:
                 return self._result(
                     GateRoute.CLARIFY,
@@ -140,11 +147,9 @@ class IntentGate:
 
     @staticmethod
     def _command_confidence(evidence: IntentEvidence) -> float:
-        scores = [
-            evidence.addressed_confidence,
-            evidence.intent_confidence,
-            evidence.target_confidence,
-        ]
+        scores = [evidence.intent_confidence, evidence.target_confidence]
+        if evidence.source != "TRUSTED_TEXT":
+            scores.append(evidence.addressed_confidence)
         if evidence.explicit_wake_word:
             scores.append(evidence.wake_confidence)
         return min(scores)
@@ -165,7 +170,9 @@ class IntentGate:
 
 
 class LocalStopDetector:
-    _PHRASES = frozenset({"멈춰", "취소", "중지", "자비스 스톱", "자비스 멈춰"})
+    _PHRASES = frozenset(
+        {"멈춰", "취소", "중지", "스킬라 스톱", "스킬라 멈춰"}
+    )
 
     def matches(self, transcript: str) -> bool:
         return self.normalize(transcript) in self._PHRASES

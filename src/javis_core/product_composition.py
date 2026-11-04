@@ -8,7 +8,13 @@ from typing import Protocol
 
 from pydantic import SecretStr
 
-from .agent_session import FrameSource, PlannerContextProvider, PolicyContextProvider
+from .agent_session import (
+    FrameSource,
+    PlannerContextProvider,
+    PolicyContextProvider,
+    SkillTraceObserver,
+    SkillUseObserver,
+)
 from .always_on_capture import AlwaysOnCapturePump
 from .always_on_runtime import AlwaysOnAgentRuntime
 from .approval import ApprovalTokenService
@@ -18,6 +24,10 @@ from .cancellation import CancellationToken
 from .executor import Executor
 from .executor_router import CapabilityExecutorRouter
 from .intent_classifier import TypedIntentClassifier
+from .observation_loop import (
+    InMemoryVerifiedResultObserver,
+    OrchestratorRoundRunner,
+)
 from .orchestrator import Orchestrator
 from .planner import NimChatTransport, TypedPlanner
 from .policy import PolicyEngine
@@ -25,14 +35,25 @@ from .product_host import LoadedProductHostConfig
 from .registry import CapabilityRegistry, default_registry
 from .skill_runtime import LocalSkillCatalog, SkillAwarePlanner
 from .stt_bundle import LoadedSttBundle, load_stt_bundle
+from .user_visible_result import (
+    ChainedVerifiedResultObserver,
+    UserVisibleResultStore,
+)
 from .verifier import Verifier
 from .verifier_router import CapabilityVerifierRouter
-from .voice import SpeechToText, VoiceActivityDetector, VoicePipeline, WakeWordDetector
+from .voice import (
+    KoreanWakeVoicePipeline,
+    SpeechToText,
+    VoiceActivityDetector,
+    VoicePipeline,
+    WakeWordDetector,
+)
 from .voice_adapters import (
     FasterWhisperSpeechToText,
     OpenWakeWordDetector,
     PcmEnergyVad,
     SoundDeviceFrameSource,
+    WhisperKoreanWakeWordDetector,
 )
 from .voice_command import CommandPlanner, VoiceCommandCoordinator
 from .voice_feedback import VoiceFeedbackPresenter
@@ -55,6 +76,7 @@ class FrameSourceFactory(Protocol):
     def __call__(
         self,
         *,
+        device: int | None,
         frame_ms: int,
         queue_capacity: int,
     ) -> FrameSource: ...
@@ -75,7 +97,7 @@ class LanguageTransportFactory(Protocol):
 @dataclass(frozen=True)
 class ProductVoiceStack:
     frame_source: FrameSource
-    pipeline: VoicePipeline
+    pipeline: VoicePipeline | KoreanWakeVoicePipeline
 
 
 @dataclass(frozen=True)
@@ -141,7 +163,7 @@ def build_product_capability_stack(
 
 
 def _nim_transport_factory(api_key: SecretStr, model: str) -> NimChatTransport:
-    return NimChatTransport(api_key, model=model)
+    return NimChatTransport(api_key, model=model, timeout_seconds=20.0)
 
 
 def build_product_language_stack(
@@ -182,6 +204,8 @@ def build_product_runtime_stack(
     strong_authenticator: StrongAuthenticator | None = None,
     feedback: VoiceFeedbackPresenter | None = None,
     approval_secret: bytes | None = None,
+    skill_trace_observer: SkillTraceObserver | None = None,
+    skill_use_observer: SkillUseObserver | None = None,
 ) -> ProductRuntimeStack:
     """Compose the closed loop; injected adapters retain all external authority."""
     secret = secrets.token_bytes(32) if approval_secret is None else approval_secret
@@ -193,6 +217,7 @@ def build_product_runtime_stack(
         tokens,
         strong_authenticator,
     )
+    user_visible_results = UserVisibleResultStore()
 
     def coordinator_factory(cancellation: CancellationToken) -> VoiceCommandCoordinator:
         return VoiceCommandCoordinator(
@@ -210,6 +235,32 @@ def build_product_runtime_stack(
             approvals=tokens,
             approval_broker=approvals,
             cancellation=cancellation,
+            verified_result_observer=user_visible_results,
+        )
+
+    def observation_round_runner_factory(
+        cancellation: CancellationToken,
+        scoped_policy_context_provider: PolicyContextProvider,
+    ) -> OrchestratorRoundRunner:
+        def observed_orchestrator_factory(
+            observer: InMemoryVerifiedResultObserver,
+        ) -> Orchestrator:
+            return Orchestrator(
+                policy=PolicyEngine(language.registry),
+                executor=executor,
+                verifier=verifier,
+                audit=audit,
+                approvals=tokens,
+                approval_broker=approvals,
+                cancellation=cancellation,
+                verified_result_observer=ChainedVerifiedResultObserver(
+                    observer, user_visible_results
+                ),
+            )
+
+        return OrchestratorRoundRunner(
+            observed_orchestrator_factory,
+            scoped_policy_context_provider,
         )
 
     runtime = AlwaysOnAgentRuntime(
@@ -218,6 +269,12 @@ def build_product_runtime_stack(
         policy_context_provider=policy_context_provider,
         feedback=feedback,
         planner_context_provider=planner_context_provider,
+        skill_trace_observer=skill_trace_observer,
+        skill_use_observer=skill_use_observer,
+        observation_planner=language.planner,
+        observation_registry=language.registry,
+        observation_round_runner_factory=observation_round_runner_factory,
+        user_visible_results=user_visible_results,
     )
     return ProductRuntimeStack(
         runtime=runtime,
@@ -241,6 +298,8 @@ def build_product_runtime_stack_from_capabilities(
     strong_authenticator: StrongAuthenticator | None = None,
     feedback: VoiceFeedbackPresenter | None = None,
     approval_secret: bytes | None = None,
+    skill_trace_observer: SkillTraceObserver | None = None,
+    skill_use_observer: SkillUseObserver | None = None,
 ) -> ProductRuntimeStack:
     """Compose only when NIM, policy, executor, and verifier surfaces are identical."""
     language_capabilities = tuple(item.capability_id for item in language.registry.list())
@@ -261,6 +320,8 @@ def build_product_runtime_stack_from_capabilities(
         strong_authenticator=strong_authenticator,
         feedback=feedback,
         approval_secret=approval_secret,
+        skill_trace_observer=skill_trace_observer,
+        skill_use_observer=skill_use_observer,
     )
 
 
@@ -277,20 +338,34 @@ def build_product_voice_stack(
     """Build verified local voice objects without opening the microphone."""
     wake_bundle = wake_bundle_loader(configuration.wakeword_manifest)
     stt_bundle = stt_bundle_loader(configuration.stt_manifest)
-    wake_detector = wake_factory(wake_bundle)
     stt = stt_factory(stt_bundle)
+    wake_detector = (
+        WhisperKoreanWakeWordDetector(stt)
+        if configuration.settings.wakeword_mode == "whisper_korean"
+        else wake_factory(wake_bundle)
+    )
     settings = configuration.settings
     vad = vad_factory(rms_threshold=settings.vad_rms_threshold)
     frame_source = frame_source_factory(
+        device=settings.microphone_device_index,
         frame_ms=settings.microphone_frame_ms,
         queue_capacity=settings.microphone_queue_capacity,
     )
-    pipeline = VoicePipeline(
-        wake_detector,
-        vad,
-        stt,
-        wake_threshold=settings.wake_threshold,
-        end_silence_frames=settings.end_silence_frames,
-        max_capture_frames=settings.max_capture_frames,
+    pipeline = (
+        KoreanWakeVoicePipeline(
+            vad,
+            stt,
+            end_silence_frames=settings.end_silence_frames,
+            max_capture_frames=settings.max_capture_frames,
+        )
+        if settings.wakeword_mode == "whisper_korean"
+        else VoicePipeline(
+            wake_detector,
+            vad,
+            stt,
+            wake_threshold=settings.wake_threshold,
+            end_silence_frames=settings.end_silence_frames,
+            max_capture_frames=settings.max_capture_frames,
+        )
     )
     return ProductVoiceStack(frame_source=frame_source, pipeline=pipeline)

@@ -8,6 +8,7 @@ from typing import Protocol
 
 from pydantic import Field, StrictBool, StrictInt, TypeAdapter, model_validator
 
+from .confidence_intervals import wilson_interval_95
 from .models import FrozenModel
 from .voice import AudioFrame
 from .voice_evaluation import VoiceCorpusError, load_audio_fixtures
@@ -105,6 +106,17 @@ class WakeWordSampleReport(FrozenModel):
         return self
 
 
+class WakeWordRateInterval(FrozenModel):
+    lower: float = Field(ge=0.0, le=1.0)
+    upper: float = Field(ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def bounds_are_ordered(self) -> WakeWordRateInterval:
+        if self.lower > self.upper:
+            raise ValueError("wake-word rate interval bounds are reversed")
+        return self
+
+
 class WakeWordConditionReport(FrozenModel):
     distance_band: WakeWordDistanceBand
     noise_condition: WakeWordNoiseCondition
@@ -119,6 +131,8 @@ class WakeWordConditionReport(FrozenModel):
     inference_failures: int = Field(ge=0)
     false_acceptance_rate: float = Field(ge=0.0, le=1.0)
     false_rejection_rate: float = Field(ge=0.0, le=1.0)
+    false_acceptance_interval_95: WakeWordRateInterval
+    false_rejection_interval_95: WakeWordRateInterval
 
     @model_validator(mode="after")
     def aggregate_is_consistent(self) -> WakeWordConditionReport:
@@ -142,6 +156,14 @@ class WakeWordConditionReport(FrozenModel):
             raise ValueError("wake-word condition FAR is inconsistent")
         if self.false_rejection_rate != self.false_negatives / self.positive_count:
             raise ValueError("wake-word condition FRR is inconsistent")
+        if self.false_acceptance_interval_95 != _rate_interval(
+            self.false_positives, self.negative_count
+        ):
+            raise ValueError("wake-word condition FAR interval is inconsistent")
+        if self.false_rejection_interval_95 != _rate_interval(
+            self.false_negatives, self.positive_count
+        ):
+            raise ValueError("wake-word condition FRR interval is inconsistent")
         return self
 
 
@@ -158,6 +180,8 @@ class WakeWordCorpusReport(FrozenModel):
     inference_failures: int = Field(ge=0)
     false_acceptance_rate: float = Field(ge=0.0, le=1.0)
     false_rejection_rate: float = Field(ge=0.0, le=1.0)
+    false_acceptance_interval_95: WakeWordRateInterval
+    false_rejection_interval_95: WakeWordRateInterval
     samples: tuple[WakeWordSampleReport, ...]
     conditions: tuple[WakeWordConditionReport, ...] = Field(min_length=1)
 
@@ -195,6 +219,14 @@ class WakeWordCorpusReport(FrozenModel):
                 self, field_name
             ):
                 raise ValueError("wake-word condition aggregate counts are inconsistent")
+        if self.false_acceptance_interval_95 != _rate_interval(
+            self.false_positives, self.negative_count
+        ):
+            raise ValueError("wake-word corpus FAR interval is inconsistent")
+        if self.false_rejection_interval_95 != _rate_interval(
+            self.false_negatives, self.positive_count
+        ):
+            raise ValueError("wake-word corpus FRR interval is inconsistent")
         return self
 
     def canonical_json(self) -> str:
@@ -282,6 +314,8 @@ def evaluate_wakeword_corpus(
         inference_failures=sum(item.error_code is not None for item in reports),
         false_acceptance_rate=false_positives / negative_count,
         false_rejection_rate=false_negatives / positive_count,
+        false_acceptance_interval_95=_rate_interval(false_positives, negative_count),
+        false_rejection_interval_95=_rate_interval(false_negatives, positive_count),
         samples=reports,
         conditions=_condition_reports(reports),
     )
@@ -325,9 +359,20 @@ def _condition_reports(
                 inference_failures=sum(item.error_code is not None for item in items),
                 false_acceptance_rate=false_positives / negative_count,
                 false_rejection_rate=false_negatives / positive_count,
+                false_acceptance_interval_95=_rate_interval(
+                    false_positives, negative_count
+                ),
+                false_rejection_interval_95=_rate_interval(
+                    false_negatives, positive_count
+                ),
             )
         )
     return tuple(result)
+
+
+def _rate_interval(count: int, total: int) -> WakeWordRateInterval:
+    lower, upper = wilson_interval_95(count, total)
+    return WakeWordRateInterval(lower=lower, upper=upper)
 
 
 def _evaluate_sample(

@@ -30,6 +30,7 @@ class ShortcutSpec(FrozenModel):
     arguments: str = Field(max_length=32_768)
     working_directory: str = Field(min_length=3, max_length=32_768)
     description: str = Field(min_length=1, max_length=256)
+    icon_location: str = Field(default="", max_length=32_768)
 
 
 class ShortcutBackend(Protocol):
@@ -63,6 +64,7 @@ class WindowsComShortcutBackend:
                 arguments=str(shortcut.Arguments),
                 working_directory=str(shortcut.WorkingDirectory),
                 description=str(shortcut.Description),
+                icon_location=str(shortcut.IconLocation),
             )
         except Exception as error:
             raise AutostartError("AUTOSTART_SHORTCUT_UNREADABLE") from error
@@ -74,6 +76,7 @@ class WindowsComShortcutBackend:
             shortcut.Arguments = specification.arguments
             shortcut.WorkingDirectory = specification.working_directory
             shortcut.Description = specification.description
+            shortcut.IconLocation = specification.icon_location
             shortcut.Save()
         except Exception as error:
             raise AutostartError("AUTOSTART_SHORTCUT_WRITE_FAILED") from error
@@ -110,7 +113,7 @@ def current_user_startup_directory() -> Path:
 class StartupShortcutRegistrar:
     """Own exactly one current-user Startup shortcut and refuse foreign files."""
 
-    _NAME = "JAVIS.lnk"
+    _NAME = "SKILLA.lnk"
 
     def __init__(
         self,
@@ -144,7 +147,7 @@ class StartupShortcutRegistrar:
             target=str(self._target),
             arguments=subprocess.list2cmdline(list(arguments)),
             working_directory=str(self._working_directory),
-            description="JAVIS PC Agent",
+            description="SKILLA Local Skill AI Agent",
         )
 
     @property
@@ -242,4 +245,6 @@ def _specifications_match(first: ShortcutSpec, second: ShortcutSpec) -> bool:
         and os.path.normcase(first.working_directory)
         == os.path.normcase(second.working_directory)
         and first.description == second.description
+        and os.path.normcase(first.icon_location)
+        == os.path.normcase(second.icon_location)
     )

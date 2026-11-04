@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from enum import StrEnum
+from time import perf_counter_ns
 from typing import Protocol
 from uuid import UUID
 
 from pydantic import Field
 
 from .cancellation import CancellationToken
-from .models import Action, ActionStatus, FrozenModel, PolicyContext
+from .models import Action, ActionStatus, FrozenModel, Plan, PolicyContext
 from .orchestrator import Orchestrator
 from .policy_context import gate_scoped_policy_context_provider
 from .runtime_models import TaskOutcome
@@ -35,6 +36,8 @@ class AgentSessionResult(FrozenModel):
     task_id: UUID | None = None
     completed_actions: int = Field(default=0, ge=0)
     feedback_delivered: bool | None = None
+    skill_trace_recorded: bool | None = None
+    skill_use_recorded: bool | None = None
 
 
 class FrameSource(Protocol):
@@ -54,6 +57,14 @@ class OrchestratorFactory(Protocol):
     def __call__(self, cancellation: CancellationToken) -> Orchestrator: ...
 
 
+class SkillTraceObserver(Protocol):
+    def observe(self, plan: Plan, outcome: TaskOutcome) -> None: ...
+
+
+class SkillUseObserver(Protocol):
+    def observe(self, plan: Plan, outcome: TaskOutcome, *, elapsed_ms: int) -> bool: ...
+
+
 PlannerContextProvider = Callable[[], Mapping[str, object]]
 PolicyContextProvider = Callable[[Action], PolicyContext]
 
@@ -71,6 +82,8 @@ class AgentSession:
         policy_context_provider: PolicyContextProvider,
         planner_context_provider: PlannerContextProvider | None = None,
         feedback: VoiceFeedbackPresenter | None = None,
+        skill_trace_observer: SkillTraceObserver | None = None,
+        skill_use_observer: SkillUseObserver | None = None,
     ) -> None:
         self._frame_source = frame_source
         self._voice_pipeline = voice_pipeline
@@ -79,6 +92,8 @@ class AgentSession:
         self._policy_context_provider = policy_context_provider
         self._planner_context_provider = planner_context_provider
         self._feedback = feedback
+        self._skill_trace_observer = skill_trace_observer
+        self._skill_use_observer = skill_use_observer
 
     def run_once(self, *, max_frames: int = 1_500) -> AgentSessionResult:
         if type(max_frames) is not int or not 1 <= max_frames <= 1_500:
@@ -87,6 +102,7 @@ class AgentSession:
         capture = self._capture(cancellation, max_frames)
         if isinstance(capture, AgentSessionResult):
             return capture
+        task_started_ns = perf_counter_ns()
         try:
             context = (
                 dict(self._planner_context_provider())
@@ -149,6 +165,12 @@ class AgentSession:
                 reason="ORCHESTRATION_FAILED",
                 task_id=decision.plan.task_id,
             )
+        trace_recorded = self._record_skill_trace(decision.plan, outcome)
+        use_recorded = self._record_skill_use(
+            decision.plan,
+            outcome,
+            elapsed_ms=(perf_counter_ns() - task_started_ns) // 1_000_000,
+        )
         feedback_delivered = self._deliver_feedback(outcome, cancellation)
         return AgentSessionResult(
             status=(
@@ -160,7 +182,34 @@ class AgentSession:
             task_id=outcome.task_id,
             completed_actions=outcome.completed_actions,
             feedback_delivered=feedback_delivered,
+            skill_trace_recorded=trace_recorded,
+            skill_use_recorded=use_recorded,
         )
+
+    def _record_skill_trace(self, plan: Plan, outcome: TaskOutcome) -> bool | None:
+        if self._skill_trace_observer is None:
+            return None
+        try:
+            self._skill_trace_observer.observe(plan, outcome)
+        except Exception:
+            return False
+        return True
+
+    def _record_skill_use(
+        self,
+        plan: Plan,
+        outcome: TaskOutcome,
+        *,
+        elapsed_ms: int,
+    ) -> bool | None:
+        if self._skill_use_observer is None:
+            return None
+        try:
+            return True if self._skill_use_observer.observe(
+                plan, outcome, elapsed_ms=elapsed_ms
+            ) else None
+        except Exception:
+            return False
 
     def _capture(
         self,

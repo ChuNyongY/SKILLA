@@ -29,7 +29,7 @@ def test_package_manifest_round_trip_and_sorted_paths(tmp_path: Path) -> None:
 
 def test_package_manifest_detects_tampering_and_extra_files(tmp_path: Path) -> None:
     root = tmp_path.resolve()
-    payload = root / "JAVIS.exe"
+    payload = root / "SKILLA.exe"
     payload.write_bytes(b"original")
     write_package_manifest(root, "0.1.0")
     payload.write_bytes(b"tampered")
@@ -62,7 +62,7 @@ def test_package_manifest_rejects_duplicate_or_unsorted_document(tmp_path: Path)
     (root / "payload").write_text("x", encoding="utf-8")
     document = {
         "schema_version": "1.0",
-        "product": "JAVIS-PC",
+        "product": "SKILLA-PC",
         "version": "0.1.0",
         "files": [
             {"path": "z", "size": 1, "sha256": "0" * 64},

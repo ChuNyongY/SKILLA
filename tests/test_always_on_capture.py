@@ -147,3 +147,27 @@ def test_aborted_capture_is_forwarded_without_transcript_retention() -> None:
     assert completed is not None
     assert completed.event_type is RuntimeEventType.FAILED
     assert "transcript" not in result.model_dump_json()
+
+
+def test_immediate_duplicate_command_is_not_submitted_twice() -> None:
+    planner = BlockingPlanner()
+    runtime, _classifier, _planner = runtime_with_executor(
+        BlockingExecutor(),
+        planner=planner,
+    )
+    pipeline = ScriptedPipeline(
+        [capture("시스템 정보 확인"), None, capture("  시스템  정보 확인  ")]
+    )
+    pump = AlwaysOnCapturePump(
+        frame_source=FiniteFrameSource(3),
+        voice_pipeline=pipeline,
+        runtime=runtime,
+    )
+
+    result = pump.run(max_frames=3)
+    planner.release.set()
+    runtime.wait_for_idle(timeout_seconds=1)
+
+    assert result.capture_count == 2
+    assert result.tasks_started == 1
+    assert result.duplicate_ignored == 1

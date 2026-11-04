@@ -195,6 +195,32 @@ def test_file_open_contract_requires_hash_viewer_target_and_exact_predicate() ->
     )
 
 
+def test_file_open_contract_rejects_target_not_bound_to_digest() -> None:
+    digest = "0" * 64
+    with pytest.raises(PlanContractError, match="bind its lowercase sha256"):
+        validate_plan_contracts(
+            Plan(
+                goal="open exact PDF",
+                steps=(
+                    Action(
+                        capability_id="file.open",
+                        arguments={
+                            "path": "C:/fixture.pdf",
+                            "sha256": digest,
+                            "viewer_app_id": "edge",
+                        },
+                        purpose="open",
+                        target_identity="C:/fixture.pdf",
+                        expected_postconditions=(
+                            Postcondition(predicate="file.opened"),
+                        ),
+                    ),
+                ),
+            ),
+            default_registry(),
+        )
+
+
 def test_plan_step_count_is_bounded() -> None:
     steps = tuple(
         Action(

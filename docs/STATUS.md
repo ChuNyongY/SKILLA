@@ -1,6 +1,422 @@
 # 구현 상태
 
-최종 갱신: 2026-10-07
+최종 갱신: 2026-10-20
+
+## 2026-10-20 독립 확인 실험과 자동 업데이트 앱 검증
+
+- 예시 논문의 반복측정 설계를 JAVIS 스킬 연구에 맞춰 적용해 결과 확인 전에 `developer10`, seed
+  `2026102001`, 5작업×3블록×SK0~SK3의 60관측 계획을 고정하고 실행했다.
+- 15개 완전 대응 블록에서 SK0 10/15, SK1 12/15, SK2 12/15, SK3 14/15 성공했다. SK3의
+  평균 시간은 12,367 ms, 평균 호출은 1.867회, 평균 토큰은 3,135.7이었지만 평균 사용자 확인은
+  1.0회로 가장 높았다. 세 exact McNemar 비교는 Holm 보정 뒤 모두 p>=0.375이므로 통계적
+  우월성을 주장하지 않는다.
+- 60개 evidence hash, observations/report hash와 manifest를 전부 대조했고 불일치 0건이었다.
+  같은 인자로 다섯 runner를 재실행했을 때 원장·관측·보고서 15개 파일이 모두 불변이었다.
+- Edge 자동 업데이트 해시 drift를 실험 사전점검에서 발견했다. 현재 실행 파일의 Microsoft
+  Authenticode 서명과 새 SHA-256을 확인해 등록부를 갱신하고, PDF·Explorer 실험 runner도 제품과
+  같은 `등록 경로 + 정확한 발행자 서명` 조건에서만 signed update를 허용하도록 수정했다.
+- 전체 1,096개 회귀시험, 자격 증명 사전점검 3/3과 앱 등록부 유효 서명을 통과했다.
+
+## 2026-10-19 0.1.9 스킬 검토 창 표시 수정
+
+- 텍스트 명령 창에서 스킬 검토를 열 때 별도 `Tk` 실행 루프를 중첩하던 구조를 같은 실행 루프의
+  `Toplevel` 보조 창으로 변경했다. 실제 로컬 초안이 있는데도 목록이 빈 화면처럼 보이던 현상을
+  제거했다.
+- 실제 0.1.7→`state/v1` 이관 초안을 사용해 `[신규] Windows 시스템 정보 조회 (v1)` 항목이
+  스킬 검토 창에 표시되는 것을 Windows 화면 자동화와 데이터베이스 조회 두 경로로 확인했다.
+- 검토 대기 초안이 정말 0개일 때는 빈 화면 대신 `스킬 후보 검토`에서 실행 기록을 초안으로
+  만드는 방법을 안내한다.
+- 전체 **1,096개 시험(1,091 통과, 5 건너뜀)**, Ruff, strict mypy 151 files를 통과했다.
+  1,826개 파일의 0.1.9 r1 패키지는 manifest 검증, 자격 증명 사전점검 3/3, 13개 기능 서비스
+  조립과 `capture_running=false`를 통과했다. 설치본의 읽기 전용 시스템 정보 smoke도
+  `SUCCEEDED`와 `ALL_ACTIONS_VERIFIED`로 끝났다.
+- 실제 Setup 설치는 `SUCCESS/code=0`이었고 시작 메뉴가 설치된 0.1.9를 가리킨다. 설치본
+  카탈로그에서도 `read-windows-system-info` v1 DRAFT가 유지됐다. 현재 주 화면은
+  `DISPLAY1` 2560×1440으로 정상 탐지됐다.
+- Setup SHA-256은 `d7fe1397a9cf9bcd9bb3dbee93dea04cafda6b48e0bf32d16e6d939f01a76f8e`,
+  wheel은 `a0c96269c272945cb475851fd2b7d0fd4ad1cfd2f578f3dade78f2277da50c8b`,
+  package manifest는 `93c3f99737c35aa943ede07b281969a71193d5ec754a10a8b3de119f1b0c8a27`다.
+  패키지의 `NIM.txt`는 0건이다. release audit은 manifest와 Setup hash를 통과했지만
+  console/tray/Setup은 모두 `NotSigned`이므로 공개 서명 배포 완료와 구분한다.
+
+## 2026-10-19 0.1.8 전면 결함 수정
+
+- 설치본의 스킬·실행 기록 저장 경로를 앱 버전별 폴더에서 상태 형식별 공용 `state/v1` 폴더로
+  변경했다. 첫 실행 때 0.1.7 데이터베이스와 감사·화면 선택 파일을 덮어쓰지 않고 이관하므로,
+  업데이트 뒤 스킬 목록이 비어 보이던 결함을 제거했다.
+- 텍스트 명령 화면에 독립 검증을 통과한 결과 영역을 추가했다. 시스템 정보는 운영체제,
+  릴리스, 버전, 시스템 종류, 컴퓨터 이름만 한국어 표제로 표시하며 임의 관측값은 노출하지 않는다.
+- 유휴 상태와 완료 상태가 동시에 표시되던 문구를 하나의 완료 상태로 정리했고, NIM 스킬 초안
+  생성 완료를 별도 알림으로 보여준다. 실행 기록의 성공·검증 상태와 주요 기능명도 한국어로 표시한다.
+- 전체 **1,095개 시험(1,090 통과, 5 건너뜀)**, Ruff, strict mypy 151 files를 통과했다. 1,826개
+  파일의 0.1.8 r2 패키지는 manifest 검증, 자격 증명 사전점검 3/3, 13개 기능 서비스 조립,
+  `capture_running=false`를 통과했다.
+- 실제 Setup 설치 exit code 0 뒤 시작 메뉴가 설치된 0.1.8을 가리키고, 텍스트 명령 창 제목을
+  실제로 확인한 뒤 정상 종료했다. 0.1.7의 `read-windows-system-info` 초안 ID와 DRAFT 상태가
+  `state/v1`에 그대로 이관됨을 설치본 CLI로 확인했다.
+- 최종 Setup SHA-256은 `023b73d46b98b643f5555111091afed6346951213a3a2670fd77b6d9a9e65fb7`,
+  wheel은 `43c3f9aac2da2983aaf43fbddc70c1de4b1e360c3881b7412370c40656a57a65`다.
+  패키지와 Setup의 `NIM.txt` 및 실제 키 일치는 0건이다. 세 실행 파일은 여전히 미서명이다.
+
+## 2026-10-18 첫 실행 설정·0.1.7 최종 후보
+
+- NIM 키가 없는 첫 실행에서 콘솔 명령을 요구하던 진입 장벽을 제거했다. 마스킹된 `JAVIS 초기 설정`
+  창에서 키를 받아 기존 Windows 자격 증명 관리자에 저장하고, 저장 상태를 다시 읽어 `PRESENT`가
+  확인된 경우에만 제품 사전점검과 주 창으로 진행한다. 취소는 조용히 종료하고 저장·화면 오류는
+  고정 한국어 문구만 표시한다.
+- API 키는 명령줄·로그·오류 문구에 넣지 않으며 저장 직후 입력 위젯의 값을 지운다. 작업자 token은
+  초기 설정보다 먼저 분기한다. 저장 성공·취소·실패·예외 redaction·저장 후 재검증 실패를 자동시험으로
+  고정했다.
+- 전체 회귀는 **1,085 passed, 4 skipped**, Ruff `src tests`, strict mypy 150 source files와
+  `git diff --check`를 통과했다.
+- 0.1.7 one-folder 1,826개 파일은 manifest `VERIFIED`, Credential 사전점검 3/3, 13-capability
+  service `CREATED`, `capture_running=false`를 통과했다. 실제 Setup 최초 설치 `SUCCESS/code=0`,
+  재설치 `ALREADY_VERIFIED/code=0`과 설치본 manifest 재검증을 확인했다.
+- 시작 메뉴 링크는 설치된 0.1.7 `JAVIS-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다. 링크를
+  실제 실행해 `JAVIS 텍스트 명령` 창과 응답 상태를 확인한 뒤 정상 종료했으며 시험 process는 남지
+  않았다.
+- 별도 새 가상환경에 0.1.7 wheel과 선언된 기본 의존성을 설치해 version import와 `javis --help`를
+  통과했다. package의 민감한 파일명과 실제 저장된 키의 정확한 byte 일치 검색은 각각 0건이다.
+- 최종 r2 Setup SHA-256은
+  `a9003f4465f838b32540827ccb21e91a509e46e54ecbfdf6c94a0cd6de980228`, package manifest는
+  `e4cc23da0bd5e511a10401602f55722e119d52aa28c965cd11271fa48aaadf16`, `JAVIS.exe`는
+  `815c7a5af68ae43b8770c690e5cf24590b277113415121629c0578354b63ef84`, `JAVIS-Tray.exe`는
+  `88ff9db277f3e108715227add9b861dbfe7925f3b1e318c120abddb67cc7466d`다. wheel SHA-256은
+  `2afadcf28de01c0790447f4a8c48f8c983b32cba655e7c497832cc14edc921b9`다.
+- r2 release audit은 manifest와 Setup hash를 통과하고 세 Authenticode 서명을 정확히 실패했다.
+  현재 사용자 저장소의 사용 가능한 코드 서명 인증서는 0개이므로 로컬 시연용 완성과 공개 배포
+  서명 완료를 구분한다.
+
+## 2026-10-18 시작 실패 안내·화면 복구·스킬 UI·0.1.6 후보
+
+- 연구 핵심인 스킬 기능이 음성 tray 메뉴에만 있고 기본 더블클릭 텍스트 창에서는 접근할 수 없는
+  제품 결함을 확인했다. 기본 창 두 번째 줄에 `스킬 관리`, `스킬 후보 검토`, `작업 화면 선택`을
+  연결하고, 기존 tray와 같은 catalog·trace·NIM draft workflow 객체를 재사용하도록 했다.
+- 보조 화면 callback 실패는 실제 예외·경로·키를 표시하지 않고 기능별 고정 한국어 문구로 처리한다.
+  callback 호출·예외 redaction·CLI wiring 시험을 추가했으며 이 UI 경로는 microphone capture를
+  시작하지 않는다. 이 변경을 포함한 최종 후보 버전은 0.1.6이다.
+
+- 설치된 windowed 실행 파일이 주 창을 만들기 전에 Windows 자격 증명의 NIM 키 상태, 제품 구성,
+  필수 구성 요소를 기존 사전점검기로 확인하도록 했다. 키 없음·키 읽기 실패·구성 손상·필수 구성
+  요소 실패·예상하지 못한 시작 실패를 서로 다른 고정 한국어 문구와 안정적인 종료 코드로 구분한다.
+- 오류 창에는 실제 예외, 사용자 경로, API 키 또는 traceback을 넣지 않는다. 오류 창 자체가 실패해도
+  원래의 비정상 종료 코드는 유지한다. 음성/TTS/UIA/Explorer 작업자 token 경로는 이 검사보다 먼저
+  분리되므로 기존 worker 실행 계약을 바꾸지 않는다.
+- NIM에는 의존성 없는 windowed startup wrapper와 안내 문구 초안을 요청했다. Codex 감사에서 초안의
+  새 keyring 의존성, one-folder와 맞지 않는 임시 경로 가정, worker token 전달 가정을 제외하고 기존
+  Credential Manager·제품 사전점검·설치 폴더 계약으로 구현했다.
+- 시작 오류·스킬 UI 시험과 CLI 대상 시험을 포함한 전체 회귀는 **1,078 passed, 4 skipped**다.
+  `src`·`tests` Ruff와 strict mypy 150 source files도 통과했다.
+- 첫 0.1.4 설치 뒤 시작 메뉴 링크는 정확했지만 저장된 `primary` 화면의 1920×1080 좌표와 현재
+  2560×1440 좌표가 달라 `DISPLAY_GEOMETRY_CHANGED`로 시작이 차단되는 실제 결함을 발견했다.
+  `primary`는 특정 장치가 아니라 현재 주 화면이라는 사용자 의도이므로 현재 주 화면 descriptor로
+  원자적으로 갱신하고, 명시적인 `device` 고정은 누락·좌표 변화 시 상태를 바꾸지 않고 계속 차단하도록
+  수정했다.
+- 최종 0.1.6 `dist/JAVIS-PC-0.1.6-skill-20261018-r1` 1,826개 파일은 manifest `VERIFIED`이고,
+  Credential 사전점검 3/3, 13-capability service `CREATED`, `capture_running=false`를 통과했다.
+  실제 Setup 최초 설치는 `SUCCESS/code=0`, 재설치는 `ALREADY_VERIFIED/code=0`이었다. 시작 메뉴 링크는
+  설치된 0.1.6 `JAVIS-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다.
+- 시작 메뉴 링크를 실제 실행해 `JAVIS 텍스트 명령` 창을 확인하고 정상 닫았으며 시험 process가 남지
+  않았다. 설치 상태의 `primary` descriptor도 실제 `DISPLAY1 2560×1440`과 일치한다. 후속 한국어
+  명령 입력 UI 검증은 사용자가 물리적 Escape로 Computer Use를 중지해 반복하지 않았다. 실제 NIM
+  명령 E2E 자체는 0.1.3 설치본에서 이미 통과했고, 0.1.6은 같은 runtime 경로의 회귀시험과 창 시작을
+  통과한 것으로 범위를 구분한다.
+- 최종 Setup SHA-256은
+  `5f90c3cd579db2797ab8d1d5ea062810b78ec1ef63737c98dc248c007888f091`이고 sidecar와 일치한다.
+  package manifest는 `cebf8451df2113db437fd3e484489c61c0f532cb763cd3da4f508d7d4749adfd`,
+  `JAVIS.exe`는 `3557663fd0fb5014dda72a92e87fe6a951d557c818103a38ff034882d5046219`,
+  `JAVIS-Tray.exe`는 `61b9b33249f5dd0a1b60f3ed954092e43130cf3995640db6881d596047fb87df`다.
+  package의 비밀 파일명·API key 형태 검색은 모두 0건이다.
+- 0.1.6 wheel SHA-256은
+  `e4206deedaaa5b787b679f5be37349a3bab0035e3e58912ddc62f3a15aa7e26d`이다. 새 가상환경에
+  `--no-deps`로 설치해 version·시작 오류·화면·스킬 UI 모듈 import와 `javis --help` exit 0을 확인했다.
+  Setup·두 EXE는 여전히 `NotSigned`이므로 로컬 시연·제출용과 공개 배포 완료를 구분한다.
+- 0.1.6 공개 배포 감사는 package manifest와 Setup hash는 PASS, console·tray·Setup signature는
+  `SIGNATURE_INVALID`로 정확히 실패했다. 현재 사용자 인증서 저장소의 private key 포함 유효 코드
+  서명 인증서는 0개이므로 보안 설정을 약화하거나 임시 인증서를 신뢰시키지 않고 외부 인증서 준비를
+  배포 차단 조건으로 유지한다.
+
+## 2026-10-17 실행 화면·텍스트 명령·0.1.3 배포 후보 검증
+
+- 제품에 `primary`, 고정 장치 이름, 현재 활성 창 추적의 세 화면 선택 방식을 추가했다. 현재 PC의
+  `DISPLAY1`(주 화면, 2560×1440)을 실제 열거하고 고정 선택했으며, 화면 누락·주 화면 변경·좌표 또는
+  해상도 변화와 선택 화면 밖 창은 실행 전에 거부한다. tray의 `작업 화면 선택`과 CLI
+  `list-displays`, `select-display`를 연결했다. 실제 다중 모니터 하드웨어 시험은 화면이 하나인
+  현재 PC에서는 수행할 수 없었다.
+- 설계도에 있었지만 제품 UI에 빠져 있던 텍스트 명령 창을 구현했다. 더블클릭한 `JAVIS.exe`와
+  `JAVIS-Tray.exe`는 기본적으로 `JAVIS 텍스트 명령` 창을 열며, 이 경로는 마이크·상시 capture를
+  시작하지 않는다. 입력은 기존 NIM planner, 정책, 실행기, 독립 검증기, 실행 기록과 스킬 재사용
+  경로를 그대로 사용한다. 소스 루트가 아닌 one-folder 자체와 격리 설치 폴더를 각각 작업 위치로
+  두고 실제 EXE의 창 handle·제목 생성을 확인한 뒤 정상 종료했다.
+- 기본 텍스트 창에 `작업 화면 선택` 버튼을 연결해 CLI 없이 주 화면·정확한 DISPLAY 장치·전면 창
+  추적 방식을 선택할 수 있게 했다. callback 연결과 마이크 미개방은 자동시험으로 검증했다. 설치된
+  0.1.3 기본 창을 실제 캡처해 버튼 표시를 확인하고 클릭했으며, `주 모니터 고정`, 현재
+  `DISPLAY1 (2560×1440, 0,0) · 주 모니터`, `현재 전면 창 따라가기` 선택 창이 열리는 것을 확인했다.
+  설정은 바꾸지 않고 취소한 뒤 두 시험 창을 모두 닫았다.
+- 설치된 0.1.3을 시작 메뉴에서 다시 열어 텍스트 입력란에 한국어 읽기 전용 시스템 정보 명령을
+  실제 입력·제출했다. 화면은 `명령을 검토하고 있습니다`를 거쳐 약 10초 뒤
+  `작업을 완료했습니다`로 바뀌었다. 외부 state의 감사 원장은 GREEN 정책, 실행 시작·성공,
+  독립 검증 성공, `ALL_ACTIONS_VERIFIED`의 5개 record를 남겼고 hash chain 검증을 통과했다.
+  `skill-traces.sqlite3`에는 새 스킬 후보 trace 1건이 저장됐으며 명령 원문과 실제 시스템 정보 값은
+  감사 기록에 없었다. 이 텍스트 경로는 microphone capture를 시작하지 않았다.
+- 실제 NIM에 `현재 Windows 시스템 정보를 읽어서 확인해 줘`를 입력한 안전 smoke는
+  `system.info.read` 1개 action을 실행·독립 검증해 `ALL_ACTIONS_VERIFIED`로 끝났고 스킬 실행
+  기록을 남겼다. 명령 원문은 상태·실행 event에 저장하지 않았고 microphone은 열지 않았다.
+- Chrome 자동 업데이트로 바뀐 실행 파일은 유효 Google Authenticode와 정확한 발행자를 다시
+  확인해 현재 hash를 고정했다. 제품 loader는 이후 같은 경로에서 유효 서명과 동일 발행자를 모두
+  만족한 갱신만 메모리에서 수용하며, 잘못된 발행자·서명 실패·경로 변경은 계속 거부한다.
+- 전체 회귀는 **1,072 collected, 1,068 passed, 4 skipped**, 제품 `src`와 `tests` Ruff clean,
+  strict mypy **149 source files** PASS다. 저장소 전체 Ruff에는 현재 제품 경로 밖의 과거 보고서
+  생성 도구 오류 107개가 남아 있어 저장소 전체 clean으로 주장하지 않는다.
+- 기존 설치를 덮어쓰지 않는 업그레이드를 위해 최종 제품 버전을 0.1.3으로 올리고 package·installer·
+  Python metadata·한국어 안내문의 버전 일치를 시험으로 고정했다. 새 one-folder
+  `dist/JAVIS-PC-0.1.3-skill-20261017-r1`의 1,826개 파일은 manifest 검증을
+  통과했다. 설치본 `JAVIS.exe`도 같은 1,826개를 `VERIFIED`로 판정했고, 실제 화면 열거와
+  Credential 기반 13-capability service `CREATED`를 통과했으며 `capture_running=false`였다.
+- 설치기는 현재 사용자 시작 메뉴에 고정 이름 `JAVIS-PC` 링크를 만들고 target·빈 인자·작업 폴더·
+  설명·아이콘을 다시 읽어 모두 일치할 때만 성공한다. 다른 대상의 기존 링크는 덮거나 지우지 않는다.
+  동일 설치 부모 아래 정확한 이전 버전 링크만 `OUTDATED`로 식별해 새 링크로 바꾼다. 실제
+  0.1.1→0.1.2→0.1.3 설치에서 링크가 갱신됐고, 시작 메뉴 실행은 설치된 0.1.3 `JAVIS-Tray.exe`와 동일
+  hash의 새 process 및 `JAVIS 텍스트 명령` 창을 만들었으며 해당 시험 창만 닫았다.
+- 새 Setup SHA-256은
+  `eca1615f99aa00adf7335c573c7ac28e1fef85648139bba51809b1124f7870a9`이고 sidecar와 일치한다.
+  실제 현재 사용자 위치의 0.1.3 최초 설치 영수증은 `SUCCESS/code=0`, 같은 설치 파일 재실행은
+  `ALREADY_VERIFIED/code=0`이었다. wheel SHA-256은
+  `265ac23e1040a0e6cdaeedaa20212a94ba1f5e602fb14cb0ff7234c869693b3a`, package manifest는
+  `f1cac510b26ffec41b833eb40d21ec0d583fbfdb654579536271e2b874f5611f`다. 새 wheel을 별도
+  가상환경에 설치해 시작 메뉴·텍스트 UI import와 `javis --help`를 확인했다.
+- Codex Microsoft Store 앱 안에서 실행한 실제 설치 시험은 Windows가 `%LOCALAPPDATA%`를 앱 전용
+  `LocalCache`로 가상화했다. 따라서 일반 Explorer에서 Setup을 실행한 물리 경로와 같다고 주장하지
+  않는다. 다만 영수증·manifest·서비스·링크 target과 실행 process hash는 그 실제 가상화 환경 안에서
+  서로 일치했다.
+- package 안의 비밀 이름 파일과 `nvapi-` 형태 검색은 0건이다. `JAVIS.exe`, `JAVIS-Tray.exe`,
+  Setup은 모두 Authenticode `NotSigned`이므로 이 배포 후보는 로컬 시연·제출용으로 검증됐지만,
+  인증서 서명이 필요한 불특정 사용자 공개 배포 완료로 판정하지 않는다.
+
+## 2026-10-17 발표자료·설명문 정합성 갱신
+
+- 13장 졸업발표 자료를 권한 분석이 아닌 스킬 저장·검색·재사용·개정 연구를
+  중심으로 다시 작성했다. 현재 구현 범위, SK0~SK3 실험 조건, 32블록·128관측,
+  성공률·시간·호출·토큰 결과와 통계적 한계를 반영했다.
+- 발표자료의 모든 13장을 렌더링해 전체 흐름과 수정 장을 확대 검토했다. PowerPoint 구조,
+  레이아웃, 맑은 고딕 글꼴, 13장 수, 수정 가능한 차트와 내장 자료 표는 최종화 검사를
+  통과했다. 최종 파일 SHA-256은
+  `3572f3d3446efa147fb829729fe07274ab5f52fd42ab2025dab880c17f108358`이다.
+- 교수님 발표 정리본을 전면 개편해 하네스·스킬·도구·기능 권한을 구분하고,
+  기존 에이전트와의 차이, 선례, 예비실험 수치, 예상 질문 8개와 보수적 답변을 담았다.
+  논문의 주제를 스킬 효과 검증으로 고정하고 안전 정책은 보조 하네스로 분리했다.
+- 참가자 비교실험 운영안의 과거 `B0/B1/P1/P2` 조건을 현재 `SK0~SK3` 스킬 연구로
+  교체했다. 고정 seed 순서 균형화, 완전 대응 블록, 모델·설정·도구·초기 상태 동일성,
+  결과 근거 hash, 동의·철회·폐기·중단 절차와 현재 분석기의 McNemar·Holm 계약을 일치시켰다.
+- 모집문·동의서·철회 안내문 초안을 추가했다. 현재는 보관 기간·보상·문의처·연구윤리 확인
+  결과가 `[확정 필요]`이므로 배포·모집에 사용할 수 없다. 실제 참가자 자료 수집은 아직 시작하지 않았다.
+
+## 2026-10-16 최신 연구·배포 후보 검증
+
+- 결과 확인 전 `developer09`, seed `2026101609`, 다섯 작업 각각 3회로 고정한 추가 batch를 실제
+  NIM과 Windows 실행기로 완료했다. 기존 자료와 합친 자기완결형 묶음은 32블록·128관측·128근거이며
+  모든 evidence와 observations/report hash가 일치한다. SK0 26/32, SK1 24/32, SK2 30/32,
+  SK3 32/32 성공했다. SK3는 평균 시간·호출·token도 가장 작았다.
+- SK3 대 SK1 성공률 차이 +25.00%p의 Holm 보정 p값은 0.0234375였다. SK3 대 SK0 +18.75%p는
+  보정 p=0.0625, SK3 대 SK2 +6.25%p는 0.5로 유의하지 않았다. 이는 개발자 반복 실행·다섯 작업
+  묶음 결과이며 실제 참가자나 일반 Windows 작업에 대한 우월성으로 확대하지 않는다. 최신 통합
+  manifest SHA-256은 `ed99f41a9b56e04cc0514e8e6485806785da0ad52b74912df1e01ed1641663ee`다.
+- 새 다섯 원장을 같은 인자로 재실행해 ledger·observations·report 15개 hash가 모두 불변임을
+  확인했다. 통합 128 evidence의 실제 hash와 identity 불일치는 0건이고 `nvapi-`·절대경로 검색도
+  0건이다.
+- 폴더 목록 최초 실행의 실제 NIM 출력 한도 1,000과 기록된 모델 구성 1,800의 불일치를 감사에서
+  발견했다. 해당 원본과 통합 묶음은 `archive-invalid-...-model-config-mismatch`로 분리하고 최종
+  분석에서 제외했다. 2026-10-16 정확한 설정 hash로 3블록을 재수집해 12/12 관측의 구성 hash,
+  evidence hash와 완료 원장 재실행 불변을 확인했다. 당시 3작업 통합 manifest SHA-256은
+  `eaeb0caba96782b1f4cab917656973ddb8b320305a83ea66b7568e4aa2cc3b28`다.
+- 확장자별 파일 정리 runner는 세 파일을 정확한 기존 폴더로 옮기는 새 변경 작업이다. 3블록에서
+  SK0·SK1·SK2는 각각 2/3, SK3는 3/3 성공했다. 12관측의 실제 모델 구성 hash, 근거 hash,
+  목록 확인 선행, 성공 실행의 승인·이동 journal과 완료 원장 재실행 불변성을 확인했다. 새 네 작업
+  통합 manifest SHA-256은
+  `b8a3de5495296874e3f5af730ed9dda93ba6a2248fe4eba100224c0732f8ba12`다.
+- Explorer 폴더 열기 3블록은 네 조건 모두 3/3 성공하고 NIM 1회씩 사용했다. 12관측 모두 등록된
+  Explorer 프로세스·새 HWND·정확한 폴더를 독립 검증하고 해당 HWND만 닫았으며 marker hash와
+  완료 원장 재실행 hash가 바뀌지 않았다. 최신 다섯 작업 통합 manifest SHA-256은
+  `fe64d1e68b2d71930e720e98a48760a6feed059362fd97c364dfb8da6313a868`다.
+- 사용자 3/5 평가의 번역기 같은 TTS 말투를 줄이기 위해 여섯 고정 문장을 짧은 해요체로 바꾸고,
+  사용되지 않던 일반 실패 문구를 실제 상태 매핑에 연결해 안전 차단과 처리 실패를 구분했다. 새
+  여섯 문장은 실제 SAPI 무음 렌더링에서 mono 16-bit·22,050 Hz·비어 있지 않은 frame과 worker
+  크기·SHA-256 일치를 통과했다. 실제 자연스러움 개선은 새 청취 동의·평가 전까지 미검증이다.
+- 설치 결과 영수증 계약까지 포함한 전체 회귀는 **1,037 passed, 3 skipped**(총 1,040개), 제품 소스·시험·열
+  개 검증 도구 Ruff clean, strict mypy는 제품 소스와 해당 도구를 합친 155 source files에서
+  PASS했다.
+- 최신 소스 기준 doctor 15/15, Credential Manager의 NIM key `PRESENT`, 제품 preflight 3/3과
+  13-capability service `CREATED`를 통과했으며 `capture_running=false`다. 안전 평가는 15개 중
+  8개 PASS, 7개 NOT_RUN으로 재현됐고 `all_required_evidence_complete=false`다. snapshot VM과
+  interactive actual 근거가 없는 항목은 성공으로 계산하지 않는다.
+- 최신 소스의 actual reversible smoke에서 S01 Chrome 새 창, S02 음량 변경·원상복원, S03
+  메모리·hash-pinned PDF·Edge 새 창, Explorer exact-folder, Settings 4개 페이지와 tray 종료가 모두
+  PASS했고 생성한 창을 정리했다. allowlisted `github.com` Chrome navigation도 URL digest 결합과
+  exact window 정리를 통과했다. 실제 경로·창 내용·장치 상세는 출력하지 않았다. 이 host smoke는
+  snapshot VM 50셀이나 사용자 연구를 대신하지 않는다.
+- 최신 소스에서 `dist/JAVIS-PC-0.1.0-skill-20261016-r3`를 새로 만들었다. source verifier가
+  manifest의 1,826개 항목을 `VERIFIED`로 판정했고 `package-manifest.json` SHA-256은
+  `446f6f95ef490de95fa5b3b85ba6cd8a6d8f6bcd62c9b66742a8625bddee7cbd`다. 같은 package의
+  `JAVIS.exe verify-package` 직접 재실행도 1,826개를 `VERIFIED`로 판정했다.
+- `dist/wheel-skill-20261016-r4/javis_pc_agent-0.1.0-py3-none-any.whl`은 149개 항목,
+  368,497바이트이며 SHA-256은
+  `906929d3c5a3f41a43e4d22b8ee088ad8cbe941717f0cc59447f26bfd3ffc27b`다. 새 격리 가상환경에
+  의존성과 함께 설치해 스킬 작성·검토·실행 기록 검토 모듈 import와 `javis --help`를 확인했다.
+- 최신 `dist/JAVIS-PC-0.1.0-skill-20261016-r5-Setup.exe`는 260,702,208바이트이며 SHA-256은
+  `819f36a116b6bd03411af98b21fcbb4fd352a9c1c1f03da72cfede83349dd289`이고 sidecar와 일치한다.
+  package·wheel·Setup의 `nvapi-` 접두사 검색은 0건이며 package에서 찾은 유일한 PEM은 의존성
+  `certifi`의 공개 CA 묶음이다.
+- 최신 `JAVIS.exe`, `JAVIS-Tray.exe`, Setup은 모두 Authenticode `NotSigned`다. release audit은
+  package manifest와 Setup hash를 `OK`, 세 서명을 `SIGNATURE_INVALID`로 판정해 `ready=false`,
+  exit 1로 닫혔다.
+- 설치 script는 `%LOCALAPPDATA%/JAVIS-PC/install-result-0.1.0.txt`에 schema·version·상태·코드만
+  직접 기록한다. `SUCCESS`는 staging package 검증과 최종 이동이 모두 끝난 뒤에만 기록하며,
+  기존 검증 설치는 `ALREADY_VERIFIED`, 실패는 `FAILED`로 남긴다. 비밀과 절대경로는 기록하지 않는다.
+- 별도 `LOCALAPPDATA`에서 r5 Setup 최초 설치는 영수증 `SUCCESS/code=0`, 설치 폴더 존재와 staging
+  0개를 확인했다. source verifier와 설치본 `JAVIS.exe`가 manifest 1,826개를 모두 `VERIFIED`했고,
+  frozen doctor 필수 항목, Credential preflight 3/3과 13-capability service `CREATED`를 통과했다.
+  서비스 조립 뒤 manifest도 다시 `VERIFIED`였으며 package 내부 `state`는 없고 외부 state만 생겼다.
+  같은 Setup 재실행은 `ALREADY_VERIFIED/code=0`과 manifest 불변을 확인했다.
+- 손상된 격리 설치에 r5를 실행한 부정 시험은 Setup의 0 반환과 무관하게 최종 영수증
+  `FAILED/code=13`을 남기고 기존 폴더를 덮어쓰지 않았다. r4의 임시 파일 교체 방식이
+  `STARTED`에 머문 결함을 발견해 고정 결과 파일 직접 쓰기로 고친 결과다. 시험 표식을 제거한 뒤
+  manifest 1,826개와 `ALREADY_VERIFIED` 상태를 다시 확인했다.
+- 직전 r3 Setup에서 관측한 Code Integrity 3033·3077 차단과 설치 실패는 r5에서 재현되지 않았고,
+  r5 설치 시간대의 일치 이벤트는 0건이며 현재 one-folder 직접 검증도 통과한다. 다만 세 파일은
+  여전히 `NotSigned`이고 release audit은 `ready=false`다. 미서명 실행 허용 상태의 변동과 무관하게
+  조직 인증서 서명과 서명 후 동일 설치 검증 없이는 공개 배포 완료가 아니다.
+
+## 2026-10-14 관찰-계획-실행 폐루프 실장
+
+- 상시 실행 제품에 최대 횟수와 context 크기가 고정된 관찰-계획-실행 loop를 연결했다. 독립 검증에
+  성공한 관찰만 다음 계획에 전달하며 action ID 재사용과 동일 상태 변경 반복을 거부한다.
+- Planner와 실행 loop 양쪽에서 `continue_after_verification` 계획은 읽기 전용 capability만
+  허용한다. Planner는 읽기 전용 관찰과 상태 변경을 같은 plan에 섞는 응답도 typed contract
+  오류로 닫고 한 번의 엄격한 형식 복구만 허용한다.
+- `tools/run_safe_file_sort_pilot.py`는 매 실행 새 임시 sandbox만 허용하고, `file.move`의 원본과
+  목적지가 그 root 안에 정확히 묶인 경우에만 YELLOW 승인을 제공한다. 실제 NIM 실행에서 폴더
+  관찰 후 두 파일을 옮기는 2-round 작업이 완료됐고, move journal 두 건이 각각
+  `PREPARED -> COMMITTED`, 독립 내용 검사가 PASS했다.
+- 수정 전 실패 실행도 파일 이동 0건으로 닫혔음을 확인했다. 수정 후 결과는 NIM 성공 요청 3회,
+  입력 4,077-token, 출력 1,098-token, 검증 관찰 3건이다. 이는 단일 기능 파일럿이며 아직
+  SK0~SK3 비교 성능 결과가 아니다.
+- 현재 전체 회귀는 **994 passed, 3 skipped**(총 997개), 제품 소스·시험·여섯 연구 도구 Ruff clean,
+  strict mypy는 제품 소스와 여섯 연구 도구를 합친 150 source files에서 PASS했다. 소스 doctor 15/15, Credential `PRESENT`,
+  제품 preflight 3/3과 13-capability service `CREATED`도 PASS했다.
+- 제품 tray에 `스킬 검토` 화면을 연결했다. DRAFT의 호출 표현·절차·동적 입력·판단·검증 규칙과
+  허용 capability를 모두 표시하고, 승인과 거절은 선택 상태 재검사와 별도 확인을 거친다. 변경 뒤
+  목록을 다시 읽으며 오래된 선택·저장소 오류·확인창 오류는 원문을 노출하지 않고 닫힌 상태로
+  처리한다. 실제 Windows에서 창 생성·빈 상태 렌더링·정리 smoke가 PASS했고 마이크와 스킬 상태는
+  변경하지 않았다.
+- 제품 tray에 `실행 기록 검토` 화면을 연결했다. 경로·URL·이메일·원문 인자를 제외한 실행 기록만
+  표시하고, 사용자가 선택한 한 건의 NIM 전송을 별도 확인창에서 동의해야 초안 생성을 시작한다.
+  NIM은 작업 thread에서 실행하고 Tk 갱신은 UI thread의 queue poll에서만 수행한다. 중복 요청을
+  막고, 작성 실패는 기록을 보존하며, DRAFT 저장 뒤 기록 소비가 실패하면 새 DRAFT를 RETIRED로
+  회수한다. 실제 Windows 창 smoke와 합성 검증 기록의 실제 NIM 실행에서 2회 요청, 입력 1,572-token,
+  출력 649-token, DRAFT 1건, 대기 기록 0건, 관찰된 capability 하나만 허용됨을 확인했다.
+- 같은 실행 기록 화면에서 개정 대상을 선택할 수 있게 했다. VERIFIED이면서 현재 평가가
+  `PROPOSE_REVISION`이고, 이를 직접 supersede하는 다른 DRAFT가 없는 스킬만 표시한다. 확인 전후와
+  worker 실행 직전에 대상 ID·버전·수정 시각·상태·평가를 다시 검사한다. 실제 합성 반복 실패 근거로
+  NIM 개정 smoke를 수행해 요청 1회, 입력 827-token, 출력 307-token으로 v2 DRAFT를 생성했다. 기존
+  v1은 VERIFIED, supersedes 연결은 일치, trace는 소비됐고 capability는 `system.info.read` 하나로
+  유지됐다.
+- 실제 SK0~SK3 파일 정리 파일럿 1블록을 고정 seed 일정으로 완료했다. SK0·SK1은 실패,
+  SK2·SK3은 성공했고 네 조건 모두 같은 모델 설정·도구·경로 독립 초기 상태 hash를 사용했다.
+  최신 결과·원장·조건별 근거 파일은 `output/skill-study-pilot-20261014-evidence`에 있다. 네 관측의
+  evidence hash가 실제 파일과 모두 일치했고, 완성 원장을 다시 실행했을 때 NIM을 재호출하거나
+  ledger hash를 바꾸지 않는 재개 동작도 확인했다. 표본 1개이므로 성능 결론은 아니다.
+- 두 번째 실제 작업으로 hash-pinned PDF를 등록 Edge 새 창에서 여는 SK0~SK3 1블록을 완료했다.
+  네 조건 모두 1/1 성공했고 NIM 호출 1회, 사용자 개입 0회였다. PDF hash·Edge 프로세스·새 창
+  PID/HWND를 독립 검증하고 정확한 창만 닫았다. 네 evidence hash와 완료 원장 재실행 불변성을
+  확인했다. SK0도 성공해 성공률 차이는 0이며 단순 작업에서는 스킬 이득이 없을 수 있는 반례다.
+- `file.open` 실행기가 요구하는 `file-sha256:<sha256>` 대상과 NIM 안내문의 경로 대상이 달랐던
+  계약 오류를 수정했다. typed plan 경계가 target identity와 digest 결합을 실행 전에 검사한다.
+- 파일 정리와 PDF 열기의 관측·근거를 실제 SHA-256과 내부 identity로 다시 검증해 자기완결형 통합
+  묶음으로 만드는 도구를 추가했다. 실제 묶음은 2블록·8관측·8근거이며 모든 해시가 일치하고 원본
+  절대경로를 기록하지 않는다. 통합 성공은 SK0 1/2, SK1 1/2, SK2 2/2, SK3 2/2이지만 세 대응
+  검정의 Holm 보정 p값은 모두 1.0이라 우월성을 주장하지 않는다.
+- 개정 후보 평가 계약을 추가했다. 같은 모델 설정·도구 표면·초기 상태가 아닌 대응 비교는 거부하고,
+  최소 3쌍에서 성공 회귀·개별 성공→실패·평균 시간 또는 토큰 악화를 검사한다. 모든 관문을 통과해도
+  `READY_FOR_HUMAN_REVIEW`일 뿐 DRAFT를 자동 승인하거나 기존 VERIFIED 버전을 교체하지 않는다.
+- 실제 카탈로그의 `VERIFIED` 기존 버전과 이를 직접 supersede하는 다음 `DRAFT`만 후보 쌍으로
+  허용하는 수집 조립부를 추가했다. 블록마다 실행 순서를 교차하며 runner 측정값을 스킬 ID·버전·
+  블록 ID에 결합하고, 권한 확대·잘못 결합된 측정값을 거부한다. 단위 smoke 후에도 기존 상태는
+  VERIFIED, 후보는 DRAFT로 유지됨을 확인했다.
+- `output/skill-revision-candidate-pilot-20261014`에서 실제 NIM 파일 정리 v1/v2 후보 비교 3개
+  block을 완료했다. v1 0/3, v2 3/3, 평균 시간 53,342.7→31,196.3 ms, 평균 token
+  8,395.3→6,349.7로 `READY_FOR_HUMAN_REVIEW`가 나왔다. 여섯 evidence hash, 교차 실행 순서,
+  이동 journal과 완료 원장 재실행 시 hash 불변을 확인했다. v2는 자동 승인되지 않고 DRAFT다.
+  단일 작업·3-block pilot이므로 일반적 성능 우월성으로 해석하지 않는다.
+- 스킬 실행에 모델 구성과 도구 표면 SHA-256을 선택적으로 결합하고, 정확히 같은 스킬 버전의 최근
+  실행만으로 `CURRENT`, `INSUFFICIENT_EVIDENCE`, `REVIEW_REQUIRED`를 판정하는 환경 변화 감지를
+  추가했다. 반복 실패, 도구 변화, 모델 변화를 서로 다른 코드로 보고하며 날짜만으로 낡음을
+  추정하지 않는다. 판정 뒤에도 VERIFIED/DRAFT/RETIRED 상태는 자동 변경되지 않는다.
+- 운영 검색기에 결정론적 점수와 `MATCHED`/`NO_MATCH`/`AMBIGUOUS` 판정을 추가했다. 호출 문구 완전
+  일치를 느슨한 단어 중복보다 우선하고, 최상위 동점은 수정 시각으로 임의 선택하지 않고 기본
+  Planner로 되돌린다. 같은 검색 함수를 사용하는 엄격한 라벨 평가 CLI가 정확도·거짓 양성·거짓
+  음성·잘못된 스킬·모호 판정을 집계하며, 평가가 카탈로그 상태를 바꾸지 않음을 시험했다.
+- `evaluation/skill_search_pilot_cases.json`의 고정 개발자 라벨 22건과 독립 카탈로그 runner를
+  추가했다. 최초 결과는 정답 18, 거짓 양성 0, 거짓 음성 1, 잘못 선택 0, 모호 판정 3이었다.
+  한 글자 토큰을 제외하고 등록 스킬 어휘와 정확히 일치할 때만 한국어 조사를 제거하도록 개선한 뒤
+  정답 19, 모호 판정 2가 됐다. 호출 문구·제목 우선순위와 동점 보류는 유지했다.
+- 개선 전에 별도 보류자료 25건의 SHA-256을 고정했다. 같은 자료에서 변경 전 14/25(56%), 변경 후
+  21/25(84%) 정답이었고 거짓 양성은 두 실행 모두 0건이었다. 변경 후 거짓 음성 1, 잘못 선택 1,
+  모호 판정 2가 남았다. 자료가 공개됐으므로 추가 튜닝에 재사용하지 않으며, 개발자 작성 소표본을
+  일반 사용자 성능으로 해석하지 않는다.
+- 상시 실행 제품과 단발 세션이 선택한 정확한 스킬 버전을 내부의 제한된 일회성 `task_id` 결합으로
+  보존하고, 실행 종료 시 성공·실패·중단, 전체 처리 시간, 모델 구성·도구 표면 지문을 자동 기록하도록
+  연결했다. 후속 관찰 계획, 검색 실패·동점은 별도 사용으로 기록하지 않는다. 저장 성공·미선택·내부
+  실패는 각각 `true`·`null`·`false`로만 노출하며 기록 실패가 완료된 작업 결과를 바꾸지 않는다.
+- `TypedPlanner`의 NIM 누적 계측을 Plan 직전·직후 차이로 계산하고 모든 계획 호출을 직렬화해 다른
+  요청의 사용량이 스킬 기록에 섞이지 않게 했다. 호출·입출력 token과 usage 누락 수를 자동 기록하며,
+  계측 미지원·counter 역행·usage 누락은 `planner_usage_complete=false`로 구분한다. 실제 NIM 비실행
+  Plan smoke에서 호출 1회·입력 2,611·출력 128-token·누락 0이 선택 v1에 결합됨을 확인했다.
+
+## 2026-10-13 스킬 연구 기준 반영
+
+제공된 연구계획 자료에 맞춰 프로젝트의 핵심을 스킬 생성·검색·재사용·실행 기록·개정으로 고정했다.
+안전 정책·승인·검증은 스킬 효과를 실제 Windows 상태로 측정하는 공통 실행 기반으로 유지한다.
+
+- 스킬 계약에 동적 입력, 판단 규칙과 검증 규칙을 추가했다.
+- 기존 SQLite 파일을 보존하는 열 단위 마이그레이션을 추가했다.
+- 관련 스킬이 없을 때 제품 요청 전체를 거부하던 동작을 기본 Planner fallback으로 수정했다.
+- 실행 시간, LLM 호출, 입출력 토큰과 사용자 개입을 스킬 버전에 결합해 기록한다.
+- 반복 실패와 성공률을 근거로 개정 필요성만 제안하고 자동 활성화하지 않는 판정기를 추가했다.
+- SK0(스킬 없음), SK1(저장 지침), SK2(초기 스킬), SK3(개정 스킬)의 완전 대응 관측과 비용
+  손익분기를 검사하는 분석 계약을 추가했다.
+- 독립 검증된 성공 trace만 최초 스킬 초안으로 바꾸고, 반복 실패·낮은 성공률이 확인될 때만 개정
+  초안을 만드는 LLM 작성 경로를 추가했다.
+- LLM이 실행 근거에 없던 capability를 최초 스킬에 넣거나 기존 스킬의 capability 권한을 개정에서
+  넓히는 동작을 차단했다. 모든 생성물은 DRAFT로 남아 사용자 승인 전에는 검색·실행되지 않는다.
+- 실행 근거는 원문 인자·경로·문서 내용 없이 단계별 capability·결과 코드·독립 검증 여부만 전달하고,
+  정규화된 근거의 SHA-256을 산출물에 연결한다.
+- 상시 실행 런타임이 성공·중단 결과를 개인정보 최소화 trace로 바꾸고, 경로·URL·이메일을 가린
+  사용자 요청과 함께 로컬 SQLite 검토 대기열에 저장하도록 제품 조립부를 연결했다. 대기 기록은
+  자동으로 NIM에 전송되거나 스킬로 승인되지 않는다.
+- 사용자가 trace ID를 지정하는 명시적 CLI 명령에서만 NIM이 최초·개정 스킬 DRAFT를 작성하도록
+  연결했다. DRAFT 저장이 성공한 뒤에만 trace를 소비하므로 네트워크·모델 실패 시 근거가 보존된다.
+- 대기 trace 목록·상세 조회, 행을 지우지 않는 폐기·복원, DRAFT/VERIFIED/RETIRED 상태별 스킬 목록을
+  추가해 NIM 전송 전과 승인 전 검토가 가능해졌다.
+- SK0~SK3 순서를 고정 seed로 재현하고 블록마다 균형화하는 일정 생성기를 추가했다. 분석 시 네 조건의
+  모델 ID, 모델 설정·도구 표면·초기 상태 SHA-256 동일성을 강제하고 결과 증거 SHA-256도 요구한다.
+- 고정 일정의 다음 셀만 실행하고 관측 identity가 일치할 때만 `fsync` ledger에 추가하는 수집기를
+  구현했다. 중단 후 일정 접두사를 검증해 재개하며, 네 조건 전체가 끝나기 전에는 분석 입력을
+  내보내지 않는다.
+- 조건별 성공률에 Wilson 95% 신뢰구간을 추가하고, SK3 대 SK0·SK1·SK2의 대응 성공 차이를 정확
+  McNemar 검정과 Holm 다중검정 보정으로 보고하도록 분석기를 확장했다.
+- NIM 응답에서 요청·성공·입력 토큰·출력 토큰·usage 누락을 동시성 안전하게 누적하는 계측을
+  추가했다. 실제 `glm-5.3-flash` probe에서 1회 성공, 입력 29-token, 출력 8-token을 확인했다.
+
+당시 전체 회귀는 **879 passed, 3 skipped**, Ruff clean, mypy strict 135 source files였다. 별도 임시
+카탈로그에서 과제 자료 정리 스킬 생성·승인, 실패 2회·성공 1회 기록과 `PROPOSE_REVISION`
+판정을 CLI로 재현했다. NIM은 한 번의 timeout과 한 번의 HTTP 410으로 초안을 반환하지 않았다.
+
+당시에는 사용자 초안 검토 UI, SK0~SK3 Windows 관측과 후보 재실행이 미완료였다. 세 항목 모두
+위 2026-10-14 항목에서 구현·검증했다.
+Chrome 155.0.8059.40과 Edge 155.0.4283.45의 현재 실행 파일은 Authenticode 서명자와 SHA-256을
+함께 재검증해 app registry를 갱신했다. 소스 doctor 15/15, Credential `PRESENT`, 제품 preflight
+3/3, 13-capability service `CREATED`가 다시 PASS했다. 아래 2026-10-07 release hash는 당시
+배포 산출물의 증거이며 이번 소스 변경을 포함한 새 배포본은 아니다.
 
 ## 2026-10-07 최신 재검증 요약
 
@@ -254,7 +670,7 @@ Chrome 자동 업데이트로 발생한 등록 해시 drift를 수정했고, 최
 - 한국어 TTS 익명 후보의 사용자 자연스러움·명료도 평가와 채택 후보의 실제 스피커 재검증
 - Windows Hello helper의 별도 배포용 코드 서명
 - 사용자 앱 화면 smoke, 학습 기반 local grounder와 앱별 profile을 갖춘 선택적 Vision grounding
-- Setup EXE의 배포용 Authenticode 코드 서명과 실제 설치·복구·제거 사용자 smoke
+- Setup EXE의 배포용 Authenticode 코드 서명과 별도 사용자 환경의 복구·제거 smoke
 - 영구 삭제 executor와 휴지통 복원 workflow
 - 실제 snapshot VM harness 연동과 위험·고장 주입 통합시험
 - 실제 참가자 연구 데이터 수집·사전등록·검정력 및 결과 해석
@@ -526,3 +942,28 @@ recovery는 파일을 이동하거나 삭제하지 않고, 관찰된 상태에 �
 - 4표본 pilot과 섞이지 않는 보정 세션 16표본·최종시험 세션 16표본 계획을 추가했다. 각 계획은
   근거리/원거리×조용함/사람 말소리 네 조건에 양성·평범한 음성·이름만 말하는 어려운 음성을
   균형 배치하며, 서로 다른 새 동의와 새 출력 폴더가 필요하다. 아직 녹음은 시작하지 않았다.
+# 2026-10-20 졸업논문 초안 작성
+
+- `output/JAVIS_스킬기반_Windows_PC에이전트_졸업논문_초안.docx`를 작성하였다.
+- 개발 단계 32블록과 별도 확인 실험 15블록을 합치지 않고 구분해 보고하였다.
+- 확인 실험의 성공률, 실행 시간, 호출 수, 토큰 수, McNemar 검정과 Holm 보정 결과를 반영하였다.
+- Microsoft Word로 PDF를 내보낸 뒤 16쪽을 PNG로 렌더링하여 표·문단·페이지 번호의 잘림과 겹침을 확인하였다.
+- 발표 자료는 이 논문 초안과 같은 수치·한계 표현으로 개정할 예정이다.
+- `output/JAVIS_스킬_관련논문_방법론과_적용범위.docx`에 ReAct, Toolformer, Reflexion, Voyager, UFO, OSWorld, AgentBench의 원 방법과 JAVIS 반영 범위·비반영 범위를 8쪽으로 정리하였다.
+
+# 2026-10-20 졸업발표 자료 확인 실험 반영
+
+- 기존 13장 발표본의 구조와 디자인을 유지한 새 파일 `output/JARVIS_스킬기반_PC에이전트_졸업발표_확인실험반영_최종본_v3.pptx`를 작성하였다.
+- 구현 상태를 전체 1,096개 시험 중 1,091개 통과·5개 제외, 엄격 자료형 검사 151개 파일 통과로 갱신하였다.
+- 실험 설계를 확인 실험 15개 짝 비교 묶음·60개 관측값으로 고치고, SK0 66.67%, SK1 80.00%, SK2 80.00%, SK3 93.33%의 성공률을 반영하였다.
+- SK3와 SK0 비교에서 성공률 +26.67%p, 평균 실행 시간 34.16%, 대형 언어 모델 호출 15.15%, 토큰 16.59% 감소를 표시하였다. Holm 보정 p=0.375로 유의하지 않았다는 한계를 함께 적었다.
+- 관련 연구 슬라이드를 ReAct, Toolformer, Reflexion, Voyager의 원 방법과 JAVIS 적용 원리로 교체하고 원문 링크를 발표자 노트에 기록하였다.
+- 11쪽 성공률 차트를 PowerPoint에서 편집 가능한 기본 차트로 다시 만들었다. 13장 전체 패키지·레이아웃·글꼴·차트 검증을 통과했고, 모든 슬라이드를 렌더링하여 시각적으로 확인하였다.
+
+# 2026-10-20 논문 제출본과 A1 연구 포스터
+
+- 한국어 논문 제출용 파일 `output/JAVIS_스킬기반_Windows_PC에이전트_졸업논문_제출본.docx`를 생성하였다. 기존 초안의 연구 수치와 한계는 유지하고 표지의 초안 표기를 제거하였다.
+- Microsoft Word로 16쪽을 PDF와 PNG로 렌더링하여 전 페이지의 한글 글꼴, 표, 문단, 페이지 번호를 확인하였다. 잘림과 겹침은 발견되지 않았다.
+- 제공된 CUBERAG A1 세로형 포스터 두 종의 제목 영역, 번호가 붙은 절 구성, 두 열 배치, 결과표와 참고문헌 구성을 참고하여 `output/JAVIS_스킬기반_Windows_PC에이전트_졸업작품_포스터_최종본_v2.pptx`를 작성하였다.
+- 포스터에는 연구 목적, 프로그램 구조, 스킬 계약, 네 실험 조건, 구현 검증 상태, 성공률 차트, 시간·호출·토큰 변화, 작업별 결과, 통계적 한계와 다음 단계를 한 장에 정리하였다.
+- PPTX 패키지·레이아웃·글꼴·편집 가능한 기본 차트 검증을 통과하였다. PowerPoint에서 A1 PDF로 직접 내보낸 뒤 다시 PNG로 렌더링하여 제목과 지표 상자의 줄바꿈까지 수정하였다.

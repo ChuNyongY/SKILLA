@@ -298,6 +298,19 @@ def validate_plan_contracts(
             raise PlanContractError(f"missing argument contract: {action.capability_id}")
         _validate_postconditions(action)
         contract.validate(action)
+        _validate_argument_binding(action)
+
+
+def _validate_argument_binding(action: Action) -> None:
+    if action.capability_id != "file.open":
+        return
+    digest = action.arguments.get("sha256")
+    if (
+        not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        or action.target_identity != f"file-sha256:{digest}"
+    ):
+        raise PlanContractError("file.open target_identity must bind its lowercase sha256")
 
 
 def _validate_postconditions(action: Action) -> None:

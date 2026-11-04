@@ -3,7 +3,9 @@ from __future__ import annotations
 import math
 import queue
 import sys
+import unicodedata
 from array import array
+from collections import deque
 from collections.abc import Buffer, Callable, Iterable, Mapping, Sequence
 from contextlib import suppress
 from hashlib import sha256
@@ -12,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from .cancellation import CancellationToken
-from .voice import AudioFrame
+from .voice import AudioFrame, SpeechToText
 
 if TYPE_CHECKING:
     from .stt_bundle import LoadedSttBundle
@@ -165,6 +167,49 @@ class OpenWakeWordDetector:
 
     def reset(self) -> None:
         self._model.reset()
+
+
+class WhisperKoreanWakeWordDetector:
+    """Detect the Korean wake word locally with the already loaded STT model."""
+
+    def __init__(
+        self,
+        stt: SpeechToText,
+        *,
+        window_frames: int = 20,
+        hop_frames: int = 5,
+    ) -> None:
+        if window_frames < 10 or not 1 <= hop_frames <= window_frames:
+            raise ValueError("invalid Korean wake-word window")
+        self._stt = stt
+        self._frames: deque[AudioFrame] = deque(maxlen=window_frames)
+        self._window_frames = window_frames
+        self._hop_frames = hop_frames
+        self._since_inference = 0
+
+    def score(self, frame: AudioFrame) -> float:
+        if frame.sample_rate != 16_000 or frame.channels != 1:
+            raise ValueError("Korean wake-word detection requires mono 16 kHz PCM")
+        self._frames.append(frame)
+        self._since_inference += 1
+        if len(self._frames) < self._window_frames:
+            return 0.0
+        if self._since_inference < self._hop_frames:
+            return 0.0
+        self._since_inference = 0
+        try:
+            transcript = self._stt.transcribe(tuple(self._frames)).strip()
+        except Exception:
+            return 0.0
+        normalized = unicodedata.normalize("NFKC", transcript).replace(" ", "")
+        if "스킬라" not in normalized:
+            return 0.0
+        self.reset()
+        return 1.0
+
+    def reset(self) -> None:
+        self._frames.clear()
+        self._since_inference = 0
 
 
 def _repcnn_waveform(pcm_s16le: bytes) -> object:
@@ -325,7 +370,7 @@ class RepCnnWakeWordDetector:
 
 
 class PcmEnergyVad:
-    """Small offline RMS gate; deployment thresholds must be calibrated per microphone."""
+    """Offline speech-band gate that attenuates DC and low-frequency electrical hum."""
 
     def __init__(self, *, rms_threshold: int = 500) -> None:
         if not 0 <= rms_threshold <= 32_767:
@@ -341,7 +386,13 @@ class PcmEnergyVad:
             samples.byteswap()
         if not samples:
             return False
-        mean_square = sum(sample * sample for sample in samples) / len(samples)
+        if len(samples) < 2:
+            return False
+        differences = (
+            int(samples[index]) - int(samples[index - 1])
+            for index in range(1, len(samples))
+        )
+        mean_square = sum(value * value for value in differences) / (len(samples) - 1)
         return math.sqrt(mean_square) >= self._threshold
 
 
@@ -423,6 +474,14 @@ class FasterWhisperSpeechToText:
             beam_size=5,
             condition_on_previous_text=False,
             vad_filter=False,
+            initial_prompt=(
+                "한국어 Windows PC 명령입니다. 스킬라, 시스템 정보 확인, "
+                "파일 정리, 폴더 열기, 프로그램 실행, 소리 조절."
+            ),
+            hotwords=(
+                "스킬라 시스템 정보 확인 컴퓨터 정보 파일 폴더 프로그램 실행 "
+                "스킬 소리 음량 중지 취소"
+            ),
         )
         pieces: list[str] = []
         characters = 0

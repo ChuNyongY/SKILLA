@@ -27,9 +27,9 @@ def test_frozen_worker_uses_exact_console_sibling(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    console = tmp_path / "JAVIS.exe"
+    console = tmp_path / "SKILLA.exe"
     console.write_bytes(b"fixture")
-    tray = tmp_path / "JAVIS-Tray.exe"
+    tray = tmp_path / "SKILLA-Tray.exe"
     tray.write_bytes(b"fixture")
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", str(tray))

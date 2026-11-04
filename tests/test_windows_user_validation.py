@@ -120,7 +120,7 @@ def configuration(tmp_path: Path) -> LoadedProductHostConfig:
 def test_actual_runner_factory_uses_transient_voice_tts_hello_and_stop(
     tmp_path: Path,
 ) -> None:
-    transcripts = iter(("헤이 자비스 시스템 정보", "자비스 스톱"))
+    transcripts = iter(("스킬라 시스템 정보", "스킬라 스톱"))
 
     def voice_factory(_config: LoadedProductHostConfig) -> ProductVoiceStack:
         return ProductVoiceStack(
@@ -148,9 +148,9 @@ def test_actual_runner_factory_uses_transient_voice_tts_hello_and_stop(
     stop = callbacks[ValidationStep.STOP_LATENCY]()
 
     assert microphone.passed and microphone.code == "VOICE_CONFIRMED"
-    assert assessment.transcripts == ["헤이 자비스 시스템 정보"]
+    assert assessment.transcripts == ["스킬라 시스템 정보"]
     assert tts.passed and tts.rating == 4
-    assert speaker.spoken == ["자비스 음성 안내 품질을 확인합니다."]
+    assert speaker.spoken == ["스킬라 음성 안내 품질을 확인합니다."]
     assert hello.passed and hello.code == "HELLO_VERIFIED"
     assert stop.passed and stop.latency_ms == 24
 

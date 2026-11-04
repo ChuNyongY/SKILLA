@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .audit import AuditRetentionPolicy, JsonlAuditSink
+from .display_target import DisplayTargetController, build_windows_display_controller
 from .local_approval import LocalApprovalPresenter, OsBackedStrongAuthenticator, TkApprovalDialog
+from .natural_tts import EdgeNeuralTtsRunner, FallbackSpeechSink
+from .planner import NimChatTransport
 from .product_composition import (
     ProductCapabilityStack,
     ProductLanguageStack,
@@ -27,8 +30,19 @@ from .product_host import (
     run_product_preflight_with_secret_loader,
 )
 from .product_policy import build_windows_policy_context_provider
+from .product_state import prepare_product_state_directory
 from .product_windows import build_windows_product_capabilities
-from .skill_runtime import LocalSkillCatalog
+from .skill_authoring import SkillDraftAuthor
+from .skill_draft_workflow import InitialSkillDraftWorkflow
+from .skill_runtime import LocalSkillCatalog, SkillAwarePlanner
+from .skill_trace_store import LocalSkillTraceStore
+from .skill_use_recording import (
+    CatalogSkillUseRecorder,
+    product_model_configuration_sha256,
+    product_tool_surface_sha256,
+)
+from .tts_ipc import TtsWorkerRunner
+from .voice_feedback import VoiceFeedbackPresenter
 from .windows_hello import load_windows_hello_verifier
 
 
@@ -38,6 +52,9 @@ class WindowsProductService:
     preflight: ProductPreflightReport
     capabilities: ProductCapabilityStack
     skills: LocalSkillCatalog
+    skill_traces: LocalSkillTraceStore
+    skill_draft_workflow: InitialSkillDraftWorkflow
+    display: DisplayTargetController
     voice: ProductVoiceStack
     language: ProductLanguageStack
     runtime: ProductRuntimeStack
@@ -90,19 +107,42 @@ def _build_windows_product_service(
     root = project_root.resolve(strict=True)
     configuration = load_product_host_config(config_path, root)
     api_key = secret_loader()
-    capabilities = build_windows_product_capabilities(configuration, root)
-    state_directory = root / "state"
-    if state_directory.is_symlink():
-        raise ProductHostError("product state directory must not be a symlink")
-    state_directory.mkdir(exist_ok=True)
-    if not state_directory.is_dir():
-        raise ProductHostError("product state directory is unavailable")
+    state_directory = prepare_product_state_directory(root)
+    display = build_windows_display_controller(state_directory)
+    display.ensure_selection()
+    capabilities = build_windows_product_capabilities(
+        configuration,
+        root,
+        state_directory=state_directory,
+    )
     skills = LocalSkillCatalog(state_directory / "skills.sqlite3", capabilities.registry)
+    skill_traces = LocalSkillTraceStore(state_directory / "skill-traces.sqlite3")
+    skill_draft_workflow = InitialSkillDraftWorkflow(
+        trace_store=skill_traces,
+        author=SkillDraftAuthor(
+            NimChatTransport(api_key, model=configuration.settings.nim_model),
+            skills,
+        ),
+        catalog=skills,
+    )
     language = build_product_language_stack(
         configuration,
         api_key,
         registry=capabilities.registry,
         skill_catalog=skills,
+    )
+    language_planner = getattr(language, "planner", None)
+    skill_use_recorder = (
+        CatalogSkillUseRecorder(
+            skills,
+            language_planner,
+            model_configuration_sha256=product_model_configuration_sha256(
+                configuration.settings.nim_model
+            ),
+            tool_surface_sha256=product_tool_surface_sha256(capabilities.registry),
+        )
+        if isinstance(language_planner, SkillAwarePlanner)
+        else None
     )
     voice = build_product_voice_stack(configuration)
     audit = JsonlAuditSink(
@@ -120,6 +160,12 @@ def _build_windows_product_service(
         ("personal",),
     )
     planner_context_provider = build_windows_planner_context_provider(configuration)
+    feedback = VoiceFeedbackPresenter(
+        FallbackSpeechSink(
+            EdgeNeuralTtsRunner(root, state_directory),
+            TtsWorkerRunner(state_directory),
+        )
+    )
     runtime = build_product_runtime_stack_from_capabilities(
         voice,
         language,
@@ -129,6 +175,9 @@ def _build_windows_product_service(
         strong_authenticator=strong_authenticator,
         policy_context_provider=policy_context_provider,
         planner_context_provider=planner_context_provider,
+        feedback=feedback,
+        skill_trace_observer=skill_traces,
+        skill_use_observer=skill_use_recorder,
     )
     lifecycle = ProductHostLifecycle(
         preflight=lambda: preflight,
@@ -141,6 +190,9 @@ def _build_windows_product_service(
         preflight=preflight,
         capabilities=capabilities,
         skills=skills,
+        skill_traces=skill_traces,
+        skill_draft_workflow=skill_draft_workflow,
+        display=display,
         voice=voice,
         language=language,
         runtime=runtime,

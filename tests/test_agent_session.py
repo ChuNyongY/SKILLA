@@ -85,7 +85,7 @@ class Vad:
 
 class Stt:
     def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
-        return "자비스 시스템 정보 확인"
+        return "스킬라 시스템 정보 확인"
 
 
 class Classifier:
@@ -153,11 +153,38 @@ class SpeechSink:
         self.messages.append(text)
 
 
+class TraceObserver:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+        self.observed: list[tuple[Plan, object]] = []
+
+    def observe(self, plan: Plan, outcome: object) -> None:
+        if self.fail:
+            raise RuntimeError("private trace detail")
+        self.observed.append((plan, outcome))
+
+
+class UseObserver:
+    def __init__(self, *, selected: bool = True, fail: bool = False) -> None:
+        self.selected = selected
+        self.fail = fail
+        self.elapsed: list[int] = []
+
+    def observe(self, plan: Plan, outcome: object, *, elapsed_ms: int) -> bool:
+        del plan, outcome
+        self.elapsed.append(elapsed_ms)
+        if self.fail:
+            raise RuntimeError("private skill use detail")
+        return self.selected
+
+
 def build_session(
     source: FrameSource,
     *,
     sink: SpeechSink | None = None,
     context_provider: object | None = None,
+    trace_observer: TraceObserver | None = None,
+    use_observer: UseObserver | None = None,
 ) -> tuple[AgentSession, Planner, MockExecutor]:
     planner = Planner()
     executor = MockExecutor({"system.info.read": lambda _action: {}})
@@ -196,6 +223,8 @@ def build_session(
             ),
             planner_context_provider=planner_context,
             feedback=VoiceFeedbackPresenter(sink) if sink is not None else None,
+            skill_trace_observer=trace_observer,  # type: ignore[arg-type]
+            skill_use_observer=use_observer,  # type: ignore[arg-type]
         ),
         planner,
         executor,
@@ -216,8 +245,46 @@ def test_run_once_connects_frames_to_verified_task_and_fixed_feedback() -> None:
     assert source.closed
     assert planner.contexts == [{"foreground_app_id": "notepad"}]
     assert len(executor.calls) == 1
-    assert sink.messages == ["요청한 작업을 확인하고 완료했습니다."]
-    assert "자비스 시스템 정보 확인" not in result.model_dump_json()
+    assert sink.messages == ["작업을 마쳤고, 결과도 확인했어요."]
+    assert "스킬라 시스템 정보 확인" not in result.model_dump_json()
+
+
+def test_verified_outcome_is_offered_to_optional_skill_trace_observer() -> None:
+    observer = TraceObserver()
+    session, _planner, _executor = build_session(
+        FrameSource((FRAME, FRAME)), trace_observer=observer
+    )
+    result = session.run_once()
+    assert result.skill_trace_recorded is True
+    assert len(observer.observed) == 1
+
+    failing = TraceObserver(fail=True)
+    session, _planner, _executor = build_session(
+        FrameSource((FRAME, FRAME)), trace_observer=failing
+    )
+    result = session.run_once()
+    assert result.status is AgentSessionStatus.COMPLETED
+    assert result.skill_trace_recorded is False
+    assert "private" not in result.model_dump_json()
+
+
+def test_verified_outcome_is_offered_to_optional_skill_use_observer() -> None:
+    observer = UseObserver()
+    session, _planner, _executor = build_session(
+        FrameSource((FRAME, FRAME)), use_observer=observer
+    )
+    result = session.run_once()
+    assert result.skill_use_recorded is True
+    assert observer.elapsed and observer.elapsed[0] >= 0
+
+    failing = UseObserver(fail=True)
+    session, _planner, _executor = build_session(
+        FrameSource((FRAME, FRAME)), use_observer=failing
+    )
+    result = session.run_once()
+    assert result.status is AgentSessionStatus.COMPLETED
+    assert result.skill_use_recorded is False
+    assert "private" not in result.model_dump_json()
 
 
 def test_no_complete_utterance_and_capture_failure_close_source() -> None:

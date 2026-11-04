@@ -4,19 +4,30 @@ import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
+from pydantic import SecretStr
 from pytest import CaptureFixture, MonkeyPatch
 
 from javis_core import (
+    Action,
+    ActionStatus,
     AlwaysOnState,
     AutostartStatus,
     BenchmarkRunOutcome,
     ForegroundSnapshot,
+    Plan,
     ProductHostState,
     ProductHostStatusSnapshot,
     RiskLevel,
+    RuntimeEvent,
+    RuntimeEventType,
     RuntimeStatusSnapshot,
+    SkillCandidateTrial,
+    SkillStudyCondition,
+    SkillTrialObservation,
+    TaskOutcome,
     TrialResult,
     WakeWordCalibrationStatus,
 )
@@ -24,6 +35,185 @@ from javis_core import cli as cli_module
 from javis_core.cli import build_parser, main
 from javis_core.credential_store import CredentialStatus
 from javis_core.package_manifest import write_package_manifest
+from javis_core.skill_trace_store import LocalSkillTraceStore
+from javis_core.start_menu import StartMenuStatus
+
+
+def test_explicit_nim_trace_command_creates_draft_and_consumes_trace(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+    monkeypatch: MonkeyPatch,
+) -> None:
+    trace_path = (tmp_path / "traces.sqlite3").resolve()
+    catalog_path = (tmp_path / "skills.sqlite3").resolve()
+    trace_store = LocalSkillTraceStore(trace_path)
+    plan = Plan(
+        goal="시스템 정보를 반복 확인",
+        steps=(Action(capability_id="system.info.read", purpose="read"),),
+    )
+    trace_store.observe(
+        plan,
+        TaskOutcome(
+            task_id=plan.task_id,
+            status=ActionStatus.SUCCEEDED,
+            completed_actions=1,
+            reason="ALL_ACTIONS_VERIFIED",
+        ),
+    )
+    trace_id = trace_store.pending()[0].trace.trace_id
+
+    class FakeNim:
+        def __init__(self, api_key: SecretStr, *, model: str) -> None:
+            assert api_key.get_secret_value().startswith("nvapi-")
+            assert model == "test-model"
+
+        def complete(self, _system_prompt: str, _user_prompt: str) -> str:
+            return json.dumps(
+                {
+                    "key": "system-info-check",
+                    "title": "시스템 정보 확인",
+                    "description": "시스템 정보를 반복 확인한다.",
+                    "triggers": ["시스템 정보 확인"],
+                    "procedure": ["현재 시스템 정보를 읽는다."],
+                    "dynamic_inputs": ["현재 시스템 상태"],
+                    "decision_rules": [],
+                    "verification_rules": ["읽기 결과가 반환됐는지 확인한다."],
+                    "allowed_capabilities": ["system.info.read"],
+                },
+                ensure_ascii=False,
+            )
+
+    monkeypatch.setattr(
+        cli_module, "load_nim_credential", lambda: SecretStr("nvapi-" + "x" * 32)
+    )
+    monkeypatch.setattr(cli_module, "NimChatTransport", FakeNim)
+    assert main(
+        (
+            "skill-draft-from-trace-nim",
+            str(catalog_path),
+            str(trace_path),
+            str(trace_id),
+            "--model",
+            "test-model",
+        )
+    ) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["draft"]["status"] == "DRAFT"
+    assert LocalSkillTraceStore(trace_path).pending() == ()
+
+
+def test_skill_review_commands_list_show_discard_restore(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+) -> None:
+    trace_path = (tmp_path / "traces.sqlite3").resolve()
+    store = LocalSkillTraceStore(trace_path)
+    plan = Plan(goal="자료 정리", steps=(Action(capability_id="file.move", purpose="move"),))
+    store.observe(
+        plan,
+        TaskOutcome(
+            task_id=plan.task_id,
+            status=ActionStatus.SUCCEEDED,
+            completed_actions=1,
+            reason="ALL_ACTIONS_VERIFIED",
+        ),
+    )
+    trace_id = str(store.pending()[0].trace.trace_id)
+    assert main(("skill-trace-list", str(trace_path))) == 0
+    assert json.loads(capsys.readouterr().out)["pending"][0]["trace"]["trace_id"] == trace_id
+    assert main(("skill-trace-show", str(trace_path), trace_id)) == 0
+    assert json.loads(capsys.readouterr().out)["trace"]["trace_id"] == trace_id
+    assert main(("skill-trace-discard", str(trace_path), trace_id)) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "DISCARDED"
+    assert main(("skill-trace-list", str(trace_path))) == 0
+    assert json.loads(capsys.readouterr().out)["pending"] == []
+    assert main(("skill-trace-restore", str(trace_path), trace_id)) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "PENDING"
+
+
+def test_skill_study_cli_builds_schedule_and_analyzes_paired_observations(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+) -> None:
+    assert main(
+        (
+            "build-skill-study-schedule",
+            "p01",
+            "1",
+            "17",
+            "--task",
+            "weekly-file-sort",
+        )
+    ) == 0
+    schedule = json.loads(capsys.readouterr().out)["schedule"]
+    assert len(schedule) == 4
+    assert {item["condition"] for item in schedule} == {
+        item.value for item in SkillStudyCondition
+    }
+
+    observations = []
+    for condition in SkillStudyCondition:
+        observations.append(
+            SkillTrialObservation(
+                participant_id="p01",
+                task_id="weekly-file-sort",
+                repetition=1,
+                condition=condition,
+                succeeded=True,
+                elapsed_ms=1000,
+                llm_calls=1,
+                input_tokens=100,
+                output_tokens=50,
+                user_interventions=0,
+                run_cost_microunits=10,
+                model_id="z-ai/glm-5.3-flash",
+                model_configuration_sha256="a" * 64,
+                tool_surface_sha256="b" * 64,
+                initial_state_sha256="c" * 64,
+                outcome_evidence_sha256=(f"{condition.value}:".encode().hex() + "d" * 64)[:64],
+            ).model_dump(mode="json")
+        )
+    path = (tmp_path / "observations.json").resolve()
+    path.write_text(json.dumps(observations), encoding="utf-8")
+    assert main(("analyze-skill-study", str(path))) == 0
+    assert json.loads(capsys.readouterr().out)["complete_blocks"] == 1
+
+
+def test_skill_revision_candidate_cli_reports_without_approving(
+    tmp_path: Path,
+    capsys: CaptureFixture[str],
+) -> None:
+    baseline = UUID("00000000-0000-0000-0000-000000000001")
+    candidate = UUID("00000000-0000-0000-0000-000000000002")
+    trials = [
+        SkillCandidateTrial(
+            block_id=f"block-{index}",
+            baseline_skill_id=baseline,
+            candidate_skill_id=candidate,
+            baseline_executed_first=index % 2 == 1,
+            baseline_succeeded=True,
+            candidate_succeeded=True,
+            baseline_elapsed_ms=100,
+            candidate_elapsed_ms=90,
+            baseline_tokens=100,
+            candidate_tokens=80,
+            baseline_model_configuration_sha256="a" * 64,
+            candidate_model_configuration_sha256="a" * 64,
+            baseline_tool_surface_sha256="b" * 64,
+            candidate_tool_surface_sha256="b" * 64,
+            baseline_initial_state_sha256="c" * 64,
+            candidate_initial_state_sha256="c" * 64,
+            baseline_evidence_sha256="d" * 64,
+            candidate_evidence_sha256="e" * 64,
+        ).model_dump(mode="json")
+        for index in range(1, 4)
+    ]
+    path = (tmp_path / "candidate-trials.json").resolve()
+    path.write_text(json.dumps(trials), encoding="utf-8")
+
+    assert main(("evaluate-skill-revision-candidate", str(path))) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["decision"] == "READY_FOR_HUMAN_REVIEW"
 
 
 def test_product_service_commands_require_explicit_paths() -> None:
@@ -47,6 +237,48 @@ def test_product_service_commands_require_explicit_paths() -> None:
     assert autostart.command == "install-autostart"
 
 
+def test_start_menu_commands_require_an_explicit_install_root() -> None:
+    parser = build_parser()
+
+    for command in ("start-menu-status", "install-start-menu", "remove-start-menu"):
+        parsed = parser.parse_args((command, "C:/SKILLA-PC/0.1.0"))
+        assert parsed.command == command
+        assert parsed.install_root == Path("C:/SKILLA-PC/0.1.0")
+
+
+def test_start_menu_commands_report_stable_status(
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture[str],
+) -> None:
+    calls: list[str] = []
+
+    class Registration:
+        def __init__(self, root: Path) -> None:
+            assert root == Path("C:/SKILLA-PC/0.1.0")
+
+        def status(self) -> StartMenuStatus:
+            calls.append("status")
+            return StartMenuStatus.ALREADY_REGISTERED
+
+        def register(self) -> StartMenuStatus:
+            calls.append("register")
+            return StartMenuStatus.REGISTERED
+
+        def unregister(self) -> StartMenuStatus:
+            calls.append("unregister")
+            return StartMenuStatus.REMOVED
+
+    monkeypatch.setattr(cli_module, "StartMenuShortcutRegistrar", Registration)
+    for command, expected in (
+        ("start-menu-status", "ALREADY_REGISTERED"),
+        ("install-start-menu", "REGISTERED"),
+        ("remove-start-menu", "REMOVED"),
+    ):
+        assert main((command, "C:/SKILLA-PC/0.1.0")) == 0
+        assert json.loads(capsys.readouterr().out)["status"] == expected
+    assert calls == ["status", "register", "unregister"]
+
+
 def test_credential_product_commands_do_not_accept_a_secret_path() -> None:
     parser = build_parser()
 
@@ -55,11 +287,132 @@ def test_credential_product_commands_do_not_accept_a_secret_path() -> None:
         "check-product-service-credential",
         "run-product-host-credential",
         "run-product-tray-credential",
+        "run-product-console-credential",
         "install-autostart-credential",
     ):
         parsed = parser.parse_args((command, "C:/project", "C:/project/config.json"))
         assert parsed.command == command
         assert not hasattr(parsed, "nim_secret")
+
+
+def test_text_product_console_does_not_start_microphone_capture(
+    monkeypatch: MonkeyPatch,
+    capsys: CaptureFixture[str],
+) -> None:
+    calls: list[str] = []
+
+    class Runtime:
+        def close(self) -> RuntimeEvent:
+            calls.append("close")
+            return RuntimeEvent(
+                event_type=RuntimeEventType.CLOSED,
+                reason="RUNTIME_CLOSED",
+            )
+
+    runtime = Runtime()
+    display = object()
+    skills = object()
+    traces = object()
+    workflow = object()
+    service = SimpleNamespace(
+        runtime=SimpleNamespace(runtime=runtime),
+        display=display,
+        skills=skills,
+        skill_traces=traces,
+        skill_draft_workflow=workflow,
+        configuration=SimpleNamespace(
+            settings=SimpleNamespace(hud_poll_interval_ms=250)
+        ),
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "build_windows_product_service_with_secret_loader",
+        lambda *_args: service,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_tk_text_command",
+        lambda received, **kwargs: (
+            calls.append("window"),
+            kwargs["review_skills"](),
+            kwargs["review_skill_traces"](),
+            kwargs["open_display_selector"](),
+        )
+        if received is runtime
+        else None,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_tk_display_selector",
+        lambda received: calls.append("display") if received is display else None,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_tk_skill_review",
+        lambda received: calls.append("skills") if received is skills else None,
+    )
+    monkeypatch.setattr(
+        cli_module,
+        "run_tk_skill_trace_review",
+        lambda received_traces, received_workflow, received_skills: calls.append("traces")
+        if (received_traces, received_workflow, received_skills)
+        == (traces, workflow, skills)
+        else None,
+    )
+
+    result = main(
+        ("run-product-console-credential", "C:/project", "C:/config.json")
+    )
+
+    assert result == 0
+    assert calls == ["window", "skills", "traces", "display", "close"]
+    assert json.loads(capsys.readouterr().out)["event_type"] == "CLOSED"
+
+
+def test_frozen_double_click_defaults_to_text_console_without_microphone(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    executable = tmp_path / "SKILLA-Tray.exe"
+    config = tmp_path / "config" / "product_host.json"
+    config.parent.mkdir()
+    executable.write_bytes(b"fixture")
+    config.write_text("{}", encoding="utf-8")
+    observed: list[tuple[Path, tuple[str, ...]]] = []
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(executable))
+    monkeypatch.setattr(sys, "argv", [str(executable)])
+    def run_startup(executable_path: Path, **kwargs: object) -> int:
+        product_runner = kwargs["product_runner"]
+        assert callable(product_runner)
+        root = executable_path.resolve().parent
+        resolved_config = (root / "config" / "product_host.json").resolve()
+        result = product_runner(root, resolved_config)
+        observed.append((executable_path, tuple()))
+        return result
+
+    monkeypatch.setattr(cli_module, "run_windowed_product_startup", run_startup)
+    monkeypatch.setattr(
+        cli_module,
+        "main",
+        lambda arguments=None: observed.append((executable, tuple(arguments or ()))) or 0,
+    )
+
+    with pytest.raises(SystemExit) as stopped:
+        cli_module.entrypoint()
+
+    assert stopped.value.code == 0
+    assert observed == [
+        (
+            executable,
+            (
+            "run-product-console-credential",
+            str(tmp_path.resolve()),
+            str(config.resolve()),
+            ),
+        ),
+        (executable, ()),
+    ]
 
 
 def test_skill_lifecycle_commands_create_approve_search_and_revise(
@@ -69,15 +422,45 @@ def test_skill_lifecycle_commands_create_approve_search_and_revise(
     catalog = (tmp_path / "skills.sqlite3").resolve()
     create = (
         "skill-create", str(catalog), "volume-control", "볼륨 조절", "볼륨을 안전하게 조절한다.",
-        "--trigger", "볼륨", "--step", "현재 값을 읽는다.", "--capability", "audio.volume.read",
+        "--trigger", "볼륨", "--step", "현재 값을 읽는다.",
+        "--dynamic-input", "현재 볼륨", "--decision-rule", "0에서 100 사이인지 확인",
+        "--verification-rule", "실제 값을 다시 읽어 확인", "--capability", "audio.volume.read",
     )
     assert main(create) == 0
     draft = json.loads(capsys.readouterr().out)
     skill_id = draft["skill_id"]
+    assert draft["dynamic_inputs"] == ["현재 볼륨"]
     assert main(("skill-approve", str(catalog), skill_id)) == 0
     capsys.readouterr()
     assert main(("skill-search", str(catalog), "볼륨")) == 0
     assert json.loads(capsys.readouterr().out)["matches"][0]["skill_id"] == skill_id
+    for outcome in ("FAILED", "FAILED", "SUCCEEDED"):
+        assert main(
+            (
+                "skill-record-use", str(catalog), skill_id, outcome,
+                "TARGET_NOT_FOUND" if outcome == "FAILED" else "VERIFIED",
+                "--elapsed-ms", "1200", "--llm-calls", "1",
+                "--input-tokens", "100", "--output-tokens", "25",
+                "--model-configuration-sha256", "a" * 64,
+                "--tool-surface-sha256", "b" * 64,
+            )
+        ) == 0
+        capsys.readouterr()
+    assert main(("skill-assess-revision", str(catalog), skill_id)) == 0
+    assessment = json.loads(capsys.readouterr().out)
+    assert assessment["decision"] == "PROPOSE_REVISION"
+    assert main(
+        (
+            "skill-assess-staleness",
+            str(catalog),
+            skill_id,
+            "a" * 64,
+            "b" * 64,
+        )
+    ) == 0
+    staleness = json.loads(capsys.readouterr().out)
+    assert staleness["decision"] == "REVIEW_REQUIRED"
+    assert staleness["reason_code"] == "RECENT_REPEATED_FAILURE"
     revise = (
         "skill-revise", str(catalog), skill_id, "volume-control", "볼륨 조절", "재확인한다.",
         "--trigger", "소리", "--step", "현재 값을 읽는다.", "--capability", "audio.volume.read",
@@ -403,8 +786,8 @@ def test_frozen_autostart_targets_windowless_tray_executable(
     tmp_path: Path,
 ) -> None:
     root = tmp_path.resolve()
-    console = root / "JAVIS.exe"
-    tray = root / "JAVIS-Tray.exe"
+    console = root / "SKILLA.exe"
+    tray = root / "SKILLA-Tray.exe"
     config = root / "config.json"
     secret = root / "NIM.txt"
     for path in (console, tray, config, secret):
@@ -444,8 +827,8 @@ def test_frozen_credential_autostart_contains_no_secret_path(
     tmp_path: Path,
 ) -> None:
     root = tmp_path.resolve()
-    console = root / "JAVIS.exe"
-    tray = root / "JAVIS-Tray.exe"
+    console = root / "SKILLA.exe"
+    tray = root / "SKILLA-Tray.exe"
     config = root / "config.json"
     for path in (console, tray, config):
         path.write_bytes(b"fixture")
@@ -589,7 +972,7 @@ def test_verify_package_command_reports_only_summary(
     capsys: CaptureFixture[str],
 ) -> None:
     root = tmp_path.resolve()
-    (root / "JAVIS.exe").write_bytes(b"fixture")
+    (root / "SKILLA.exe").write_bytes(b"fixture")
     write_package_manifest(root, "0.1.0")
 
     result = main(("verify-package", str(root)))

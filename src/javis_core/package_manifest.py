@@ -38,7 +38,7 @@ class PackageFileEntry(FrozenModel):
 
 class PackageManifest(FrozenModel):
     schema_version: str = Field(default="1.0", pattern=r"^1\.0$")
-    product: str = Field(default="JAVIS-PC", pattern=r"^JAVIS-PC$")
+    product: str = Field(default="SKILLA-PC", pattern=r"^SKILLA-PC$")
     version: str = Field(min_length=1, max_length=64, pattern=r"^[0-9A-Za-z.+_-]+$")
     files: tuple[PackageFileEntry, ...] = Field(min_length=1, max_length=20_000)
 

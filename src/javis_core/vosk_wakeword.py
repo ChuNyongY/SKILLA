@@ -21,7 +21,7 @@ class VoskRecognizerLike(Protocol):
 
 
 RecognizerFactory = Callable[[], VoskRecognizerLike]
-_TARGET_TOKEN = "자비스"
+_TARGET_TOKEN = "스킬라"
 
 
 class VoskKoreanWakeWordDetector:

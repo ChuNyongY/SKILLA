@@ -42,6 +42,7 @@ def default_registry() -> CapabilityRegistry:
         reversible: bool = True,
         external: bool = False,
         sensitive: bool = False,
+        changes_state: bool = False,
     ) -> CapabilitySpec:
         return CapabilitySpec(
             capability_id=capability_id,
@@ -51,6 +52,7 @@ def default_registry() -> CapabilityRegistry:
             reversible=reversible,
             external_effect=external,
             sensitive=sensitive,
+            state_changing=changes_state,
         )
 
     return CapabilityRegistry(
@@ -66,24 +68,28 @@ def default_registry() -> CapabilityRegistry:
                 "Launch an application",
                 RiskLevel.R1,
                 ("native", "powershell"),
+                changes_state=True,
             ),
             spec(
                 "explorer.folder.open",
                 "Open an allowlisted directory in File Explorer",
                 RiskLevel.R1,
                 ("native",),
+                changes_state=True,
             ),
             spec(
                 "settings.open",
                 "Open an allowlisted Windows Settings page",
                 RiskLevel.R1,
                 ("native",),
+                changes_state=True,
             ),
             spec(
                 "audio.volume.set",
                 "Set default audio render endpoint volume",
                 RiskLevel.R1,
                 ("native",),
+                changes_state=True,
             ),
             spec(
                 "audio.volume.read",
@@ -94,7 +100,13 @@ def default_registry() -> CapabilityRegistry:
             spec("file.list", "List files", RiskLevel.R0, ("native", "powershell")),
             spec("storage.status.read", "Read bounded storage status", RiskLevel.R0, ("native",)),
             spec("cleanup.suggest", "Suggest cleanup without mutation", RiskLevel.R0, ("native",)),
-            spec("file.open", "Open a hash-pinned file", RiskLevel.R1, ("native",)),
+            spec(
+                "file.open",
+                "Open a hash-pinned file",
+                RiskLevel.R1,
+                ("native",),
+                changes_state=True,
+            ),
             spec("memory.search", "Search bounded local memory", RiskLevel.R0, ("native",)),
             spec(
                 "browser.fixture.read",
@@ -107,12 +119,14 @@ def default_registry() -> CapabilityRegistry:
                 "Open an allowlisted HTTPS URL in a registered browser",
                 RiskLevel.R1,
                 ("native",),
+                changes_state=True,
             ),
             spec(
                 "document.write",
                 "Write a new verified DOCX fixture document",
                 RiskLevel.R2,
                 ("native",),
+                changes_state=True,
             ),
             spec(
                 "package.verify",
@@ -128,6 +142,7 @@ def default_registry() -> CapabilityRegistry:
                 ("native",),
                 reversible=False,
                 sensitive=True,
+                changes_state=True,
             ),
             spec(
                 "ui.element.inspect",
@@ -141,13 +156,21 @@ def default_registry() -> CapabilityRegistry:
                 "Replace text in an authorized Notepad editor",
                 RiskLevel.R2,
                 ("uia",),
+                changes_state=True,
             ),
-            spec("file.move", "Move a file", RiskLevel.R2, ("native", "powershell")),
+            spec(
+                "file.move",
+                "Move a file",
+                RiskLevel.R2,
+                ("native", "powershell"),
+                changes_state=True,
+            ),
             spec(
                 "file.delete.trash",
                 "Move a file to trash",
                 RiskLevel.R2,
                 ("native", "powershell"),
+                changes_state=True,
             ),
             spec(
                 "file.delete.permanent",
@@ -155,8 +178,15 @@ def default_registry() -> CapabilityRegistry:
                 RiskLevel.R4,
                 ("native", "powershell"),
                 reversible=False,
+                changes_state=True,
             ),
-            spec("message.draft", "Draft a message", RiskLevel.R1, ("native",)),
+            spec(
+                "message.draft",
+                "Draft a message",
+                RiskLevel.R1,
+                ("native",),
+                changes_state=True,
+            ),
             spec(
                 "message.send",
                 "Send a message",
@@ -164,6 +194,7 @@ def default_registry() -> CapabilityRegistry:
                 ("native",),
                 reversible=False,
                 external=True,
+                changes_state=True,
             ),
             spec(
                 "system.shutdown",
@@ -171,6 +202,7 @@ def default_registry() -> CapabilityRegistry:
                 RiskLevel.R3,
                 ("native", "powershell"),
                 reversible=False,
+                changes_state=True,
             ),
             spec(
                 "system.reset.commit",
@@ -179,6 +211,7 @@ def default_registry() -> CapabilityRegistry:
                 ("native",),
                 reversible=False,
                 sensitive=True,
+                changes_state=True,
             ),
             spec(
                 "system.reset.prepare",
@@ -186,6 +219,7 @@ def default_registry() -> CapabilityRegistry:
                 RiskLevel.R4,
                 ("native",),
                 sensitive=True,
+                changes_state=True,
             ),
         )
     )

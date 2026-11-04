@@ -13,6 +13,7 @@ from javis_core import (
     OpenWakeWordDetector,
     PcmEnergyVad,
     SoundDeviceFrameSource,
+    WhisperKoreanWakeWordDetector,
 )
 
 
@@ -75,6 +76,37 @@ def test_openwakeword_rejects_wrong_audio_format() -> None:
         detector.score(AudioFrame(pcm_s16le=b"\x00\x00", sample_rate=8_000))
 
 
+class WakeStt:
+    def __init__(self, transcript: str) -> None:
+        self.transcript = transcript
+        self.calls = 0
+
+    def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
+        self.calls += 1
+        assert len(frames) == 10
+        return self.transcript
+
+
+def test_whisper_korean_wakeword_detects_normalized_local_transcript() -> None:
+    stt = WakeStt("스 킬 라")
+    detector = WhisperKoreanWakeWordDetector(stt, window_frames=10, hop_frames=2)
+
+    scores = [detector.score(audio()) for _ in range(10)]
+
+    assert scores[-1] == 1.0
+    assert stt.calls == 1
+
+
+def test_whisper_korean_wakeword_rejects_unrelated_transcript() -> None:
+    stt = WakeStt("오늘 날씨")
+    detector = WhisperKoreanWakeWordDetector(stt, window_frames=10, hop_frames=2)
+
+    scores = [detector.score(audio()) for _ in range(12)]
+
+    assert max(scores) == 0.0
+    assert stt.calls == 2
+
+
 def test_openwakeword_local_bundle_is_explicitly_onnx_and_offline(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -135,19 +167,31 @@ def test_openwakeword_local_bundle_rejects_non_onnx_model(tmp_path: Path) -> Non
 def test_pcm_energy_vad_detects_signal() -> None:
     vad = PcmEnergyVad(rms_threshold=500)
     assert not vad.is_speech(audio(b"\x00\x00" * 8))
-    assert vad.is_speech(audio((1000).to_bytes(2, "little", signed=True) * 8))
+    alternating = b"".join(
+        value.to_bytes(2, "little", signed=True)
+        for value in (1000, -1000, 1000, -1000, 1000, -1000, 1000, -1000)
+    )
+    assert vad.is_speech(audio(alternating))
+
+
+def test_pcm_energy_vad_rejects_constant_low_frequency_like_level() -> None:
+    vad = PcmEnergyVad(rms_threshold=500)
+    constant = (10_000).to_bytes(2, "little", signed=True) * 16
+    assert not vad.is_speech(audio(constant))
 
 
 def test_faster_whisper_joins_segments_with_offline_options() -> None:
-    model = WhisperModel([" 자비스", "크롬 열어 "])
+    model = WhisperModel([" 스킬라", "크롬 열어 "])
     stt = FasterWhisperSpeechToText(model, audio_converter=lambda frames: b"converted")
 
-    assert stt.transcribe((audio(),)) == "자비스 크롬 열어"
+    assert stt.transcribe((audio(),)) == "스킬라 크롬 열어"
     converted, options = model.calls[0]
     assert converted == b"converted"
     assert options["language"] == "ko"
     assert options["condition_on_previous_text"] is False
     assert options["vad_filter"] is False
+    assert "스킬라" in str(options["initial_prompt"])
+    assert "시스템 정보" in str(options["hotwords"])
 
 
 def test_faster_whisper_bounds_transcript() -> None:

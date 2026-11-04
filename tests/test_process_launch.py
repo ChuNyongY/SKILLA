@@ -14,13 +14,15 @@ from javis_core import (
 
 class FakeLauncher:
     def __init__(self) -> None:
-        self.calls: list[tuple[Path, str | None, Path, dict[str, str]]] = []
+        self.calls: list[
+            tuple[Path, str | tuple[str, ...] | None, Path, dict[str, str]]
+        ] = []
 
     def launch(
         self,
         executable: Path,
         *,
-        fixed_argument: str | None,
+        fixed_argument: str | tuple[str, ...] | None,
         working_directory: Path,
         environment: Mapping[str, str],
     ) -> int:
@@ -113,6 +115,29 @@ def test_registered_fixed_new_window_argument_is_not_action_controlled(tmp_path:
 
     assert result.success
     assert launcher.calls[0][1] == "--new-window"
+
+
+def test_registered_valorant_arguments_are_fixed_by_registry(tmp_path: Path) -> None:
+    executor, launcher, _executable = registered_executor(tmp_path)
+    application = executor._apps["safe-app"].model_copy(  # noqa: SLF001 - contract fixture
+        update={
+            "launch_arguments": (
+                "--launch-product=valorant",
+                "--launch-patchline=live",
+            )
+        }
+    )
+
+    result = ProcessLaunchExecutor(
+        {"safe-app": application},
+        launcher=launcher,
+    ).execute(action())
+
+    assert result.success
+    assert launcher.calls[0][1] == (
+        "--launch-product=valorant",
+        "--launch-patchline=live",
+    )
 
 
 def test_additional_arguments_are_rejected(tmp_path: Path) -> None:

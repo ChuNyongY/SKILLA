@@ -38,8 +38,8 @@ AppLoader = Callable[[Path], Mapping[str, RegisteredApp]]
 class _LazySqliteMemorySearchBackend:
     """Delay local DB creation until an authorized memory search actually runs."""
 
-    def __init__(self, project_root: Path) -> None:
-        self._state_directory = project_root / "state"
+    def __init__(self, state_directory: Path) -> None:
+        self._state_directory = state_directory
         self._repository: SqliteMemoryRepository | None = None
         self._lock = Lock()
 
@@ -58,6 +58,7 @@ def build_windows_product_capabilities(
     configuration: LoadedProductHostConfig,
     project_root: Path,
     *,
+    state_directory: Path | None = None,
     allowed_roots: Iterable[Path] | None = None,
     storage_roots: Mapping[str, Path] | None = None,
     app_loader: AppLoader | None = None,
@@ -68,9 +69,15 @@ def build_windows_product_capabilities(
 ) -> ProductCapabilityStack:
     """Build the host-safe Windows routes without launching apps or changing state."""
     root = _trusted_root(project_root)
+    state = state_directory or root / "state"
+    if not state.is_absolute() or state.is_symlink():
+        raise ValueError("state directory must be an absolute non-symlink path")
     roots = _trusted_allowed_roots(allowed_roots or (root,))
     selected_storage_roots = dict(storage_roots or {"workspace": root})
-    load_apps = app_loader or AppRegistryLoader(require_publisher=True).load
+    load_apps = app_loader or AppRegistryLoader(
+        require_publisher=True,
+        allow_signed_updates=True,
+    ).load
     apps = dict(load_apps(configuration.app_registry))
     settings = apps.get("settings")
     explorer_app = apps.get("explorer")
@@ -83,7 +90,7 @@ def build_windows_product_capabilities(
         raise ValueError("required registered Windows applications are unavailable")
 
     audio = volume_backend or PycawEndpointVolumeBackend()
-    journal = move_journal or DurableMoveJournal(root / "state" / "move-journal.jsonl")
+    journal = move_journal or DurableMoveJournal(state / "move-journal.jsonl")
     read_only = NativeReadOnlyExecutor(roots)
     process = ProcessLaunchExecutor(apps)
     settings_executor = SettingsOpenExecutor(settings)
@@ -97,7 +104,7 @@ def build_windows_product_capabilities(
     )
     explorer = ExplorerFolderOpenExecutor(selected_storage_roots, explorer_app)
     memory = MemorySearchExecutor(
-        memory_backend or _LazySqliteMemorySearchBackend(root),
+        memory_backend or _LazySqliteMemorySearchBackend(state),
         store_id="personal",
     )
 

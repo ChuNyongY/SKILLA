@@ -103,6 +103,17 @@ class TypedIntentClassifier:
                 explicit_wake_word=explicit_wake_word,
                 source=source,
             )
+        if _is_known_local_command(normalized):
+            return IntentEvidence(
+                transcript=normalized,
+                wake_confidence=wake_confidence,
+                addressed_confidence=1.0 if explicit_wake_word else 0.98,
+                intent_confidence=1.0,
+                target_confidence=1.0,
+                intent_class=IntentClass.COMMAND,
+                explicit_wake_word=explicit_wake_word,
+                source=source,
+            )
         try:
             response = self._transport.complete(
                 self._system_prompt(),
@@ -120,7 +131,9 @@ class TypedIntentClassifier:
         return IntentEvidence(
             transcript=normalized,
             wake_confidence=wake_confidence,
-            addressed_confidence=proposal.addressed_confidence,
+            addressed_confidence=(
+                1.0 if explicit_wake_word else proposal.addressed_confidence
+            ),
             intent_confidence=proposal.intent_confidence,
             target_confidence=proposal.target_confidence,
             intent_class=IntentClass(proposal.intent_class),
@@ -158,7 +171,6 @@ class TypedIntentClassifier:
         ):
             raise IntentClassifierError("invalid local intent evidence")
         return normalized
-
     def _parse(self, response: str) -> IntentClassification:
         if not isinstance(response, str):
             raise IntentClassifierError("invalid intent classification response")
@@ -190,6 +202,16 @@ class TypedIntentClassifier:
             "JSON decimals from 0.0 through 1.0, and flags must be JSON booleans. "
             f"SCHEMA={json.dumps(schema, ensure_ascii=False, separators=(',', ':'))}"
         )
+
+
+def _is_known_local_command(transcript: str) -> bool:
+    """Recognize a small, auditable set of built-in read-only commands locally."""
+    compact = "".join(transcript.lower().split())
+    targets = ("시스템정보", "컴퓨터정보", "윈도우정보")
+    command_verbs = ("확인", "알려", "보여", "읽어", "조회")
+    return any(target in compact for target in targets) and any(
+        verb in compact for verb in command_verbs
+    )
 
 
 def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:

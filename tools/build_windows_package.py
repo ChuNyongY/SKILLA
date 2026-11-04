@@ -13,8 +13,8 @@ from javis_core.package_manifest import (
     write_package_manifest,
 )
 from javis_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
+from javis_core.version import VERSION
 
-VERSION = "0.1.0"
 ASSET_DIRECTORIES = (
     Path("config"),
     Path("models"),
@@ -41,9 +41,9 @@ def build_package(
     staging = temporary / "staging"
     try:
         _run_pyinstaller(root, temporary)
-        frozen = temporary / "dist" / "JAVIS"
-        if not (frozen / "JAVIS.exe").is_file() or not (
-            frozen / "JAVIS-Tray.exe"
+        frozen = temporary / "dist" / "SKILLA"
+        if not (frozen / "SKILLA.exe").is_file() or not (
+            frozen / "SKILLA-Tray.exe"
         ).is_file():
             raise PackageBuildError("FROZEN_EXECUTABLE_MISSING")
         frozen.replace(staging)
@@ -53,11 +53,11 @@ def build_package(
         readme = root / "docs" / "PACKAGE_README.ko.txt"
         _copy_trusted_file(readme, staging / readme.name)
         if signer is not None:
-            signer.sign((staging / "JAVIS.exe").resolve(strict=True))
-            signer.sign((staging / "JAVIS-Tray.exe").resolve(strict=True))
+            signer.sign((staging / "SKILLA.exe").resolve(strict=True))
+            signer.sign((staging / "SKILLA-Tray.exe").resolve(strict=True))
         write_package_manifest(staging.resolve(strict=True), VERSION)
         verified = verify_package_manifest(staging.resolve(strict=True))
-        if not any(entry.path == "JAVIS.exe" for entry in verified.files):
+        if not any(entry.path == "SKILLA.exe" for entry in verified.files):
             raise PackageBuildError("PACKAGE_EXECUTABLE_UNMANIFESTED")
         destination.parent.mkdir(parents=True, exist_ok=True)
         staging.replace(destination)
@@ -169,7 +169,7 @@ def main() -> int:
     parser.add_argument(
         "--destination",
         type=Path,
-        default=Path("dist") / f"JAVIS-PC-{VERSION}",
+        default=Path("dist") / f"SKILLA-PC-{VERSION}",
     )
     parser.add_argument("--certificate-thumbprint")
     parser.add_argument("--expected-publisher")

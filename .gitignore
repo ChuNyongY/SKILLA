@@ -1,4 +1,9 @@
 .venv/
+.venv-edge-tts/
+.venv-tts/
+models/**/.cache/
+models/faster-whisper-small/*
+!models/faster-whisper-small/manifest.json
 .dotnet/
 __pycache__/
 *.py[cod]
@@ -15,6 +20,8 @@ native/**/publish/
 *.egg-info/
 .coverage
 htmlcov/
+*.inspect.ndjson
+output/~$*
 state/
 .env
 NIM.txt

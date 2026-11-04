@@ -451,6 +451,16 @@ def test_windows_capture_wrapper_rejects_backend_identity_mismatch() -> None:
         backend.capture_window(PID)
 
 
+def test_windows_capture_wrapper_rejects_window_outside_selected_display() -> None:
+    backend = WindowsForegroundWindowCaptureBackend(
+        CaptureApi(capture()),
+        display_allowed=lambda _capture: False,
+    )
+
+    with pytest.raises(RuntimeError, match="outside the selected display"):
+        backend.capture_window(PID)
+
+
 def test_exact_template_grounder_finds_one_bound_target() -> None:
     background = b"\x00\x00\x00\xff"
     target = b"\x01\x02\x03\xff"

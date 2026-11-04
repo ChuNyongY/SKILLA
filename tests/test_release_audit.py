@@ -17,10 +17,10 @@ class FakePublisherVerifier:
 def _release_fixture(tmp_path: Path) -> tuple[Path, Path]:
     package = tmp_path / "package"
     package.mkdir()
-    (package / "JAVIS.exe").write_bytes(b"console")
-    (package / "JAVIS-Tray.exe").write_bytes(b"tray")
+    (package / "SKILLA.exe").write_bytes(b"console")
+    (package / "SKILLA-Tray.exe").write_bytes(b"tray")
     write_package_manifest(package.resolve(), "0.1.0")
-    setup = tmp_path / "JAVIS-PC-0.1.0-Setup.exe"
+    setup = tmp_path / "SKILLA-PC-0.1.0-Setup.exe"
     setup.write_bytes(b"setup")
     from hashlib import sha256
 
@@ -39,7 +39,7 @@ def test_release_audit_requires_all_three_exact_signatures(tmp_path: Path) -> No
         setup,
         "CN=Trusted",
         publisher_verifier=FakePublisherVerifier(
-            {"JAVIS.exe", "JAVIS-Tray.exe", setup.name}
+            {"SKILLA.exe", "SKILLA-Tray.exe", setup.name}
         ),
     )
 
@@ -57,7 +57,7 @@ def test_release_audit_fails_closed_on_missing_signature_or_tampered_setup(
         package,
         setup,
         "CN=Trusted",
-        publisher_verifier=FakePublisherVerifier({"JAVIS.exe"}),
+        publisher_verifier=FakePublisherVerifier({"SKILLA.exe"}),
     )
 
     assert not report.ready

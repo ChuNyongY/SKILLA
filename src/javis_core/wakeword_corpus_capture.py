@@ -149,9 +149,9 @@ class ConsoleWakeWordCaptureReadiness:
         if not self._input.isatty():
             return False
         guidance = (
-            "'헤이 자비스'라고 자연스럽게 말하세요"
+            "'스킬라'라고 자연스럽게 말하세요"
             if sample.target_present
-            else "'헤이 자비스'를 말하지 말고 평소 문장이나 주변 소리를 들려주세요"
+            else "'스킬라'를 말하지 말고 평소 문장이나 주변 소리를 들려주세요"
         )
         session = "미지정" if sample.session_index == 0 else str(sample.session_index)
         self._output.write(

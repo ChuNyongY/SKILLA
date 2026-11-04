@@ -40,7 +40,7 @@ def wav_bytes(*, rate: int = 16_000, channels: int = 1, width: int = 2) -> bytes
     return buffer.getvalue()
 
 
-def sample(raw: bytes, *, reference: str = "자비스 메모장 열어") -> VoiceCorpusSample:
+def sample(raw: bytes, *, reference: str = "스킬라 메모장 열어") -> VoiceCorpusSample:
     return VoiceCorpusSample(
         sample_id="sample-001",
         audio_file="speaker-a/sample.wav",
@@ -62,7 +62,7 @@ def test_evaluation_computes_metrics_without_exposing_text_or_path(tmp_path: Pat
     raw = wav_bytes()
     root = prepare_fixture(tmp_path, raw)
     manifest = VoiceCorpusManifest(corpus_id="ko-test", samples=(sample(raw),))
-    stt = StubStt([" 자비스   메모장 열어 "])
+    stt = StubStt([" 스킬라   메모장 열어 "])
     times = iter((1.0, 1.025))
 
     report = evaluate_voice_corpus(manifest, root, stt, clock=lambda: next(times))
@@ -72,7 +72,7 @@ def test_evaluation_computes_metrics_without_exposing_text_or_path(tmp_path: Pat
     assert report.exact_matches == 1
     assert report.samples[0].latency_ms == pytest.approx(25)
     serialized = report.canonical_json()
-    assert "자비스" not in serialized
+    assert "스킬라" not in serialized
     assert "sample.wav" not in serialized
     assert len(stt.calls[0]) == 2
 

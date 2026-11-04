@@ -64,7 +64,10 @@ def _target_matches(
             storage_roots, root_id, relative_path
         )
     if capability in {"audio.volume.read", "audio.volume.set"}:
-        return target == "default-render-endpoint"
+        # Keep the policy identity identical to the concrete Core Audio adapter.
+        # A shorter legacy spelling here made otherwise valid volume plans fail
+        # closed before they reached the executor.
+        return target == "default-audio-render-endpoint"
     if capability in {"storage.status.read", "cleanup.suggest"}:
         root_id = action.arguments.get("root_id")
         return (

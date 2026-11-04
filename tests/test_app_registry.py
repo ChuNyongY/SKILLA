@@ -119,6 +119,36 @@ def test_only_fixed_new_window_argument_is_accepted(tmp_path: Path) -> None:
         )
 
 
+def test_only_fixed_valorant_argument_pair_is_accepted(tmp_path: Path) -> None:
+    executable = tmp_path / "riot-client.exe"
+    executable.write_bytes(b"fixture")
+    loaded = AppRegistryLoader().load(
+        registry(
+            tmp_path / "valorant.json",
+            [
+                app(
+                    executable,
+                    launch_arguments=[
+                        "--launch-product=valorant",
+                        "--launch-patchline=live",
+                    ],
+                )
+            ],
+        )
+    )
+    assert loaded["safe-app"].launch_arguments == (
+        "--launch-product=valorant",
+        "--launch-patchline=live",
+    )
+    with pytest.raises(AppRegistryError, match="invalid"):
+        AppRegistryLoader().load(
+            registry(
+                tmp_path / "bad-valorant.json",
+                [app(executable, launch_arguments=["--launch-product=other"])],
+            )
+        )
+
+
 def test_single_instance_handoff_rejects_conflicting_modes(tmp_path: Path) -> None:
     launcher = tmp_path / "launcher.exe"
     runtime = tmp_path / "runtime.exe"
@@ -213,6 +243,59 @@ def test_publisher_is_verified_and_can_be_required(tmp_path: Path) -> None:
 
     assert loaded["safe-app"].publisher == "CN=Trusted Publisher"
     assert verifier.calls == [(executable.resolve(), "CN=Trusted Publisher")]
+
+
+def test_product_mode_accepts_hash_drift_only_for_exact_verified_publisher(
+    tmp_path: Path,
+) -> None:
+    executable = tmp_path / "safe.exe"
+    executable.write_bytes(b"updated signed application")
+    verifier = PublisherVerifier(True)
+    path = registry(
+        tmp_path / "signed-update.json",
+        [
+            app(
+                executable,
+                publisher="CN=Trusted Publisher",
+                sha256="0" * 64,
+            )
+        ],
+    )
+
+    loaded = AppRegistryLoader(
+        publisher_verifier=verifier,
+        require_publisher=True,
+        allow_signed_updates=True,
+    ).load(path)["safe-app"]
+
+    assert loaded.sha256 == hashlib.sha256(b"updated signed application").hexdigest()
+    assert loaded.matches_executable(executable)
+    assert verifier.calls == [(executable.resolve(), "CN=Trusted Publisher")]
+
+
+def test_signed_update_mode_rejects_missing_or_wrong_publisher(tmp_path: Path) -> None:
+    executable = tmp_path / "safe.exe"
+    executable.write_bytes(b"updated")
+    stale_unsigned = registry(
+        tmp_path / "unsigned-update.json",
+        [app(executable, sha256="0" * 64)],
+    )
+    with pytest.raises(AppRegistryError, match="publisher is required"):
+        AppRegistryLoader(
+            require_publisher=True,
+            allow_signed_updates=True,
+        ).load(stale_unsigned)
+
+    stale_wrong_signer = registry(
+        tmp_path / "wrong-signer-update.json",
+        [app(executable, publisher="CN=Expected", sha256="0" * 64)],
+    )
+    with pytest.raises(AppRegistryError, match="publisher verification failed"):
+        AppRegistryLoader(
+            publisher_verifier=PublisherVerifier(False),
+            require_publisher=True,
+            allow_signed_updates=True,
+        ).load(stale_wrong_signer)
 
 
 def test_missing_or_unverified_publisher_is_rejected(tmp_path: Path) -> None:

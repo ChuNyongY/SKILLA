@@ -1,0 +1,127 @@
+[
+  {
+    "case_id": "holdout.positive.weekly.01",
+    "query": "어제 내려받은 과제들을 수학과 영어 폴더로 나눠 놔",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "holdout.positive.weekly.02",
+    "query": "이번 주 제출물 파일을 과목 기준으로 옮겨 줘",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "holdout.positive.weekly.03",
+    "query": "다운로드에 있는 숙제 문서를 수업별로 분류해 줘",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "holdout.positive.meeting.01",
+    "query": "지난 회의에서 공유한 PDF를 찾아 열어",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "holdout.positive.meeting.02",
+    "query": "팀 미팅 자료 문서를 화면에 띄워 줘",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "holdout.positive.meeting.03",
+    "query": "회의용 문서 중 PDF 하나를 열어 보고 싶어",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "holdout.positive.volume.01",
+    "query": "스피커 음량을 절반으로 맞춰 줘",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "holdout.positive.volume.02",
+    "query": "지금 소리가 너무 크니 낮춰 줘",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "holdout.positive.volume.03",
+    "query": "볼륨을 현재보다 올려 줘",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "holdout.positive.system.01",
+    "query": "이 PC의 운영체제 정보를 보여 줘",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "holdout.positive.system.02",
+    "query": "컴퓨터 사양이 어떻게 되는지 확인해 줘",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "holdout.positive.system.03",
+    "query": "내 시스템 상태를 읽어서 알려 줘",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "holdout.positive.browser.01",
+    "query": "브라우저에서 학교 포털 주소를 띄워 줘",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "holdout.positive.browser.02",
+    "query": "허용 목록에 있는 누리집으로 접속해 줘",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "holdout.positive.browser.03",
+    "query": "깃허브 페이지를 새 브라우저 창에 열어 줘",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "holdout.confusing.weekly.01",
+    "query": "과제 PDF 파일을 과목 폴더로 정리하되 열지는 마",
+    "expected_skill_key": "weekly-file-sort"
+  },
+  {
+    "case_id": "holdout.confusing.meeting.01",
+    "query": "회의 자료 PDF를 정리하지 말고 열기만 해",
+    "expected_skill_key": "meeting-pdf-open"
+  },
+  {
+    "case_id": "holdout.confusing.volume.01",
+    "query": "컴퓨터 상태 말고 소리만 낮춰",
+    "expected_skill_key": "volume-control"
+  },
+  {
+    "case_id": "holdout.confusing.system.01",
+    "query": "소리 설정이 아니라 PC 사양을 확인해",
+    "expected_skill_key": "system-check"
+  },
+  {
+    "case_id": "holdout.confusing.browser.01",
+    "query": "회의 문서가 아니라 웹 주소를 브라우저로 열어",
+    "expected_skill_key": "browser-navigation"
+  },
+  {
+    "case_id": "holdout.negative.math.01",
+    "query": "이 수학 문제 풀이 과정을 설명해 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "holdout.negative.travel.01",
+    "query": "서울행 기차표 가격을 알아봐 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "holdout.negative.photo.01",
+    "query": "이 사진의 밝기를 조금 높여 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "holdout.negative.email.01",
+    "query": "메일함에서 읽지 않은 편지를 요약해 줘",
+    "expected_skill_key": null
+  },
+  {
+    "case_id": "holdout.negative.news.01",
+    "query": "오늘 주요 뉴스를 세 줄로 정리해 줘",
+    "expected_skill_key": null
+  }
+]

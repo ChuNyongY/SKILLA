@@ -13,6 +13,7 @@ from .always_on_runtime import (
     RuntimeEventType,
 )
 from .cancellation import CancellationToken
+from .intent import LocalStopDetector
 from .models import FrozenModel
 from .voice import AudioFrame, VoiceCaptureResult
 
@@ -43,6 +44,7 @@ class CapturePumpResult(FrozenModel):
     tasks_started: int = Field(ge=0)
     stops_accepted: int = Field(ge=0)
     busy_ignored: int = Field(ge=0)
+    duplicate_ignored: int = Field(default=0, ge=0)
     last_event: RuntimeEvent | None = None
 
 
@@ -55,10 +57,15 @@ class AlwaysOnCapturePump:
         frame_source: FrameSource,
         voice_pipeline: CapturePipeline,
         runtime: AlwaysOnAgentRuntime,
+        duplicate_cooldown_frames: int = 250,
     ) -> None:
+        if not 1 <= duplicate_cooldown_frames <= 10_000:
+            raise ValueError("duplicate cooldown must be within 1..10000 frames")
         self._frame_source = frame_source
         self._voice_pipeline = voice_pipeline
         self._runtime = runtime
+        self._duplicate_cooldown_frames = duplicate_cooldown_frames
+        self._stop_detector = LocalStopDetector()
         self._lock = Lock()
         self._lifecycle: CancellationToken | None = None
 
@@ -89,6 +96,9 @@ class AlwaysOnCapturePump:
         started = 0
         stopped = 0
         ignored = 0
+        duplicate_ignored = 0
+        last_transcript: str | None = None
+        last_transcript_frame = -self._duplicate_cooldown_frames
         last_event: RuntimeEvent | None = None
         iterator: object | None = None
         status = CapturePumpStatus.INPUT_EXHAUSTED
@@ -103,11 +113,24 @@ class AlwaysOnCapturePump:
                 capture = self._voice_pipeline.feed(frame)
                 if capture is not None:
                     captures += 1
+                    normalized = _normalized_transcript(capture.transcript)
+                    if (
+                        normalized is not None
+                        and not self._stop_detector.matches(normalized)
+                        and normalized == last_transcript
+                        and frames - last_transcript_frame
+                        <= self._duplicate_cooldown_frames
+                    ):
+                        duplicate_ignored += 1
+                        continue
                     try:
                         last_event = self._runtime.submit_capture(capture)
                     except Exception:
                         failed_reason = "RUNTIME_SUBMISSION_FAILED"
                         break
+                    if normalized is not None:
+                        last_transcript = normalized
+                        last_transcript_frame = frames
                     started += last_event.event_type is RuntimeEventType.TASK_STARTED
                     stopped += last_event.event_type is RuntimeEventType.STOP_ACCEPTED
                     ignored += last_event.event_type is RuntimeEventType.BUSY_IGNORED
@@ -143,6 +166,7 @@ class AlwaysOnCapturePump:
             tasks_started=started,
             stops_accepted=stopped,
             busy_ignored=ignored,
+            duplicate_ignored=duplicate_ignored,
             last_event=last_event,
         )
 
@@ -159,3 +183,10 @@ class AlwaysOnCapturePump:
         except Exception:
             failed = True
         return failed
+
+
+def _normalized_transcript(transcript: str | None) -> str | None:
+    if transcript is None:
+        return None
+    normalized = " ".join(transcript.casefold().split())
+    return normalized or None

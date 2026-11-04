@@ -46,7 +46,7 @@ def frame(samples: int = 1_280) -> AudioFrame:
 
 def test_detects_only_exact_fixed_korean_token() -> None:
     recognizers = [
-        Recognizer(partials=[json.dumps({"partial": "헤이 자비스"}, ensure_ascii=False)]),
+        Recognizer(partials=[json.dumps({"partial": "스킬라"}, ensure_ascii=False)]),
         Recognizer(),
     ]
     detector = VoskKoreanWakeWordDetector(lambda: recognizers.pop(0))
@@ -68,7 +68,7 @@ def test_does_not_match_substrings_or_unmeasured_aliases() -> None:
 
 
 def test_forced_finalization_detects_at_bounded_window() -> None:
-    first = Recognizer(finals=[json.dumps({"text": "자비스"}, ensure_ascii=False)])
+    first = Recognizer(finals=[json.dumps({"text": "스킬라"}, ensure_ascii=False)])
     second = Recognizer()
     recognizers = [first, second]
     detector = VoskKoreanWakeWordDetector(
@@ -108,7 +108,7 @@ def test_malformed_json_and_native_failure_fail_closed() -> None:
 
 def test_duplicate_result_key_cannot_force_detection() -> None:
     duplicate = Recognizer(
-        partials=['{"partial":"","partial":"자비스"}']
+        partials=['{"partial":"","partial":"스킬라"}']
     )
     replacement = Recognizer()
     recognizers = [duplicate, replacement]

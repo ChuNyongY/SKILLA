@@ -25,6 +25,74 @@ def test_tray_dispatches_only_the_selected_callback() -> None:
     assert calls == ["stop"]
 
 
+def test_tray_exposes_skill_review_only_when_callback_is_configured() -> None:
+    calls: list[str] = []
+    tray = WindowsTrayController(
+        show_status=lambda: None,
+        stop_agent=lambda: None,
+        exit_agent=lambda: None,
+        review_skills=lambda: calls.append("review"),
+    )
+
+    result = tray.dispatch(TrayCommand.REVIEW_SKILLS)
+
+    assert result.succeeded
+    assert calls == ["review"]
+
+    unavailable = WindowsTrayController(
+        show_status=lambda: None,
+        stop_agent=lambda: None,
+        exit_agent=lambda: None,
+    ).dispatch(TrayCommand.REVIEW_SKILLS)
+    assert not unavailable.succeeded
+    assert unavailable.reason == "TRAY_COMMAND_UNAVAILABLE"
+
+
+def test_tray_dispatches_trace_review_callback_without_starting_capture() -> None:
+    calls: list[str] = []
+    tray = WindowsTrayController(
+        show_status=lambda: None,
+        stop_agent=lambda: None,
+        exit_agent=lambda: None,
+        review_traces=lambda: calls.append("trace-review"),
+    )
+
+    result = tray.dispatch(TrayCommand.REVIEW_TRACES)
+
+    assert result.succeeded
+    assert calls == ["trace-review"]
+
+
+def test_tray_dispatches_display_selector_only_when_configured() -> None:
+    calls: list[str] = []
+    tray = WindowsTrayController(
+        show_status=lambda: None,
+        stop_agent=lambda: None,
+        exit_agent=lambda: None,
+        select_display=lambda: calls.append("display"),
+    )
+
+    result = tray.dispatch(TrayCommand.SELECT_DISPLAY)
+
+    assert result.succeeded
+    assert calls == ["display"]
+
+
+def test_tray_dispatches_text_command_window_only_when_configured() -> None:
+    calls: list[str] = []
+    tray = WindowsTrayController(
+        show_status=lambda: None,
+        stop_agent=lambda: None,
+        exit_agent=lambda: None,
+        text_command=lambda: calls.append("text"),
+    )
+
+    result = tray.dispatch(TrayCommand.TEXT_COMMAND)
+
+    assert result.succeeded
+    assert calls == ["text"]
+
+
 def test_tray_redacts_callback_exception() -> None:
     def fail() -> None:
         raise RuntimeError("private path and transcript")
@@ -63,5 +131,5 @@ def test_runtime_status_message_exposes_only_coarse_state() -> None:
 
     message = runtime_status_message(snapshot)
 
-    assert message == "JAVIS가 승인된 작업을 실행하고 있습니다.\n완료 동작: 3"
+    assert message == "SKILLA가 승인된 작업을 실행하고 있습니다.\n완료 동작: 3"
     assert "SENSITIVE" not in message

@@ -153,7 +153,10 @@ def _sqlite_fts5(_root: Path) -> bool:
 
 
 def _app_registry(root: Path) -> bool:
-    apps = AppRegistryLoader(require_publisher=True).load(root / "config" / "apps.json")
+    apps = AppRegistryLoader(
+        require_publisher=True,
+        allow_signed_updates=True,
+    ).load(root / "config" / "apps.json")
     return bool(apps)
 
 
@@ -171,7 +174,13 @@ def _wakeword(root: Path) -> bool:
 
 
 def _stt(root: Path) -> bool:
-    bundle = load_stt_bundle(root / "models" / "faster-whisper-tiny" / "manifest.json")
+    preferred = root / "models" / "faster-whisper-small" / "manifest.json"
+    manifest = (
+        preferred
+        if preferred.is_file()
+        else root / "models" / "faster-whisper-tiny" / "manifest.json"
+    )
+    bundle = load_stt_bundle(manifest)
     return bundle.verify()
 
 

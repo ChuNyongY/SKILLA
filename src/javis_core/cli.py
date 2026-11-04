@@ -45,6 +45,10 @@ from .credential_store import (
     provision_nim_credential,
     remove_nim_credential,
 )
+from .display_target import (
+    build_windows_display_controller,
+    run_tk_display_selector,
+)
 from .doctor import run_doctor
 from .evaluation import evaluate_trials, load_trials
 from .execution_broker import ExecutionBroker
@@ -58,6 +62,7 @@ from .models import Action, Plan, PolicyContext, Postcondition
 from .native_readonly import NativeReadOnlyExecutor
 from .orchestrator import Orchestrator
 from .package_manifest import verify_package_manifest
+from .planner import NimChatTransport
 from .policy import PolicyEngine
 from .product_host import (
     load_product_host_config,
@@ -68,13 +73,29 @@ from .product_service import (
     build_windows_product_service,
     build_windows_product_service_with_secret_loader,
 )
+from .product_startup import run_tk_nim_credential_setup, run_windowed_product_startup
+from .product_state import prepare_product_state_directory
 from .registry import default_registry
 from .release_audit import audit_windows_release
 from .safe_evaluation import SafeIntegratedEvaluationRunner
 from .scenario_capabilities import audit_scenario_capabilities
 from .scenarios import load_intent_scenarios, run_intent_scenarios
 from .secret_provisioning import provision_nim_secret
-from .skill_runtime import LocalSkillCatalog, SkillOutcome, SkillProposal
+from .skill_authoring import SkillDraftAuthor
+from .skill_candidate_evaluation import (
+    evaluate_revision_candidate,
+    load_skill_candidate_trials,
+)
+from .skill_review_surface import run_tk_skill_review
+from .skill_runtime import LocalSkillCatalog, SkillOutcome, SkillProposal, SkillStatus
+from .skill_search_evaluation import evaluate_skill_search, load_skill_search_cases
+from .skill_study import (
+    build_skill_study_schedule,
+    evaluate_skill_study,
+    load_skill_study_observations,
+)
+from .skill_trace_review_surface import run_tk_skill_trace_review
+from .skill_trace_store import LocalSkillTraceStore
 from .snapshot_batch import (
     SNAPSHOT_SCENARIO_IDS,
     HmacSha256SnapshotVerifier,
@@ -82,8 +103,11 @@ from .snapshot_batch import (
     load_snapshot_hmac_key,
 )
 from .snapshot_vm import SnapshotEvidenceError, SnapshotEvidenceGate, load_snapshot_manifests
+from .start_menu import StartMenuShortcutRegistrar, StartMenuStatus
 from .status_surface import run_tk_status_hud
+from .verified_result_surface import run_tk_verified_result
 from .study_analysis import StudyCondition, analyze_paired_study, load_study_observations
+from .text_command_surface import run_tk_text_command
 from .user_validation import (
     ConsoleConsentProvider,
     UserValidationSink,
@@ -297,6 +321,9 @@ def build_parser() -> argparse.ArgumentParser:
     skill_create.add_argument("description")
     skill_create.add_argument("--trigger", action="append", required=True)
     skill_create.add_argument("--step", action="append", required=True)
+    skill_create.add_argument("--dynamic-input", action="append", default=[])
+    skill_create.add_argument("--decision-rule", action="append", default=[])
+    skill_create.add_argument("--verification-rule", action="append", default=[])
     skill_create.add_argument("--capability", action="append", required=True)
 
     skill_approve = subparsers.add_parser(
@@ -313,6 +340,14 @@ def build_parser() -> argparse.ArgumentParser:
     skill_search.add_argument("catalog", type=Path)
     skill_search.add_argument("query")
 
+    skill_list = subparsers.add_parser(
+        "skill-list",
+        help="List local skills, optionally filtered by lifecycle status",
+    )
+    skill_list.add_argument("catalog", type=Path)
+    skill_list.add_argument("--status", choices=[item.value for item in SkillStatus])
+    skill_list.add_argument("--limit", type=int, default=20)
+
     skill_revise = subparsers.add_parser(
         "skill-revise",
         help="Create a new draft version of a verified skill",
@@ -324,6 +359,9 @@ def build_parser() -> argparse.ArgumentParser:
     skill_revise.add_argument("description")
     skill_revise.add_argument("--trigger", action="append", required=True)
     skill_revise.add_argument("--step", action="append", required=True)
+    skill_revise.add_argument("--dynamic-input", action="append", default=[])
+    skill_revise.add_argument("--decision-rule", action="append", default=[])
+    skill_revise.add_argument("--verification-rule", action="append", default=[])
     skill_revise.add_argument("--capability", action="append", required=True)
 
     skill_use = subparsers.add_parser(
@@ -334,6 +372,112 @@ def build_parser() -> argparse.ArgumentParser:
     skill_use.add_argument("skill_id")
     skill_use.add_argument("outcome", choices=[item.value for item in SkillOutcome])
     skill_use.add_argument("detail_code")
+    skill_use.add_argument("--elapsed-ms", type=int, default=0)
+    skill_use.add_argument("--llm-calls", type=int, default=0)
+    skill_use.add_argument("--input-tokens", type=int, default=0)
+    skill_use.add_argument("--output-tokens", type=int, default=0)
+    skill_use.add_argument("--user-interventions", type=int, default=0)
+    skill_use.add_argument("--model-configuration-sha256")
+    skill_use.add_argument("--tool-surface-sha256")
+    skill_use.add_argument("--planner-usage-complete", action="store_true")
+    skill_use.add_argument("--planner-responses-without-usage", type=int, default=0)
+
+    skill_assess = subparsers.add_parser(
+        "skill-assess-revision",
+        help="Assess recorded evidence without automatically revising a skill",
+    )
+    skill_assess.add_argument("catalog", type=Path)
+    skill_assess.add_argument("skill_id")
+    skill_assess.add_argument("--minimum-observations", type=int, default=3)
+    skill_assess.add_argument("--minimum-success-rate", type=float, default=0.8)
+
+    skill_staleness = subparsers.add_parser(
+        "skill-assess-staleness",
+        help="Assess recent skill evidence for model, tool, or repeated-failure drift",
+    )
+    skill_staleness.add_argument("catalog", type=Path)
+    skill_staleness.add_argument("skill_id")
+    skill_staleness.add_argument("model_configuration_sha256")
+    skill_staleness.add_argument("tool_surface_sha256")
+    skill_staleness.add_argument("--minimum-observations", type=int, default=3)
+
+    skill_search_evaluation = subparsers.add_parser(
+        "evaluate-skill-search",
+        help="Evaluate production skill retrieval against strict labeled cases",
+    )
+    skill_search_evaluation.add_argument("catalog", type=Path)
+    skill_search_evaluation.add_argument("cases", type=Path)
+
+    skill_draft = subparsers.add_parser(
+        "skill-draft-from-trace-nim",
+        help="Explicitly send one pending trace to NIM and create an initial DRAFT",
+    )
+    skill_draft.add_argument("catalog", type=Path)
+    skill_draft.add_argument("trace_store", type=Path)
+    skill_draft.add_argument("trace_id")
+    skill_draft.add_argument("--model", default="z-ai/glm-5.3-flash")
+
+    skill_revision = subparsers.add_parser(
+        "skill-revision-from-trace-nim",
+        help="Explicitly send one pending trace to NIM and create a revision DRAFT",
+    )
+    skill_revision.add_argument("catalog", type=Path)
+    skill_revision.add_argument("trace_store", type=Path)
+    skill_revision.add_argument("trace_id")
+    skill_revision.add_argument("skill_id")
+    skill_revision.add_argument("--model", default="z-ai/glm-5.3-flash")
+
+    trace_list = subparsers.add_parser(
+        "skill-trace-list",
+        help="List privacy-minimized pending traces without contacting NIM",
+    )
+    trace_list.add_argument("trace_store", type=Path)
+    trace_list.add_argument("--limit", type=int, default=20)
+
+    trace_show = subparsers.add_parser(
+        "skill-trace-show",
+        help="Show one pending trace without contacting NIM",
+    )
+    trace_show.add_argument("trace_store", type=Path)
+    trace_show.add_argument("trace_id")
+
+    trace_discard = subparsers.add_parser(
+        "skill-trace-discard",
+        help="Hide one pending trace while retaining it for audit and restore",
+    )
+    trace_discard.add_argument("trace_store", type=Path)
+    trace_discard.add_argument("trace_id")
+
+    trace_restore = subparsers.add_parser(
+        "skill-trace-restore",
+        help="Restore one previously discarded trace to the pending queue",
+    )
+    trace_restore.add_argument("trace_store", type=Path)
+    trace_restore.add_argument("trace_id")
+
+    skill_schedule = subparsers.add_parser(
+        "build-skill-study-schedule",
+        help="Build a deterministic counterbalanced SK0-SK3 schedule",
+    )
+    skill_schedule.add_argument("participant_id")
+    skill_schedule.add_argument("repetitions", type=int)
+    skill_schedule.add_argument("seed", type=int)
+    skill_schedule.add_argument("--task", action="append", required=True)
+
+    skill_analysis = subparsers.add_parser(
+        "analyze-skill-study",
+        help="Validate paired SK0-SK3 observations and report condition means",
+    )
+    skill_analysis.add_argument("observations", type=Path)
+
+    candidate_analysis = subparsers.add_parser(
+        "evaluate-skill-revision-candidate",
+        help="Compare paired baseline and revision trials without approving the draft",
+    )
+    candidate_analysis.add_argument("trials", type=Path)
+    candidate_analysis.add_argument("--minimum-trials", type=int, default=3)
+    candidate_analysis.add_argument("--maximum-elapsed-ratio", type=float, default=1.25)
+    candidate_analysis.add_argument("--maximum-token-ratio", type=float, default=1.25)
 
     validate_apps = subparsers.add_parser(
         "validate-app-registry",
@@ -351,6 +495,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Validate local runtime integrity without launching apps or models",
     )
     doctor.add_argument("project_root", type=Path)
+    list_displays = subparsers.add_parser(
+        "list-displays",
+        help="List connected displays and the persisted SKILLA target",
+    )
+    list_displays.add_argument("project_root", type=Path)
+    select_display = subparsers.add_parser(
+        "select-display",
+        help="Persist primary, follow_foreground, or an exact Windows display device",
+    )
+    select_display.add_argument("project_root", type=Path)
+    select_display.add_argument("target")
+    for command, help_text in (
+        ("start-menu-status", "Report the owned current-user Start Menu shortcut"),
+        ("install-start-menu", "Create the owned current-user Start Menu shortcut"),
+        ("remove-start-menu", "Remove the owned current-user Start Menu shortcut"),
+    ):
+        start_menu = subparsers.add_parser(command, help=help_text)
+        start_menu.add_argument("install_root", type=Path)
     foreground = subparsers.add_parser(
         "foreground-context",
         help="Report privacy-minimized foreground window identity",
@@ -402,14 +564,18 @@ def build_parser() -> argparse.ArgumentParser:
             "run-product-tray-credential",
             "Start the tray host using Windows Credential Manager",
         ),
+        (
+            "run-product-console-credential",
+            "Start a text-only product window without opening the microphone",
+        ),
     ):
         credential_product = subparsers.add_parser(command, help=help_text)
         credential_product.add_argument("project_root", type=Path)
         credential_product.add_argument("config", type=Path)
     for command, help_text in (
-        ("autostart-status", "Report current-user JAVIS Startup registration status"),
-        ("install-autostart", "Register the JAVIS tray host for current-user Startup"),
-        ("remove-autostart", "Remove the owned current-user JAVIS Startup shortcut"),
+        ("autostart-status", "Report current-user SKILLA Startup registration status"),
+        ("install-autostart", "Register the SKILLA tray host for current-user Startup"),
+        ("remove-autostart", "Remove the owned current-user SKILLA Startup shortcut"),
     ):
         autostart = subparsers.add_parser(command, help=help_text)
         autostart.add_argument("project_root", type=Path)
@@ -594,6 +760,19 @@ def main(arguments: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+    if args.command == "skill-list":
+        records = _skill_catalog(args.catalog).list(
+            status=SkillStatus(args.status) if args.status is not None else None,
+            limit=args.limit,
+        )
+        print(
+            json.dumps(
+                {"skills": [item.model_dump(mode="json") for item in records]},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
     if args.command == "skill-revise":
         catalog = _skill_catalog(args.catalog)
         record = catalog.propose_revision(UUID(args.skill_id), _skill_proposal(args))
@@ -605,8 +784,114 @@ def main(arguments: Sequence[str] | None = None) -> int:
             catalog.require(UUID(args.skill_id)),
             SkillOutcome(args.outcome),
             args.detail_code,
+            elapsed_ms=args.elapsed_ms,
+            llm_calls=args.llm_calls,
+            input_tokens=args.input_tokens,
+            output_tokens=args.output_tokens,
+            user_interventions=args.user_interventions,
+            model_configuration_sha256=args.model_configuration_sha256,
+            tool_surface_sha256=args.tool_surface_sha256,
+            planner_usage_complete=args.planner_usage_complete,
+            planner_responses_without_usage=args.planner_responses_without_usage,
         )
         print(use_record.model_dump_json(indent=2))
+        return 0
+    if args.command == "skill-assess-revision":
+        revision_assessment = _skill_catalog(args.catalog).assess_revision(
+            UUID(args.skill_id),
+            minimum_observations=args.minimum_observations,
+            minimum_success_rate=args.minimum_success_rate,
+        )
+        print(revision_assessment.model_dump_json(indent=2))
+        return 0
+    if args.command == "skill-assess-staleness":
+        staleness_assessment = _skill_catalog(args.catalog).assess_staleness(
+            UUID(args.skill_id),
+            args.model_configuration_sha256,
+            args.tool_surface_sha256,
+            minimum_observations=args.minimum_observations,
+        )
+        print(staleness_assessment.model_dump_json(indent=2))
+        return 0
+    if args.command == "evaluate-skill-search":
+        search_report = evaluate_skill_search(
+            _skill_catalog(args.catalog),
+            load_skill_search_cases(args.cases),
+        )
+        print(search_report.model_dump_json(indent=2))
+        return 0
+    if args.command in {"skill-draft-from-trace-nim", "skill-revision-from-trace-nim"}:
+        trace_store = _skill_trace_store(args.trace_store)
+        trace_id = UUID(args.trace_id)
+        pending_trace = trace_store.require_pending(trace_id)
+        author = SkillDraftAuthor(
+            NimChatTransport(load_nim_credential(), model=args.model),
+            _skill_catalog(args.catalog),
+        )
+        artifact = (
+            author.draft_initial(pending_trace.trace)
+            if args.command == "skill-draft-from-trace-nim"
+            else author.draft_revision(UUID(args.skill_id), pending_trace.trace)
+        )
+        trace_store.mark_consumed(trace_id)
+        print(artifact.model_dump_json(indent=2))
+        return 0
+    if args.command == "skill-trace-list":
+        traces = _skill_trace_store(args.trace_store).pending(limit=args.limit)
+        print(
+            json.dumps(
+                {"pending": [item.model_dump(mode="json") for item in traces]},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+    if args.command == "skill-trace-show":
+        trace = _skill_trace_store(args.trace_store).require_pending(UUID(args.trace_id))
+        print(trace.model_dump_json(indent=2))
+        return 0
+    if args.command in {"skill-trace-discard", "skill-trace-restore"}:
+        store = _skill_trace_store(args.trace_store)
+        trace_id = UUID(args.trace_id)
+        if args.command == "skill-trace-discard":
+            store.discard(trace_id)
+            status = "DISCARDED"
+        else:
+            store.restore(trace_id)
+            status = "PENDING"
+        print(json.dumps({"trace_id": str(trace_id), "status": status}, indent=2))
+        return 0
+    if args.command == "build-skill-study-schedule":
+        schedule = build_skill_study_schedule(
+            participant_id=args.participant_id,
+            task_ids=tuple(args.task),
+            repetitions=args.repetitions,
+            seed=args.seed,
+        )
+        print(
+            json.dumps(
+                {"schedule": [item.model_dump(mode="json") for item in schedule]},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+    if args.command == "analyze-skill-study":
+        skill_study_report = evaluate_skill_study(
+            load_skill_study_observations(
+                _resolve_cli_path(args.observations, directory=False)
+            )
+        )
+        print(skill_study_report.model_dump_json(indent=2))
+        return 0
+    if args.command == "evaluate-skill-revision-candidate":
+        candidate_report = evaluate_revision_candidate(
+            load_skill_candidate_trials(_resolve_cli_path(args.trials, directory=False)),
+            minimum_trials=args.minimum_trials,
+            maximum_elapsed_ratio=args.maximum_elapsed_ratio,
+            maximum_token_ratio=args.maximum_token_ratio,
+        )
+        print(candidate_report.model_dump_json(indent=2))
         return 0
     if args.command == "intent-scenarios":
         scenario_report = run_intent_scenarios(load_intent_scenarios(args.path))
@@ -979,6 +1264,48 @@ def main(arguments: Sequence[str] | None = None) -> int:
         report = run_doctor(args.project_root)
         print(report.model_dump_json(indent=2))
         return 0 if report.passed else 1
+    if args.command in {"list-displays", "select-display"}:
+        root = _resolve_cli_path(args.project_root, directory=True)
+        controller = build_windows_display_controller(
+            prepare_product_state_directory(root)
+        )
+        if args.command == "select-display":
+            target = args.target
+            if target == "primary":
+                selection = controller.select_primary()
+            elif target == "follow_foreground":
+                selection = controller.select_follow_foreground()
+            else:
+                selection = controller.select_device(target)
+        else:
+            selection = controller.ensure_selection()
+        print(
+            json.dumps(
+                {
+                    "selection": selection.model_dump(mode="json"),
+                    "displays": [
+                        item.model_dump(mode="json") for item in controller.displays()
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+    if args.command in {
+        "start-menu-status",
+        "install-start-menu",
+        "remove-start-menu",
+    }:
+        start_menu_registration = StartMenuShortcutRegistrar(args.install_root)
+        if args.command == "start-menu-status":
+            status = start_menu_registration.status()
+        elif args.command == "install-start-menu":
+            status = start_menu_registration.register()
+        else:
+            status = start_menu_registration.unregister()
+        print(json.dumps({"status": status.value}, indent=2))
+        return 0 if status is not StartMenuStatus.CONFLICT else 1
     if args.command == "foreground-context":
         apps = AppRegistryLoader(require_publisher=args.require_publisher).load(args.registry)
         snapshot = ForegroundContextCollector(apps).capture()
@@ -1041,14 +1368,51 @@ def main(arguments: Sequence[str] | None = None) -> int:
         try:
             run_tk_status_hud(
                 status_provider=service.runtime.runtime.status_snapshot,
+                voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,
+                request_task_stop=service.runtime.runtime.cancel_current_task,
                 request_capture_stop=service.runtime.capture_pump.request_stop,
                 request_runtime_stop=service.lifecycle.stop,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                open_text_command=lambda: run_tk_text_command(
+                    service.runtime.runtime,
+                    poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                ),
+                open_verified_result=lambda: run_tk_verified_result(
+                    lambda: service.runtime.runtime.status_snapshot().result
+                ),
+                review_skills=lambda: run_tk_skill_review(service.skills),
+                review_skill_traces=lambda: run_tk_skill_trace_review(
+                    service.skill_traces,
+                    service.skill_draft_workflow,
+                    service.skills,
+                ),
             )
         finally:
             stopped = service.lifecycle.stop()
         print(stopped.model_dump_json(indent=2))
         return 0 if stopped.state.value == "STOPPED" else 1
+    if args.command == "run-product-console-credential":
+        service = build_windows_product_service_with_secret_loader(
+            args.project_root,
+            args.config,
+            load_nim_credential,
+        )
+        try:
+            run_tk_text_command(
+                service.runtime.runtime,
+                poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                open_display_selector=lambda: run_tk_display_selector(service.display),
+                review_skills=lambda: run_tk_skill_review(service.skills),
+                review_skill_traces=lambda: run_tk_skill_trace_review(
+                    service.skill_traces,
+                    service.skill_draft_workflow,
+                    service.skills,
+                ),
+            )
+        finally:
+            closed = service.runtime.runtime.close()
+        print(closed.model_dump_json(indent=2))
+        return 0 if closed.event_type.value == "CLOSED" else 1
     if args.command == "run-product-host-credential":
         service = build_windows_product_service_with_secret_loader(
             args.project_root,
@@ -1062,9 +1426,24 @@ def main(arguments: Sequence[str] | None = None) -> int:
         try:
             run_tk_status_hud(
                 status_provider=service.runtime.runtime.status_snapshot,
+                voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,
+                request_task_stop=service.runtime.runtime.cancel_current_task,
                 request_capture_stop=service.runtime.capture_pump.request_stop,
                 request_runtime_stop=service.lifecycle.stop,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                open_text_command=lambda: run_tk_text_command(
+                    service.runtime.runtime,
+                    poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                ),
+                open_verified_result=lambda: run_tk_verified_result(
+                    lambda: service.runtime.runtime.status_snapshot().result
+                ),
+                review_skills=lambda: run_tk_skill_review(service.skills),
+                review_skill_traces=lambda: run_tk_skill_trace_review(
+                    service.skill_traces,
+                    service.skill_draft_workflow,
+                    service.skills,
+                ),
             )
         finally:
             stopped = service.lifecycle.stop()
@@ -1086,6 +1465,24 @@ def main(arguments: Sequence[str] | None = None) -> int:
             ),
             stop_agent=service.lifecycle.stop,
             exit_agent=service.lifecycle.stop,
+            review_skills=lambda: run_tk_skill_review(service.skills),
+            review_traces=lambda: run_tk_skill_trace_review(
+                service.skill_traces,
+                service.skill_draft_workflow,
+                service.skills,
+            ),
+            select_display=lambda: run_tk_display_selector(service.display),
+            text_command=lambda: run_tk_text_command(
+                service.runtime.runtime,
+                poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                open_display_selector=lambda: run_tk_display_selector(service.display),
+                review_skills=lambda: run_tk_skill_review(service.skills),
+                review_skill_traces=lambda: run_tk_skill_trace_review(
+                    service.skill_traces,
+                    service.skill_draft_workflow,
+                    service.skills,
+                ),
+            ),
         )
         try:
             tray.run()
@@ -1109,6 +1506,24 @@ def main(arguments: Sequence[str] | None = None) -> int:
             ),
             stop_agent=service.lifecycle.stop,
             exit_agent=service.lifecycle.stop,
+            review_skills=lambda: run_tk_skill_review(service.skills),
+            review_traces=lambda: run_tk_skill_trace_review(
+                service.skill_traces,
+                service.skill_draft_workflow,
+                service.skills,
+            ),
+            select_display=lambda: run_tk_display_selector(service.display),
+            text_command=lambda: run_tk_text_command(
+                service.runtime.runtime,
+                poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                open_display_selector=lambda: run_tk_display_selector(service.display),
+                review_skills=lambda: run_tk_skill_review(service.skills),
+                review_skill_traces=lambda: run_tk_skill_trace_review(
+                    service.skill_traces,
+                    service.skill_draft_workflow,
+                    service.skills,
+                ),
+            ),
         )
         try:
             tray.run()
@@ -1233,7 +1648,7 @@ def _product_autostart_registration(
     executable = Path(sys.executable).resolve(strict=True)
     frozen = bool(getattr(sys, "frozen", False))
     if frozen:
-        tray_executable = executable.with_name("JAVIS-Tray.exe")
+        tray_executable = executable.with_name("SKILLA-Tray.exe")
         if tray_executable.is_symlink() or not tray_executable.is_file():
             raise ValueError("frozen tray executable is unavailable")
         executable = tray_executable.resolve(strict=True)
@@ -1271,7 +1686,7 @@ def _product_credential_autostart_registration(
     frozen = bool(getattr(sys, "frozen", False))
     arguments: tuple[str, ...]
     if frozen:
-        tray_executable = executable.with_name("JAVIS-Tray.exe")
+        tray_executable = executable.with_name("SKILLA-Tray.exe")
         if tray_executable.is_symlink() or not tray_executable.is_file():
             raise ValueError("frozen tray executable is unavailable")
         executable = tray_executable.resolve(strict=True)
@@ -1314,6 +1729,14 @@ def _skill_catalog(path: Path) -> LocalSkillCatalog:
     return LocalSkillCatalog(path.resolve(strict=False), default_registry())
 
 
+def _skill_trace_store(path: Path) -> LocalSkillTraceStore:
+    if not path.is_absolute() or path.is_symlink() or not path.parent.is_dir():
+        raise ValueError(
+            "skill trace store must be an absolute non-symlink path in an existing directory"
+        )
+    return LocalSkillTraceStore(path.resolve(strict=False))
+
+
 def _skill_proposal(args: argparse.Namespace) -> SkillProposal:
     return SkillProposal(
         key=args.key,
@@ -1321,6 +1744,9 @@ def _skill_proposal(args: argparse.Namespace) -> SkillProposal:
         description=args.description,
         triggers=tuple(args.trigger),
         procedure=tuple(args.step),
+        dynamic_inputs=tuple(args.dynamic_input),
+        decision_rules=tuple(args.decision_rule),
+        verification_rules=tuple(args.verification_rule),
         allowed_capabilities=tuple(args.capability),
     )
 
@@ -1336,7 +1762,7 @@ def _smoke_system_info(audit_path: Path | None) -> int:
         target_identity="local-machine",
         expected_postconditions=(Postcondition(predicate="execution.success"),),
     )
-    plan = Plan(goal="Verify the read-only JAVIS pipeline", steps=(action,))
+    plan = Plan(goal="Verify the read-only SKILLA pipeline", steps=(action,))
     context = PolicyContext(
         addressed_confidence=1.0,
         intent_confidence=1.0,
@@ -1368,6 +1794,28 @@ def entrypoint() -> None:
         from .explorer_folder_worker import main as explorer_worker_main
 
         raise SystemExit(explorer_worker_main())
+    if getattr(sys, "frozen", False) and not sys.argv[1:]:
+        raise SystemExit(
+            run_windowed_product_startup(
+                Path(sys.executable),
+                credential_status_loader=nim_credential_status,
+                credential_setup=run_tk_nim_credential_setup,
+                preflight_runner=lambda root, config: (
+                    run_product_preflight_with_secret_loader(
+                        root,
+                        config,
+                        load_nim_credential,
+                    )
+                ),
+                product_runner=lambda root, config: main(
+                    (
+                        "run-product-console-credential",
+                        str(root),
+                        str(config),
+                    )
+                ),
+            )
+        )
     raise SystemExit(main())
 
 
