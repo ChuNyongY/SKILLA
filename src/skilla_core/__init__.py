@@ -691,6 +691,7 @@ from .voice import (
 )
 from .voice_adapters import (
     AudioCaptureError,
+    BackgroundFasterWhisperSpeechToText,
     FasterWhisperSpeechToText,
     OpenWakeWordDetector,
     PcmEnergyVad,
@@ -968,6 +969,7 @@ __all__ = [
     "HostSafeScenarioResult",
     "HostSafeScenarioRunner",
     "StableForegroundContextCollector",
+    "BackgroundFasterWhisperSpeechToText",
     "FasterWhisperSpeechToText",
     "ExecutionBroker",
     "EvaluationReport",

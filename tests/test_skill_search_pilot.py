@@ -26,6 +26,13 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _normalized_text_sha256(path: Path) -> str:
+    # Git may materialize text fixtures with CRLF on Windows.  Freeze the
+    # dataset content, not the checkout platform's newline convention.
+    normalized = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(normalized).hexdigest()
+
+
 def test_frozen_cases_cover_positive_negative_and_ambiguity() -> None:
     cases = load_skill_search_cases(DEFAULT_CASES)
 
@@ -44,7 +51,7 @@ def test_holdout_cases_are_frozen_and_do_not_copy_development_queries() -> None:
     holdout = load_skill_search_cases(HOLDOUT_CASES)
 
     assert len(holdout) == 25
-    assert _sha256(HOLDOUT_CASES) == HOLDOUT_SHA256
+    assert _normalized_text_sha256(HOLDOUT_CASES) == HOLDOUT_SHA256
     assert {case.query for case in development}.isdisjoint(case.query for case in holdout)
     assert sum(case.expected_skill_key is None for case in holdout) == 5
     assert len({case.case_id for case in holdout}) == len(holdout)

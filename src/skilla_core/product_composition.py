@@ -50,7 +50,7 @@ from .voice import (
     WakeWordDetector,
 )
 from .voice_adapters import (
-    FasterWhisperSpeechToText,
+    BackgroundFasterWhisperSpeechToText,
     OpenWakeWordDetector,
     PcmEnergyVad,
     SoundDeviceFrameSource,
@@ -337,7 +337,7 @@ def build_product_voice_stack(
     wake_bundle_loader: WakeBundleLoader = load_wakeword_bundle,
     stt_bundle_loader: SttBundleLoader = load_stt_bundle,
     wake_factory: WakeDetectorFactory = OpenWakeWordDetector.from_local_bundle,
-    stt_factory: SttFactory = FasterWhisperSpeechToText.from_local_bundle,
+    stt_factory: SttFactory = BackgroundFasterWhisperSpeechToText.from_local_bundle,
     vad_factory: VadFactory = PcmEnergyVad,
     frame_source_factory: FrameSourceFactory = SoundDeviceFrameSource,
 ) -> ProductVoiceStack:

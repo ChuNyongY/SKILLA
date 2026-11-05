@@ -252,7 +252,6 @@ class TkStatusView:
             raise RuntimeError("tkinter status HUD could not start") from error
         root.title(title)
         root.resizable(False, False)
-        root.attributes("-topmost", True)
         root.geometry("800x570")
         root.configure(bg="#030711")
 

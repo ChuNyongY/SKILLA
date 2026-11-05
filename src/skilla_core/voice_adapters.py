@@ -11,6 +11,7 @@ from contextlib import suppress
 from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
+from threading import Event, Lock, Thread
 from typing import TYPE_CHECKING, Protocol
 
 from .cancellation import CancellationToken
@@ -521,6 +522,83 @@ class FasterWhisperSpeechToText:
                 raise ValueError("transcript exceeded size limit")
             pieces.append(text)
         return " ".join(pieces)
+
+
+class BackgroundFasterWhisperSpeechToText:
+    """Warm the verified local Whisper model without delaying the first UI frame."""
+
+    def __init__(
+        self,
+        bundle: LoadedSttBundle,
+        *,
+        language: str = "ko",
+        device: str = "cpu",
+        compute_type: str = "int8",
+        loader: Callable[..., FasterWhisperSpeechToText] = (
+            FasterWhisperSpeechToText.from_local_bundle
+        ),
+        thread_factory: Callable[..., Thread] = Thread,
+    ) -> None:
+        self._bundle = bundle
+        self._language = language
+        self._device = device
+        self._compute_type = compute_type
+        self._loader = loader
+        self._ready = Event()
+        self._lock = Lock()
+        self._delegate: FasterWhisperSpeechToText | None = None
+        self._error: Exception | None = None
+        try:
+            thread = thread_factory(
+                target=self._initialize,
+                name="skilla-whisper-warmup",
+                daemon=True,
+            )
+            thread.start()
+        except Exception as error:
+            self._error = error
+            self._ready.set()
+
+    @classmethod
+    def from_local_bundle(
+        cls,
+        bundle: LoadedSttBundle,
+        *,
+        language: str = "ko",
+        device: str = "cpu",
+        compute_type: str = "int8",
+    ) -> BackgroundFasterWhisperSpeechToText:
+        return cls(
+            bundle,
+            language=language,
+            device=device,
+            compute_type=compute_type,
+        )
+
+    def _initialize(self) -> None:
+        try:
+            delegate = self._loader(
+                self._bundle,
+                language=self._language,
+                device=self._device,
+                compute_type=self._compute_type,
+            )
+            with self._lock:
+                self._delegate = delegate
+        except Exception as error:
+            with self._lock:
+                self._error = error
+        finally:
+            self._ready.set()
+
+    def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
+        self._ready.wait()
+        with self._lock:
+            delegate = self._delegate
+            error = self._error
+        if delegate is None:
+            raise RuntimeError("local Whisper model initialization failed") from error
+        return delegate.transcribe(frames)
 
 
 class AudioCaptureError(RuntimeError):

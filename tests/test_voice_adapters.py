@@ -1,6 +1,7 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Event
 from types import ModuleType
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from skilla_core import (
     AudioCaptureError,
     AudioFrame,
+    BackgroundFasterWhisperSpeechToText,
     CancellationToken,
     FasterWhisperSpeechToText,
     OpenWakeWordDetector,
@@ -50,6 +52,27 @@ class WhisperModel:
 
 def audio(raw: bytes = b"\x00\x00") -> AudioFrame:
     return AudioFrame(pcm_s16le=raw)
+
+
+def test_background_whisper_warmup_does_not_block_ui_construction() -> None:
+    started = Event()
+    release = Event()
+
+    class Delegate:
+        def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
+            assert frames == (audio(),)
+            return "스킬라"
+
+    def load(_bundle: object, **_options: object) -> Delegate:
+        started.set()
+        assert release.wait(2)
+        return Delegate()
+
+    stt = BackgroundFasterWhisperSpeechToText(object(), loader=load)  # type: ignore[arg-type]
+
+    assert started.wait(1)
+    release.set()
+    assert stt.transcribe((audio(),)) == "스킬라"
 
 
 def test_openwakeword_selects_named_score_and_clamps() -> None:
