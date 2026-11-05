@@ -15,7 +15,7 @@ import win32con  # type: ignore[import-untyped]
 import win32gui  # type: ignore[import-untyped]
 import win32process  # type: ignore[import-untyped]
 
-from javis_core import (
+from skilla_core import (
     Action,
     ExactTemplateVisionGrounder,
     ExecutionResult,

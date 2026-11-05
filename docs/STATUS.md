@@ -828,7 +828,7 @@ bootstrap process를 즉시 승인하지 않는다. Windows Update로
 version/hash가 바뀌면 자동 탐색하지 않고 registry를 명시적으로 재검토해야 한다.
 
 pywinauto `find_elements`에는 timeout 인자가 없으므로 운영 UIA adapter는 고정된
-`python -I -m javis_core.uia_worker` child process에서 strict JSON 요청을 처리한다. parent는 5초
+`python -I -m skilla_core.uia_worker` child process에서 strict JSON 요청을 처리한다. parent는 5초
 timeout, 200 KiB 요청, 64 KiB 응답, 최소 환경을 적용한다. worker 오류 text와 document 원문은
 반환하지 않는다.
 

@@ -47,7 +47,7 @@ scenario ID, accepted, reason code와 signed-payload SHA-256만 남고 signature
 provider/snapshot/guest identity로 교체해야 한다.
 
 ```powershell
-python -m javis_core.cli verify-snapshot-batch `
+python -m skilla_core.cli verify-snapshot-batch `
   C:\absolute\snapshot-scenarios.json `
   C:\absolute\evidence-directory `
   C:\absolute\hmac-key.bin `
@@ -67,7 +67,7 @@ manifest/outcome/restore/signature 검증을 통과할 때만 exit code 0을 반
 VM을 실행하거나 evidence·artifact를 대신 만들지 않는다.
 
 ```powershell
-python -m javis_core.cli export-snapshot-benchmark-requests `
+python -m skilla_core.cli export-snapshot-benchmark-requests `
   evaluation/benchmark_tasks.json `
   evaluation/integrated_scenarios.json `
   C:\absolute\snapshot-benchmark-requests.json
@@ -84,7 +84,7 @@ HMAC key는 공개키가 아니라 harness와 검증기가 공유하는 비밀�
 운영자는 이 파일을 현재 검증 계정만 읽도록 보호하고 key ID별 회전·폐기를 관리해야 한다.
 
 ```powershell
-python -m javis_core.cli collect-snapshot-benchmark `
+python -m skilla_core.cli collect-snapshot-benchmark `
   evaluation/benchmark_tasks.json `
   evaluation/integrated_scenarios.json `
   C:\absolute\benchmark-collection `

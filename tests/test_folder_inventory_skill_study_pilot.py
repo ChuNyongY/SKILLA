@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import Action, Plan, Postcondition
-from javis_core.skill_study import SkillStudyCondition
+from skilla_core import Action, Plan, Postcondition
+from skilla_core.skill_study import SkillStudyCondition
 from tools.run_folder_inventory_skill_study_pilot import (
     EXPECTED_NAMES,
     MODEL_CONFIGURATION,

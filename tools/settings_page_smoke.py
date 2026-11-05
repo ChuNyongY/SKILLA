@@ -5,7 +5,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     AppRegistryLoader,
     Postcondition,

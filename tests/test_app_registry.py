@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import AppRegistryError, AppRegistryLoader
+from skilla_core import AppRegistryError, AppRegistryLoader
 
 
 class PublisherVerifier:

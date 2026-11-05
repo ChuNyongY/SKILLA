@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from javis_core.cancellation import CancellationToken
-from javis_core.natural_tts import FallbackSpeechSink, NaturalTtsError
+from skilla_core.cancellation import CancellationToken
+from skilla_core.natural_tts import FallbackSpeechSink, NaturalTtsError
 
 
 class RecordingSink:

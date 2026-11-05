@@ -28,7 +28,7 @@ helper 창의 HWND를 `UserConsentVerifierInterop.RequestVerificationForWindowAs
 ```
 
 이 PC에서는 unsigned single-file apphost가 Windows application-control 정책에 차단되므로 정책을
-우회하지 않는다. 스크립트는 framework-dependent managed 배포본을 `publish-fdd`에 만들고,
+우회하지 않는다. 스크립트는 framework-dependent managed 배포본을 `publish-skilla-fdd`에 만들고,
 Authenticode가 유효한 Microsoft system `dotnet.exe`를 host로 선택한다. manifest에는 host와
 helper DLL·deps·runtimeconfig·Windows SDK projection dependency의 SHA-256이 모두 기록된다.
 

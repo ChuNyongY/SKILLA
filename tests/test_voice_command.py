@@ -3,7 +3,7 @@ import threading
 import time
 from collections.abc import Mapping
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     ApprovalTokenService,
@@ -26,8 +26,8 @@ from javis_core import (
     VoiceCaptureResult,
     default_registry,
 )
-from javis_core.intent import InputSource
-from javis_core.voice_command import VoiceCommandCoordinator, VoiceCommandStatus
+from skilla_core.intent import InputSource
+from skilla_core.voice_command import VoiceCommandCoordinator, VoiceCommandStatus
 
 
 class Classifier:

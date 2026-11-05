@@ -3,19 +3,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from javis_core.benchmark_collection import (
+from skilla_core.benchmark_collection import (
     BenchmarkExperimentCollector,
     CollectionAttemptStatus,
 )
-from javis_core.benchmark_nonverifying_host_runner import (
+from skilla_core.benchmark_nonverifying_host_runner import (
     NonVerifyingHostConditionRunner,
 )
-from javis_core.benchmark_tasks import load_benchmark_tasks
-from javis_core.integrated_scenarios import (
+from skilla_core.benchmark_tasks import load_benchmark_tasks
+from skilla_core.integrated_scenarios import (
     ScenarioEnvironment,
     load_integrated_scenarios,
 )
-from javis_core.study_analysis import StudyCondition
+from skilla_core.study_analysis import StudyCondition
 
 
 def test_b1_and_p1_host_actions_are_single_pass_without_recovery(tmp_path: Path) -> None:

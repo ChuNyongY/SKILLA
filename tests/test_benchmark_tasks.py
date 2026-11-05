@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.benchmark_tasks import (
+from skilla_core.benchmark_tasks import (
     BenchmarkTaskError,
     load_benchmark_tasks,
     validate_benchmark_contract,
 )
-from javis_core.cli import main
-from javis_core.integrated_scenarios import load_integrated_scenarios
-from javis_core.registry import default_registry
+from skilla_core.cli import main
+from skilla_core.integrated_scenarios import load_integrated_scenarios
+from skilla_core.registry import default_registry
 
 TASKS = Path("evaluation/benchmark_tasks.json").resolve()
 SCENARIOS = Path("evaluation/integrated_scenarios.json").resolve()

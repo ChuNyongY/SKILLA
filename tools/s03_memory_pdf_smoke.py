@@ -7,7 +7,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     AppRegistryLoader,
@@ -35,9 +35,9 @@ from javis_core import (
     default_registry,
     validate_plan_contracts,
 )
-from javis_core.cancellation import CancellationToken
-from javis_core.executor import Executor
-from javis_core.verifier import Verifier
+from skilla_core.cancellation import CancellationToken
+from skilla_core.executor import Executor
+from skilla_core.verifier import Verifier
 
 
 class RecordingExecutor:

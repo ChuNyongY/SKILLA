@@ -7,14 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.cli import main
-from javis_core.snapshot_batch import (
+from skilla_core.cli import main
+from skilla_core.snapshot_batch import (
     SNAPSHOT_SCENARIO_IDS,
     HmacSha256SnapshotVerifier,
     SnapshotEvidenceBatchEvaluator,
     load_snapshot_hmac_key,
 )
-from javis_core.snapshot_vm import (
+from skilla_core.snapshot_vm import (
     SnapshotEvidenceError,
     SnapshotEvidenceGate,
     SnapshotScenarioManifest,

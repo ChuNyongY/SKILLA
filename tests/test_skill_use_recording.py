@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     CatalogSkillUseRecorder,
     LocalSkillCatalog,
@@ -20,9 +20,9 @@ from javis_core import (
     product_model_configuration_sha256,
     product_tool_surface_sha256,
 )
-from javis_core.models import ActionStatus
-from javis_core.planner import NimTransportMetrics
-from javis_core.registry import CapabilityRegistry, default_registry
+from skilla_core.models import ActionStatus
+from skilla_core.planner import NimTransportMetrics
+from skilla_core.registry import CapabilityRegistry, default_registry
 
 
 class Planner:

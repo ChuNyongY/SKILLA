@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     DocxDocumentExecutor,
@@ -9,7 +9,7 @@ from javis_core import (
     document_content_sha256,
     document_target_identity,
 )
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.runtime_models import ExecutionResult
 
 SOURCE_DIGEST = "a" * 64
 

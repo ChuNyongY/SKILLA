@@ -6,27 +6,27 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.benchmark_collection import build_benchmark_schedule
-from javis_core.benchmark_snapshot_runner import (
+from skilla_core.benchmark_collection import build_benchmark_schedule
+from skilla_core.benchmark_snapshot_runner import (
     SnapshotBenchmarkConditionRunner,
     SnapshotBenchmarkEvidence,
     build_snapshot_benchmark_requests,
     sign_snapshot_benchmark_evidence,
     write_snapshot_benchmark_requests,
 )
-from javis_core.benchmark_tasks import (
+from skilla_core.benchmark_tasks import (
     BenchmarkTask,
     BenchmarkTaskError,
     load_benchmark_tasks,
 )
-from javis_core.cli import main
-from javis_core.evaluation import TrialResult
-from javis_core.integrated_scenarios import (
+from skilla_core.cli import main
+from skilla_core.evaluation import TrialResult
+from skilla_core.integrated_scenarios import (
     ScenarioEnvironment,
     load_integrated_scenarios,
 )
-from javis_core.snapshot_batch import HmacSha256SnapshotVerifier
-from javis_core.snapshot_vm import SnapshotEvidenceError
+from skilla_core.snapshot_batch import HmacSha256SnapshotVerifier
+from skilla_core.snapshot_vm import SnapshotEvidenceError
 
 TASKS = load_benchmark_tasks(Path("evaluation/benchmark_tasks.json").resolve())
 SCENARIOS = load_integrated_scenarios(Path("evaluation/integrated_scenarios.json").resolve())

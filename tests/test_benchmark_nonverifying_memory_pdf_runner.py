@@ -4,16 +4,16 @@ import hashlib
 import json
 from pathlib import Path
 
-from javis_core.benchmark_collection import BenchmarkExperimentCollector, CollectionAttemptStatus
-from javis_core.benchmark_nonverifying_memory_pdf_runner import (
+from skilla_core.benchmark_collection import BenchmarkExperimentCollector, CollectionAttemptStatus
+from skilla_core.benchmark_nonverifying_memory_pdf_runner import (
     NonVerifyingMemoryPdfConditionRunner,
 )
-from javis_core.benchmark_tasks import load_benchmark_tasks
-from javis_core.integrated_scenarios import ScenarioEnvironment, load_integrated_scenarios
-from javis_core.models import Action, VerificationResult
-from javis_core.process_launch import RegisteredApp
-from javis_core.runtime_models import ExecutionResult
-from javis_core.study_analysis import StudyCondition
+from skilla_core.benchmark_tasks import load_benchmark_tasks
+from skilla_core.integrated_scenarios import ScenarioEnvironment, load_integrated_scenarios
+from skilla_core.models import Action, VerificationResult
+from skilla_core.process_launch import RegisteredApp
+from skilla_core.runtime_models import ExecutionResult
+from skilla_core.study_analysis import StudyCondition
 
 
 class _Resolver:

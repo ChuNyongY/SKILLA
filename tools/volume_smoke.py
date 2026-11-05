@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import secrets
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     ApprovalTokenService,

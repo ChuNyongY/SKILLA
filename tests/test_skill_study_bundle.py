@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.skill_study import SkillStudyCondition, SkillTrialObservation
+from skilla_core.skill_study import SkillStudyCondition, SkillTrialObservation
 from tools.bundle_skill_study import build_bundle
 
 

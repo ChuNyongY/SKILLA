@@ -1,6 +1,6 @@
 import pytest
 
-from javis_core.microphone_probe import MicrophoneProbeError, probe_microphones
+from skilla_core.microphone_probe import MicrophoneProbeError, probe_microphones
 
 
 class FakeBackend:

@@ -11,7 +11,7 @@ from test_always_on_runtime import (
     runtime_with_executor,
 )
 
-from javis_core import (
+from skilla_core import (
     AlwaysOnCapturePump,
     AudioFrame,
     CancellationToken,
@@ -20,7 +20,7 @@ from javis_core import (
     CaptureStatus,
     VoiceCaptureResult,
 )
-from javis_core.always_on_runtime import RuntimeEventType
+from skilla_core.always_on_runtime import RuntimeEventType
 
 FRAME = AudioFrame(pcm_s16le=b"\x00\x00")
 
@@ -63,9 +63,11 @@ class ScriptedPipeline:
     def __init__(self, results: list[VoiceCaptureResult | None]) -> None:
         self._results = iter(results)
         self.cancelled = False
+        self.feed_count = 0
 
     def feed(self, frame: AudioFrame) -> VoiceCaptureResult | None:
         del frame
+        self.feed_count += 1
         return next(self._results, None)
 
     def cancel(self) -> None:
@@ -123,6 +125,26 @@ def test_request_stop_ends_active_capture_loop() -> None:
     assert result.status is CapturePumpStatus.STOPPED
     assert pipeline.cancelled
     assert not pump.is_running
+
+
+def test_feedback_playback_and_tail_are_not_sent_to_stt_or_runtime() -> None:
+    runtime, _classifier, _planner = runtime_with_executor(BlockingExecutor())
+    pipeline = ScriptedPipeline([capture("스킬라 자체 안내 음성")])
+    states = iter((True, True, False, False, False))
+    pump = AlwaysOnCapturePump(
+        frame_source=FiniteFrameSource(5),
+        voice_pipeline=pipeline,
+        runtime=runtime,
+        feedback_active_provider=lambda: next(states, False),
+        feedback_cooldown_frames=3,
+    )
+
+    result = pump.run(max_frames=5)
+
+    assert result.capture_count == 0
+    assert result.tasks_started == 0
+    assert pipeline.feed_count == 0
+    assert pipeline.cancelled
 
 
 def test_aborted_capture_is_forwarded_without_transcript_retention() -> None:

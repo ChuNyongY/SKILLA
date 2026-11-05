@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import Action, CancellationToken, RegisteredApp, SettingsOpenExecutor
+from skilla_core import Action, CancellationToken, RegisteredApp, SettingsOpenExecutor
 
 
 class Backend:

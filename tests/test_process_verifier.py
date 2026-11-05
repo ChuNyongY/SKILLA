@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     ExecutionResult,
     Postcondition,
     ProcessExistsPredicate,

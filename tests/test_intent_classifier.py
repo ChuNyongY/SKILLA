@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from javis_core.intent import IntentClass
-from javis_core.intent_classifier import IntentClassifierError, TypedIntentClassifier
+from skilla_core.intent import IntentClass
+from skilla_core.intent_classifier import IntentClassifierError, TypedIntentClassifier
 
 
 class Transport:

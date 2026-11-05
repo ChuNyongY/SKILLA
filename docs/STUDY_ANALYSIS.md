@@ -29,5 +29,5 @@ participant sampling을 논문에서 별도로 다뤄야 한다. confirmation과
 실행 예시는 다음과 같다.
 
 ```powershell
-.\.venv\Scripts\python.exe -m javis_core.cli analyze-study evaluation/study_observations.json
+.\.venv\Scripts\python.exe -m skilla_core.cli analyze-study evaluation/study_observations.json
 ```

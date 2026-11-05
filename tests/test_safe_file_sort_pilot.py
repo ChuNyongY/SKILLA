@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from javis_core import Action, Plan, PolicyDecision, RiskLevel
-from javis_core.models import Decision
+from skilla_core import Action, Plan, PolicyDecision, RiskLevel
+from skilla_core.models import Decision
 from tools.run_safe_file_sort_pilot import (
     ExactFileSortCompletionProbe,
     SandboxYellowApproval,

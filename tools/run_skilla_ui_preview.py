@@ -4,15 +4,15 @@ import argparse
 from datetime import UTC, datetime
 from uuid import UUID
 
-from javis_core.always_on_runtime import AlwaysOnState
-from javis_core.skill_review_surface import (
+from skilla_core.always_on_runtime import AlwaysOnState
+from skilla_core.skill_review_surface import (
     SkillDraftDetail,
     SkillDraftSummary,
     SkillReviewDisplay,
     TkSkillReviewView,
 )
-from javis_core.skill_runtime import SkillOutcome, SkillStatus
-from javis_core.skill_trace_review_surface import (
+from skilla_core.skill_runtime import SkillOutcome, SkillStatus
+from skilla_core.skill_trace_review_surface import (
     PendingTraceDetail,
     PendingTraceSummary,
     RevisionTargetSummary,
@@ -20,9 +20,9 @@ from javis_core.skill_trace_review_surface import (
     TraceReviewDisplay,
     TraceStepDisplay,
 )
-from javis_core.status_surface import RuntimeStatusDisplay, TkStatusView
-from javis_core.user_visible_result import UserVisibleResultSnapshot
-from javis_core.verified_result_surface import run_tk_verified_result
+from skilla_core.status_surface import RuntimeStatusDisplay, TkStatusView
+from skilla_core.user_visible_result import UserVisibleResultSnapshot
+from skilla_core.verified_result_surface import run_tk_verified_result
 
 SKILL_ID = UUID("00000000-0000-4000-8000-000000000101")
 TRACE_ID = UUID("00000000-0000-4000-8000-000000000201")

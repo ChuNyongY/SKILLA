@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pytest import MonkeyPatch
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     CapabilityExecutorRouter,

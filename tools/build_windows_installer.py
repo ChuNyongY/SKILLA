@@ -9,9 +9,9 @@ import zipfile
 from pathlib import Path
 from uuid import uuid4
 
-from javis_core.package_manifest import verify_package_manifest
-from javis_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
-from javis_core.version import VERSION
+from skilla_core.package_manifest import verify_package_manifest
+from skilla_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
+from skilla_core.version import VERSION
 
 PAYLOAD_NAME = "SKILLA-PC-payload.zip"
 

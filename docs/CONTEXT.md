@@ -10,7 +10,7 @@
 간주해 실패한다. 일치 항목이 없으면 PID와 HWND만 포함한 미등록 상태를 반환한다.
 
 ```powershell
-python -m javis_core.cli foreground-context config/apps.json --require-publisher
+python -m skilla_core.cli foreground-context config/apps.json --require-publisher
 ```
 
 이 결과는 사용자 경험을 위한 최소 컨텍스트일 뿐 authorization artifact가 아니다. 작업 실행은

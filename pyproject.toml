@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "javis-pc-agent"
+name = "skilla-local-agent"
 version = "0.1.9"
 description = "Skill-based Windows PC agent for reusable and verifiable repeated tasks"
 readme = "README.md"
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-javis = "javis_core.cli:entrypoint"
+skilla = "skilla_core.cli:entrypoint"
 
 [project.optional-dependencies]
 dev = [
@@ -28,6 +28,7 @@ voice = [
   "numpy>=1.26,<3",
   "onnxruntime>=1.23,<2; platform_system == 'Windows'",
   "openwakeword>=0.5.1,<0.6",
+  "sherpa-onnx==1.13.8; platform_system == 'Windows'",
   "scikit-learn>=1.7,<1.8; platform_system == 'Windows'",
   "faster-whisper>=1.1,<2",
   "sounddevice>=0.5,<1",
@@ -40,7 +41,7 @@ audio-control = ["pycaw>=20251023,<20270000"]
 packaging = ["pyinstaller==6.22.3"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/javis_core"]
+packages = ["src/skilla_core"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

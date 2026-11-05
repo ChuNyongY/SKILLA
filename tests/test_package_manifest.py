@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.package_manifest import (
+from skilla_core.package_manifest import (
     PackageManifestError,
     create_package_manifest,
     verify_package_manifest,

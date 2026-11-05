@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import SkillRetrievalDecision, SkillSearchOutcome, load_skill_search_cases
+from skilla_core import SkillRetrievalDecision, SkillSearchOutcome, load_skill_search_cases
 from tools.run_skill_search_pilot import (
     CATALOG_FILENAME,
     DEFAULT_CASES,

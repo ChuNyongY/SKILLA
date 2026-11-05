@@ -11,7 +11,7 @@ from pathlib import Path
 from time import perf_counter_ns
 from uuid import UUID, uuid4
 
-from javis_core import (
+from skilla_core import (
     ApprovalTokenService,
     CapabilityExecutorRouter,
     CapabilityVerifierRouter,
@@ -32,7 +32,7 @@ from javis_core import (
     TypedPlanner,
     load_nim_credential,
 )
-from javis_core.observation_loop import (
+from skilla_core.observation_loop import (
     BoundedObservationAgent,
     InMemoryVerifiedResultObserver,
     ObservationLoopStatus,

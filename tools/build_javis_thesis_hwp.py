@@ -59,12 +59,12 @@ IMPLEMENTATION_SECTION = r"""
 
 | 적용 방법 | 구현 위치 | 확인 내용 |
 |---|---|---|
-| 관찰-행동 반복과 구조화된 계획 | `src/javis_core/planner.py` | 요청, 관찰 결과와 스킬을 받아 등록된 기능으로만 계획 생성 |
-| 스킬 검색·재사용과 버전 상태 | `src/javis_core/skill_runtime.py` | VERIFIED 상태의 스킬만 검색 결과와 실행 문맥에 제공 |
-| 실패 경험 저장과 개정 후보 생성 | `src/javis_core/skill_trace_store.py`, `skill_candidate_evaluation.py` | 실행 흔적을 저장하고 충분한 근거가 있을 때만 DRAFT 후보 생성 |
-| 제한된 Windows 기능 실행 | `src/javis_core/executor_router.py`, `uia_executor.py` | 기능별 실행기로 분기하고 임의 명령 실행을 차단 |
-| 실행 결과 기반 평가 | `src/javis_core/verifier_router.py` | 실행기의 성공 응답과 별도로 파일·프로세스·창 상태를 확인 |
-| 대응 실험과 통계 분석 | `src/javis_core/skill_study_collection.py`, `study_analysis.py` | 블록 일정, 무결성 검사, 성공률과 대응 검정을 계산 |
+| 관찰-행동 반복과 구조화된 계획 | `src/skilla_core/planner.py` | 요청, 관찰 결과와 스킬을 받아 등록된 기능으로만 계획 생성 |
+| 스킬 검색·재사용과 버전 상태 | `src/skilla_core/skill_runtime.py` | VERIFIED 상태의 스킬만 검색 결과와 실행 문맥에 제공 |
+| 실패 경험 저장과 개정 후보 생성 | `src/skilla_core/skill_trace_store.py`, `skill_candidate_evaluation.py` | 실행 흔적을 저장하고 충분한 근거가 있을 때만 DRAFT 후보 생성 |
+| 제한된 Windows 기능 실행 | `src/skilla_core/executor_router.py`, `uia_executor.py` | 기능별 실행기로 분기하고 임의 명령 실행을 차단 |
+| 실행 결과 기반 평가 | `src/skilla_core/verifier_router.py` | 실행기의 성공 응답과 별도로 파일·프로세스·창 상태를 확인 |
+| 대응 실험과 통계 분석 | `src/skilla_core/skill_study_collection.py`, `study_analysis.py` | 블록 일정, 무결성 검사, 성공률과 대응 검정을 계산 |
 
 이 연결은 선행 논문의 모든 구성요소를 복제했다는 뜻이 아니다. 본 연구에 필요한 설계 원리만 선택하여 현재 코드에서 확인할 수 있는 경로로 구현하였다.
 

@@ -1,9 +1,9 @@
 from collections.abc import Iterable
 from pathlib import Path
 
-from javis_core import Action, Postcondition, RegisteredApp
-from javis_core.runtime_models import ExecutionResult
-from javis_core.window_handoff import (
+from skilla_core import Action, Postcondition, RegisteredApp
+from skilla_core.runtime_models import ExecutionResult
+from skilla_core.window_handoff import (
     WindowIdentity,
     WindowIdentityPredicate,
     WindowsRuntimeWindowResolver,

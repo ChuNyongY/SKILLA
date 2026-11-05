@@ -11,7 +11,7 @@ from pathlib import Path
 from time import perf_counter_ns
 from typing import Any
 
-from javis_core import (
+from skilla_core import (
     ApprovalTokenService,
     CapabilityExecutorRouter,
     CapabilityVerifierRouter,
@@ -27,20 +27,20 @@ from javis_core import (
     TypedPlanner,
     load_nim_credential,
 )
-from javis_core.observation_loop import (
+from skilla_core.observation_loop import (
     BoundedObservationAgent,
     InMemoryVerifiedResultObserver,
     ObservationLoopStatus,
     OrchestratorRoundRunner,
 )
-from javis_core.skill_study import (
+from skilla_core.skill_study import (
     SkillStudyCondition,
     SkillStudyScheduleCell,
     SkillTrialObservation,
     build_skill_study_schedule,
     evaluate_skill_study,
 )
-from javis_core.skill_study_collection import SkillStudyCollector
+from skilla_core.skill_study_collection import SkillStudyCollector
 from tools.run_safe_file_sort_pilot import (
     ExactFileSortCompletionProbe,
     SandboxYellowApproval,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     AudioFrame,
     CancellationToken,
     ConsentResult,

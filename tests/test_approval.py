@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     ApprovalError,
     ApprovalTokenService,

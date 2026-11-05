@@ -7,8 +7,8 @@ from uuid import UUID, uuid4
 
 import pytest
 
-import javis_core.vision as vision_module
-from javis_core import (
+import skilla_core.vision as vision_module
+from skilla_core import (
     Action,
     CancellationToken,
     CapturedWindow,
@@ -24,7 +24,7 @@ from javis_core import (
     WindowsForegroundWindowCaptureBackend,
     load_vision_template,
 )
-from javis_core.selective_capture import CapturePurpose
+from skilla_core.selective_capture import CapturePurpose
 
 PID = 4242
 PIXELS = b"\x10\x20\x30\xff" * 4

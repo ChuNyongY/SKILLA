@@ -4,14 +4,14 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from javis_core.skill_review_surface import (
+from skilla_core.skill_review_surface import (
     SkillDraftDetail,
     SkillReviewAction,
     SkillReviewConfirmation,
     SkillReviewDisplay,
     SkillReviewPresenter,
 )
-from javis_core.skill_runtime import SkillRecord, SkillStatus
+from skilla_core.skill_runtime import SkillRecord, SkillStatus
 
 
 class FakeCatalog:

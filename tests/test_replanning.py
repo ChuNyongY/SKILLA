@@ -1,4 +1,4 @@
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     ApprovalTokenService,
@@ -13,8 +13,8 @@ from javis_core import (
     RetryBudget,
     default_registry,
 )
-from javis_core.models import VerificationResult
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.models import VerificationResult
+from skilla_core.runtime_models import ExecutionResult
 
 
 def context(_action: Action) -> PolicyContext:

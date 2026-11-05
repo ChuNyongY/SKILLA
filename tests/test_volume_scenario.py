@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from javis_core.volume_scenario import S02VolumeScenarioRunner, VolumeScenarioResult
+from skilla_core.volume_scenario import S02VolumeScenarioRunner, VolumeScenarioResult
 
 
 @dataclass

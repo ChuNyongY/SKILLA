@@ -4,7 +4,7 @@ import subprocess
 from collections.abc import Mapping
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     ConsentResult,
     HelloHelperRequest,
     HelperRunResult,
@@ -167,8 +167,8 @@ def test_published_helper_rejects_malformed_input_without_output() -> None:
         Path(__file__).parents[1]
         / "native"
         / "WindowsHelloHelper"
-        / "publish-fdd"
-        / "Javis.WindowsHelloHelper.dll"
+        / "publish-skilla-fdd"
+        / "Skilla.WindowsHelloHelper.dll"
     )
     if not executable.is_file():
         return

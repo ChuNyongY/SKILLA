@@ -2,9 +2,9 @@ from uuid import uuid4
 
 import pytest
 
-from javis_core import Action, ActionStatus, Plan, TaskOutcome
-from javis_core.skill_runtime import SkillOutcome
-from javis_core.skill_trace import SkillTraceError, build_skill_execution_trace
+from skilla_core import Action, ActionStatus, Plan, TaskOutcome
+from skilla_core.skill_runtime import SkillOutcome
+from skilla_core.skill_trace import SkillTraceError, build_skill_execution_trace
 
 
 def plan() -> Plan:

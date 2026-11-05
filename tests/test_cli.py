@@ -10,7 +10,7 @@ import pytest
 from pydantic import SecretStr
 from pytest import CaptureFixture, MonkeyPatch
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     AlwaysOnState,
@@ -31,12 +31,12 @@ from javis_core import (
     TrialResult,
     WakeWordCalibrationStatus,
 )
-from javis_core import cli as cli_module
-from javis_core.cli import build_parser, main
-from javis_core.credential_store import CredentialStatus
-from javis_core.package_manifest import write_package_manifest
-from javis_core.skill_trace_store import LocalSkillTraceStore
-from javis_core.start_menu import StartMenuStatus
+from skilla_core import cli as cli_module
+from skilla_core.cli import build_parser, main
+from skilla_core.credential_store import CredentialStatus
+from skilla_core.package_manifest import write_package_manifest
+from skilla_core.skill_trace_store import LocalSkillTraceStore
+from skilla_core.start_menu import StartMenuStatus
 
 
 def test_explicit_nim_trace_command_creates_draft_and_consumes_trace(

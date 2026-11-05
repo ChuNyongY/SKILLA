@@ -8,17 +8,18 @@ import sys
 from pathlib import Path
 from uuid import uuid4
 
-from javis_core.package_manifest import (
+from skilla_core.package_manifest import (
     verify_package_manifest,
     write_package_manifest,
 )
-from javis_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
-from javis_core.version import VERSION
+from skilla_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
+from skilla_core.version import VERSION
 
 ASSET_DIRECTORIES = (
     Path("config"),
-    Path("models"),
-    Path("native/WindowsHelloHelper/publish-fdd"),
+    Path("models/faster-whisper-large-v3-turbo"),
+    Path("models/supertonic3"),
+    Path("native/WindowsHelloHelper/publish-skilla-fdd"),
 )
 
 
@@ -72,7 +73,7 @@ def build_package(
 
 
 def _run_pyinstaller(root: Path, temporary: Path) -> None:
-    specification = root / "tools" / "javis_windows.spec"
+    specification = root / "tools" / "skilla_windows.spec"
     command = [
         sys.executable,
         "-m",

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pytest
 from pytest import MonkeyPatch
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     Postcondition,
@@ -14,7 +14,7 @@ from javis_core import (
     VolumeMatchesVerifier,
     WindowsVolumeExecutor,
 )
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.runtime_models import ExecutionResult
 
 
 @dataclass
@@ -262,7 +262,7 @@ def test_pycaw_dependency_failure_is_redacted(monkeypatch: MonkeyPatch) -> None:
     def fail_import(_name: str) -> object:
         raise ImportError("private import detail")
 
-    monkeypatch.setattr("javis_core.volume_adapter.importlib.import_module", fail_import)
+    monkeypatch.setattr("skilla_core.volume_adapter.importlib.import_module", fail_import)
 
     with pytest.raises(VolumeBackendError, match="audio backend unavailable") as caught:
         PycawEndpointVolumeBackend()

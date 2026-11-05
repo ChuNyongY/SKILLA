@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from time import perf_counter_ns
 
-from javis_core import (
+from skilla_core import (
     Action,
     ApprovalTokenService,
     CapabilityExecutorRouter,
@@ -28,7 +28,7 @@ from javis_core import (
     TypedPlanner,
     load_nim_credential,
 )
-from javis_core.observation_loop import (
+from skilla_core.observation_loop import (
     BoundedObservationAgent,
     InMemoryVerifiedResultObserver,
     ObservationLoopResult,
@@ -36,14 +36,14 @@ from javis_core.observation_loop import (
     OrchestratorRoundRunner,
     VerifiedActionObservation,
 )
-from javis_core.skill_study import (
+from skilla_core.skill_study import (
     SkillStudyCondition,
     SkillStudyScheduleCell,
     SkillTrialObservation,
     build_skill_study_schedule,
     evaluate_skill_study,
 )
-from javis_core.skill_study_collection import SkillStudyCollector
+from skilla_core.skill_study_collection import SkillStudyCollector
 from tools.run_safe_file_sort_pilot import (
     SandboxYellowApproval,
     _pilot_registry,

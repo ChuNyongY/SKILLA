@@ -3,14 +3,14 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from javis_core.models import (
+from skilla_core.models import (
     Action,
     ActionStatus,
     Plan,
     VerificationResult,
     canonical_arguments_hash,
 )
-from javis_core.runtime_models import ExecutionResult, TaskOutcome
+from skilla_core.runtime_models import ExecutionResult, TaskOutcome
 
 
 def test_argument_hash_is_canonical() -> None:

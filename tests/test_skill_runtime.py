@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     LocalSkillCatalog,
     Plan,
@@ -16,8 +16,8 @@ from javis_core import (
     SkillStalenessDecision,
     SkillStatus,
 )
-from javis_core.registry import default_registry
-from javis_core.skill_runtime import SkillRuntimeError
+from skilla_core.registry import default_registry
+from skilla_core.skill_runtime import SkillRuntimeError
 
 
 def catalog(tmp_path: Path) -> LocalSkillCatalog:

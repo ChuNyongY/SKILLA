@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import SecretStr
 
-from javis_core.secret_provisioning import (
+from skilla_core.secret_provisioning import (
     SecretProvisioningError,
     provision_nim_secret,
 )

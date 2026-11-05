@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     SkillStudyCondition,
     SkillStudyError,
     SkillStudyScheduleCell,
@@ -10,7 +10,7 @@ from javis_core import (
     build_skill_study_schedule,
     load_skill_study_observations,
 )
-from javis_core.skill_study_collection import SkillStudyCollector
+from skilla_core.skill_study_collection import SkillStudyCollector
 
 
 class Runner:

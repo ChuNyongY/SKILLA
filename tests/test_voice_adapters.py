@@ -5,7 +5,7 @@ from types import ModuleType
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     AudioCaptureError,
     AudioFrame,
     CancellationToken,
@@ -34,6 +34,8 @@ class WakeModel:
 @dataclass
 class Segment:
     text: str
+    avg_logprob: float = -0.1
+    no_speech_prob: float = 0.0
 
 
 class WhisperModel:
@@ -201,6 +203,26 @@ def test_faster_whisper_bounds_transcript() -> None:
         audio_converter=lambda frames: b"converted",
     )
     with pytest.raises(ValueError, match="size"):
+        stt.transcribe((audio(),))
+
+
+@pytest.mark.parametrize(
+    "segment",
+    [
+        Segment("스킬라 시스템 정보", avg_logprob=-0.81),
+        Segment("스킬라 시스템 정보", no_speech_prob=0.61),
+        Segment("스킬라 시스템 정보", avg_logprob=float("nan")),
+    ],
+)
+def test_faster_whisper_rejects_uncertain_segments(segment: Segment) -> None:
+    class Model:
+        @staticmethod
+        def transcribe(_audio: object, **_options: object):
+            return iter((segment,)), object()
+
+    stt = FasterWhisperSpeechToText(Model(), audio_converter=lambda frames: b"converted")
+
+    with pytest.raises(ValueError, match="confidence"):
         stt.transcribe((audio(),))
 
 

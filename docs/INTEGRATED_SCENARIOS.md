@@ -25,7 +25,7 @@ fixture/VM attestation을 다시 확인해야 한다.
 검증 명령:
 
 ```powershell
-python -m javis_core.cli validate-integrated-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli validate-integrated-scenarios evaluation/integrated_scenarios.json
 ```
 
 loader는 정확히 정렬된 S01~S15, bounded 필드, 중복 key 금지, 비유한 JSON 금지, 중복 token 금지,
@@ -37,7 +37,7 @@ snapshot 복원 증거, 반복 trial 수집과 B0/B1/P1/P2 분석이 별도로 �
 다음 명령은 개인 PC에 부작용을 만들지 않는 현재 검증 가능 subset만 실행한다.
 
 ```powershell
-python -m javis_core.cli run-host-safe-scenarios evaluation/integrated_scenarios.json (Get-Location).Path
+python -m skilla_core.cli run-host-safe-scenarios evaluation/integrated_scenarios.json (Get-Location).Path
 ```
 
 - S11은 실제 `system.info.read`를 policy → Native executor → verifier로 실행하며
@@ -53,7 +53,7 @@ S14와 S15의 증거 수준은 `POLICY_CONTRACT`다. 이는 실제 웹페이지�
 S06과 S13은 다음 mock-only 명령으로 별도 실행한다.
 
 ```powershell
-python -m javis_core.cli run-mock-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli run-mock-scenarios evaluation/integrated_scenarios.json
 ```
 
 S06 경로는 실제 R3 정책과 exact-action 승인 토큰을 사용하지만 승인은 실험용 synthetic approval이고
@@ -76,7 +76,7 @@ recoverable sandbox trash와 unrelated-file 불변 확인까지 3/3 PASS다.
 `docs/SNAPSHOT_VM_EVIDENCE.md`에 있다.
 
 ```powershell
-python -m javis_core.cli run-fixture-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli run-fixture-scenarios evaluation/integrated_scenarios.json
 ```
 
 manifest의 모든 요구 이름이 action registry 또는 planner 이전 local control로 분류됐는지는 다음
@@ -84,14 +84,14 @@ manifest의 모든 요구 이름이 action registry 또는 planner 이전 local 
 완료 선언이 아니다.
 
 ```powershell
-python -m javis_core.cli audit-scenario-capabilities evaluation/integrated_scenarios.json
+python -m skilla_core.cli audit-scenario-capabilities evaluation/integrated_scenarios.json
 ```
 
 현재 안전하게 생성 가능한 모든 증거를 실행하고 나머지를 명시적 `NOT_RUN`으로 남기려면 다음을
 사용한다. 2026-09-29 결과는 8 PASS / 7 NOT_RUN이며 전체 완료 플래그는 false다.
 
 ```powershell
-python -m javis_core.cli run-safe-evaluation evaluation/integrated_scenarios.json (Get-Location).Path
+python -m skilla_core.cli run-safe-evaluation evaluation/integrated_scenarios.json (Get-Location).Path
 ```
 
 S01의 실제 가역 검증은 다음 별도 명령으로 실행한다. 운영 registry의 Chrome path·SHA-256·publisher,

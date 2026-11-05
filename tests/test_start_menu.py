@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.autostart import ShortcutSpec
-from javis_core.start_menu import (
+from skilla_core.autostart import ShortcutSpec
+from skilla_core.start_menu import (
     StartMenuError,
     StartMenuShortcutRegistrar,
     StartMenuStatus,

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import SecretStr
 
-from javis_core.credential_store import (
+from skilla_core.credential_store import (
     NIM_CREDENTIAL_TARGET,
     CredentialStatus,
     CredentialStoreError,
@@ -64,6 +64,31 @@ def test_provision_is_create_only_unless_replace_is_explicit() -> None:
     assert load_nim_credential(backend=backend).get_secret_value() == (
         replacement.get_secret_value()
     )
+
+
+def test_legacy_credential_is_migrated_without_exposing_or_overwriting_it() -> None:
+    legacy = "JAVIS-PC/NVIDIA-NIM"
+    key = b"nvapi-abcdefghijklmnopqrstuvwxyz"
+    backend = MemoryCredentialBackend({legacy: key})
+    assert nim_credential_status(backend=backend) is CredentialStatus.PRESENT
+    with pytest.raises(CredentialStoreError, match="ALREADY_EXISTS"):
+        provision_nim_credential(SecretStr("nvapi-ABCDEFGHIJKLMNOPQRSTUVWXYZ"), backend=backend)
+    loaded = load_nim_credential(backend=backend)
+    assert str(loaded) == "**********"
+    assert backend.values == {legacy: key, NIM_CREDENTIAL_TARGET: key}
+    assert remove_nim_credential(backend=backend)
+    assert backend.values == {}
+    with pytest.raises(CredentialStoreError, match="NOT_FOUND"):
+        load_nim_credential(backend=backend)
+
+
+def test_existing_skilla_credential_wins_over_legacy_value() -> None:
+    current = b"nvapi-abcdefghijklmnopqrstuvwxyz"
+    backend = MemoryCredentialBackend({
+        NIM_CREDENTIAL_TARGET: current,
+        "JAVIS-PC/NVIDIA-NIM": b"nvapi-ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    })
+    assert load_nim_credential(backend=backend).get_secret_value().encode() == current
 
 
 @pytest.mark.parametrize(

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.release_signing import (
+from skilla_core.release_signing import (
     ReleaseSigningError,
     WindowsAuthenticodeSigner,
 )
@@ -29,7 +29,7 @@ class RecordingRunner:
 def test_signer_uses_fixed_powershell_and_minimal_environment(tmp_path: Path) -> None:
     powershell = tmp_path / "powershell.exe"
     powershell.write_bytes(b"fixture")
-    target = tmp_path / "JAVIS.exe"
+    target = tmp_path / "SKILLA.exe"
     target.write_bytes(b"fixture")
     runner = RecordingRunner()
     signer = WindowsAuthenticodeSigner(
@@ -53,8 +53,8 @@ def test_signer_uses_fixed_powershell_and_minimal_environment(tmp_path: Path) ->
     assert options["shell"] is False
     environment = options["env"]
     assert isinstance(environment, dict)
-    assert environment["JAVIS_CERT_THUMBPRINT"] == "A" * 40
-    assert environment["JAVIS_SIGN_TARGET"] == str(target.resolve())
+    assert environment["SKILLA_CERT_THUMBPRINT"] == "A" * 40
+    assert environment["SKILLA_SIGN_TARGET"] == str(target.resolve())
     assert "NVIDIA_API_KEY" not in environment
 
 
@@ -78,7 +78,7 @@ def test_signer_rejects_invalid_identity_or_timestamp(
 def test_signer_fails_closed_on_process_failure(tmp_path: Path) -> None:
     powershell = tmp_path / "powershell.exe"
     powershell.write_bytes(b"fixture")
-    target = tmp_path / "JAVIS.exe"
+    target = tmp_path / "SKILLA.exe"
     target.write_bytes(b"fixture")
     signer = WindowsAuthenticodeSigner(
         "B" * 40,

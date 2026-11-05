@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import NoReturn
 
-from javis_core import (
+from skilla_core import (
     Action,
     ApprovalArtifact,
     ApprovalTokenService,
@@ -30,7 +30,7 @@ from javis_core import (
     default_registry,
     load_nim_credential,
 )
-from javis_core.observation_loop import (
+from skilla_core.observation_loop import (
     BoundedObservationAgent,
     InMemoryVerifiedResultObserver,
     ObservationLoopStatus,

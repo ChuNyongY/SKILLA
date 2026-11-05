@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import LocalSkillCatalog, SkillStatus
+from skilla_core import LocalSkillCatalog, SkillStatus
 from tools.run_safe_file_sort_pilot import _pilot_registry
 from tools.run_skill_revision_candidate_pilot import (
     FileSortRevisionRunner,

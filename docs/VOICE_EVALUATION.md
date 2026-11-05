@@ -9,7 +9,7 @@
 여부, 16 kHz mono int16 호환 여부뿐이다. 장치명과 host API 이름은 반환하지 않는다.
 
 ```powershell
-.\.venv\Scripts\python.exe -m javis_core.cli probe-microphones
+.\.venv\Scripts\python.exe -m skilla_core.cli probe-microphones
 ```
 
 ## Manifest와 입력 검증
@@ -55,7 +55,7 @@ reference만 사용한다.
 연다. 비대화형 입력, Enter, 틀린 문구는 녹음을 시작하지 않거나 전체 수집을 취소한다.
 
 ```powershell
-python -m javis_core.cli capture-wakeword-corpus `
+python -m skilla_core.cli capture-wakeword-corpus `
   .\evaluation\wakeword_capture_plan.example.json `
   C:\absolute\new-wake-corpus-directory
 ```
@@ -98,7 +98,7 @@ ACL 상속 차단, nonzero 신호와 clipping 0도 확인했다.
 읽는다. manifest는 최소 한 개의 목표 호출어 표본과 한 개의 비호출어 표본을 포함해야 한다.
 
 ```powershell
-python -m javis_core.cli evaluate-wakeword-corpus `
+python -m skilla_core.cli evaluate-wakeword-corpus `
   C:\absolute\wake-corpus\manifest.json `
   C:\absolute\wake-corpus `
   .\models\openwakeword\manifest.json `
@@ -126,13 +126,13 @@ prediction buffer를 `reset()`해 이전 음성이 다음 표본에 섞이지 �
 실행하고, 선택된 임계값과 보고서 SHA-256을 고정한 뒤 최종 시험에 사용한다.
 
 ```powershell
-python -m javis_core.cli calibrate-wakeword-threshold `
+python -m skilla_core.cli calibrate-wakeword-threshold `
   C:\absolute\calibration-corpus\manifest.json `
   C:\absolute\calibration-corpus `
   .\models\openwakeword\manifest.json `
   --far-ceiling 0.05
 
-python -m javis_core.cli calibrate-repcnn-wakeword-threshold `
+python -m skilla_core.cli calibrate-repcnn-wakeword-threshold `
   C:\absolute\calibration-corpus\manifest.json `
   C:\absolute\calibration-corpus `
   C:\absolute\model\jarvis.onnx `
@@ -155,7 +155,7 @@ mono PCM의 최근 48,000표본(3초)을 보관하고 창이 찬 직후 한 번,
 직접 제공해야 하며 모델별 threshold는 평가 전에 고정한다.
 
 ```powershell
-python -m javis_core.cli evaluate-repcnn-wakeword-corpus `
+python -m skilla_core.cli evaluate-repcnn-wakeword-corpus `
   C:\absolute\wake-corpus\manifest.json `
   C:\absolute\wake-corpus `
   C:\absolute\model\jarvis.onnx `
@@ -181,7 +181,7 @@ SHA-256을 검증한다. symlink, 누락·추가 파일, root 이탈을 거부�
 `vosk` 패키지는 기본 `voice` 배포에 넣지 않았고 별도 `vosk-experimental` 선택 의존성으로만 선언했다.
 
 ```powershell
-python -m javis_core.cli evaluate-vosk-wakeword-corpus `
+python -m skilla_core.cli evaluate-vosk-wakeword-corpus `
   C:\absolute\wake-corpus\manifest.json `
   C:\absolute\wake-corpus `
   C:\absolute\vosk-model-small-ko-0.22\manifest.json

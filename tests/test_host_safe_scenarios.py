@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     HostSafeScenarioRunner,
     ScenarioEnvironment,
     ScenarioEvidenceLevel,

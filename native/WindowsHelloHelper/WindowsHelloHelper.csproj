@@ -11,8 +11,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <AssemblyName>Javis.WindowsHelloHelper</AssemblyName>
-    <RootNamespace>Javis.WindowsHelloHelper</RootNamespace>
+    <AssemblyName>Skilla.WindowsHelloHelper</AssemblyName>
+    <RootNamespace>Skilla.WindowsHelloHelper</RootNamespace>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <Deterministic>true</Deterministic>

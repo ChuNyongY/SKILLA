@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 from pydantic import SecretStr
 
-from javis_core.doctor import DoctorItem, DoctorReport, DoctorStatus
-from javis_core.product_host import (
+from skilla_core.doctor import DoctorItem, DoctorReport, DoctorStatus
+from skilla_core.product_host import (
     ProductHostError,
     ProductHostLifecycle,
     ProductHostState,
@@ -277,6 +277,7 @@ def test_lifecycle_redacts_capture_failure_and_rejects_second_start() -> None:
         run_capture=fail_capture,
         request_capture_stop=lambda: None,
         request_runtime_stop=lambda: None,
+        max_capture_restarts=0,
     )
 
     host.start()
@@ -287,6 +288,43 @@ def test_lifecycle_redacts_capture_failure_and_rejects_second_start() -> None:
     assert "secret" not in status.model_dump_json()
     with pytest.raises(ProductHostError, match="only start once"):
         host.start()
+
+
+def test_lifecycle_recovers_one_transient_capture_failure() -> None:
+    recovered = threading.Event()
+    release = threading.Event()
+    calls = 0
+
+    def run_capture() -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("temporary microphone status")
+        recovered.set()
+        assert release.wait(timeout=2)
+
+    def stop_capture() -> None:
+        release.set()
+
+    host = ProductHostLifecycle(
+        preflight=lambda: preflight_report(True),
+        run_capture=run_capture,
+        request_capture_stop=stop_capture,
+        request_runtime_stop=lambda: None,
+        max_capture_restarts=1,
+        capture_restart_delay_seconds=0,
+    )
+
+    started = host.start()
+    assert started.state is ProductHostState.RUNNING
+    assert recovered.wait(timeout=1)
+    recovered_status = host.status_snapshot()
+    assert recovered_status.state is ProductHostState.RUNNING
+    assert recovered_status.reason == "CAPTURE_RESTARTED"
+    assert calls == 2
+
+    stopped = host.stop(timeout_seconds=1)
+    assert stopped.state is ProductHostState.STOPPED
 
 
 def test_lifecycle_stop_timeout_fails_closed() -> None:

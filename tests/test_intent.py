@@ -1,6 +1,6 @@
 import pytest
 
-from javis_core import (
+from skilla_core import (
     GateRoute,
     IntentClass,
     IntentEvidence,

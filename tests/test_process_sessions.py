@@ -1,7 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
-from javis_core import AuthorizedProcessRegistry, ExecutionResult, RegisteredApp
+from skilla_core import AuthorizedProcessRegistry, ExecutionResult, RegisteredApp
 
 
 class Inspector:

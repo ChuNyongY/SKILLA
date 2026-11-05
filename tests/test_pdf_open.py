@@ -5,7 +5,7 @@ from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     PdfOpenedVerifier,

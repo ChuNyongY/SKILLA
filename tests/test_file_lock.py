@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import FileLockTimeout, InterprocessFileLock
+from skilla_core import FileLockTimeout, InterprocessFileLock
 
 
 def test_interprocess_lock_creates_one_byte_lock_file(tmp_path: Path) -> None:

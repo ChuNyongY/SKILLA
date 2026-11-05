@@ -4,8 +4,8 @@ from datetime import UTC, datetime
 
 import pytest
 
-from javis_core.foreground_context import ForegroundContextError, ForegroundSnapshot
-from javis_core.product_context import PrivacyMinimizedPlannerContextProvider
+from skilla_core.foreground_context import ForegroundContextError, ForegroundSnapshot
+from skilla_core.product_context import PrivacyMinimizedPlannerContextProvider
 
 
 class Collector:

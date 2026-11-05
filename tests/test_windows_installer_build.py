@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.package_manifest import PackageManifestError
+from skilla_core.package_manifest import PackageManifestError
 from tools.build_windows_installer import VERSION as INSTALLER_VERSION
 from tools.build_windows_installer import (
     InstallerBuildError,

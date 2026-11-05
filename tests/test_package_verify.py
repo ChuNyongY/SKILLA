@@ -3,15 +3,15 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     PackageIdentityVerifier,
     PackageVerifyExecutor,
     Postcondition,
 )
-from javis_core.process_launch import RegisteredApp
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.process_launch import RegisteredApp
+from skilla_core.runtime_models import ExecutionResult
 
 
 class Lease:

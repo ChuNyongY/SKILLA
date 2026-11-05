@@ -1,9 +1,10 @@
+import threading
 from uuid import uuid4
 
 import pytest
 
-from javis_core import ActionStatus, CancellationToken, TaskOutcome
-from javis_core.voice_feedback import (
+from skilla_core import ActionStatus, CancellationToken, TaskOutcome
+from skilla_core.voice_feedback import (
     FeedbackCode,
     VoiceFeedbackPresenter,
     feedback_code_for_outcome,
@@ -71,6 +72,30 @@ def test_presenter_speaks_only_fixed_phrase_and_forwards_stop_token() -> None:
     assert code is FeedbackCode.FAILED
     assert sink.calls == [("작업을 마치지 못했어요.", token)]
     assert "PRIVATE_MODEL_FAILURE" not in sink.calls[0][0]
+
+
+def test_presenter_exposes_speaking_state_only_during_sink_playback() -> None:
+    entered = threading.Event()
+    release = threading.Event()
+
+    class BlockingSink(FakeSpeechSink):
+        def speak(self, text: str, **kwargs: object) -> None:
+            entered.set()
+            assert release.wait(timeout=1)
+            super().speak(text, **kwargs)  # type: ignore[arg-type]
+
+    sink = BlockingSink()
+    presenter = VoiceFeedbackPresenter(sink)
+    worker = threading.Thread(target=lambda: presenter.present(FeedbackCode.PLAN_READY))
+
+    worker.start()
+    assert entered.wait(timeout=1)
+    assert presenter.is_speaking
+    release.set()
+    worker.join(timeout=1)
+
+    assert not worker.is_alive()
+    assert not presenter.is_speaking
 
 
 @pytest.mark.parametrize(

@@ -69,7 +69,7 @@ dB(A)나 신호 대 잡음비(SNR)를 주장하려면 같은 위치에서 교정
 표본별 준비 확인이 모두 필요하다.
 
 ```powershell
-python -m javis_core.cli capture-wakeword-corpus `
+python -m skilla_core.cli capture-wakeword-corpus `
   .\evaluation\wakeword_capture_plan.example.json `
   C:\absolute\new-wake-corpus-directory
 ```

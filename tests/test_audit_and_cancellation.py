@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     ApprovalTokenService,

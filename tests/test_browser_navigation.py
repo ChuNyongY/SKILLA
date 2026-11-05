@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import Action, CancellationToken, Postcondition, RegisteredApp
-from javis_core.browser_navigation import (
+from skilla_core import Action, CancellationToken, Postcondition, RegisteredApp
+from skilla_core.browser_navigation import (
     BrowserNavigateExecutor,
     BrowserNavigationVerifier,
 )

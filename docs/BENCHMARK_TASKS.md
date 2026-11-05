@@ -16,7 +16,7 @@ verification assertion의 부분집합이어야 한다. ground-truth risk가 등
 낮으면 거부한다.
 
 ```powershell
-python -m javis_core.cli validate-benchmark-tasks `
+python -m skilla_core.cli validate-benchmark-tasks `
   evaluation/benchmark_tasks.json `
   evaluation/integrated_scenarios.json
 ```
@@ -59,7 +59,7 @@ latency를 계산한다. P2 목표 판정은 다음 네 개로 고정된다.
 통과한 경우에만 `all_p2_targets_met=true`가 된다.
 
 ```powershell
-python -m javis_core.cli analyze-benchmark-results `
+python -m skilla_core.cli analyze-benchmark-results `
   evaluation/benchmark_tasks.json `
   evaluation/integrated_scenarios.json `
   C:\absolute\benchmark-observations.json `

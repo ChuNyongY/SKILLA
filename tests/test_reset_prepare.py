@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     Postcondition,
@@ -8,7 +8,7 @@ from javis_core import (
     ResetPreparationVerifier,
     ResetPrepareExecutor,
 )
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.runtime_models import ExecutionResult
 
 NOW = datetime(2026, 9, 29, 12, 0, tzinfo=UTC)
 

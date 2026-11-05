@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.stt_bundle import SttBundleError, load_stt_bundle
+from skilla_core.stt_bundle import SttBundleError, load_stt_bundle
 
 NAMES = ("config.json", "model.bin", "tokenizer.json", "vocabulary.txt")
 
@@ -35,6 +35,20 @@ def test_stt_bundle_loads_and_reverifies(tmp_path: Path) -> None:
 
     assert bundle.verify()
     assert bundle.source_revision == "d" * 40
+
+
+def test_turbo_json_vocabulary_loads_and_detects_change(tmp_path: Path) -> None:
+    manifest = write_bundle(tmp_path)
+    document = json.loads(manifest.read_text())
+    item = document["files"].pop("vocabulary.txt")
+    (tmp_path / "vocabulary.txt").rename(tmp_path / "vocabulary.json")
+    item["path"] = "vocabulary.json"
+    document["files"]["vocabulary.json"] = item
+    manifest.write_text(json.dumps(document))
+    bundle = load_stt_bundle(manifest)
+    assert bundle.verify()
+    (tmp_path / "vocabulary.json").write_bytes(b"changed")
+    assert not bundle.verify()
 
 
 def test_stt_bundle_detects_change_after_load(tmp_path: Path) -> None:

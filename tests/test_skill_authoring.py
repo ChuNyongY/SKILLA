@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.registry import default_registry
-from javis_core.skill_authoring import (
+from skilla_core.registry import default_registry
+from skilla_core.skill_authoring import (
     SkillAuthoringError,
     SkillDraftAuthor,
     SkillExecutionTrace,
     SkillTraceStep,
 )
-from javis_core.skill_runtime import LocalSkillCatalog, SkillOutcome, SkillProposal, SkillStatus
+from skilla_core.skill_runtime import LocalSkillCatalog, SkillOutcome, SkillProposal, SkillStatus
 
 
 class Transport:
@@ -49,6 +49,30 @@ def proposal(**updates: object) -> dict[str, object]:
     }
     value.update(updates)
     return value
+
+
+def test_plan_proposal_does_not_fabricate_success_evidence_or_store_before_review(
+    tmp_path: Path,
+) -> None:
+    from skilla_core.models import Action, Plan
+
+    catalog = LocalSkillCatalog(tmp_path / "skills.sqlite3", default_registry())
+    transport = Transport(json.dumps(proposal(allowed_capabilities=["system.info.read"])))
+    author = SkillDraftAuthor(transport, catalog)
+    plan = Plan(goal="시스템 정보 확인", steps=(Action(
+        capability_id="system.info.read", purpose="운영체제 정보 확인",
+    ),))
+    generated = author.propose_from_plan(plan)
+    evidence = json.loads(transport.user_prompt)
+    assert evidence["execution_verified"] is False
+    assert "trace_outcome" not in evidence
+    assert "CPU model" in evidence["capability_output_contracts"]["system.info.read"]
+    assert generated.key == "system-information-check"
+    assert generated.dynamic_inputs == ()
+    assert not catalog.list()
+    transport.response = json.dumps(proposal(allowed_capabilities=["file.move"]))
+    with pytest.raises(SkillAuthoringError, match="capability surface"):
+        author.propose_from_plan(plan)
 
 
 def trace(

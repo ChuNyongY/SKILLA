@@ -1,7 +1,7 @@
 # Local application registry
 
 `apps.json` is generated for this Windows installation. Each entry pins an absolute executable path,
-SHA-256, and Authenticode signer subject. JAVIS re-checks these values when loading the registry and
+SHA-256, and Authenticode signer subject. SKILLA re-checks these values when loading the registry and
 again immediately before process launch.
 
 An entry may additionally pin `runtime_executable`, `runtime_sha256`, and `runtime_publisher` when a

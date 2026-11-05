@@ -10,7 +10,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from time import perf_counter_ns
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     AppRegistryLoader,
@@ -34,14 +34,14 @@ from javis_core import (
     explorer_folder_target_identity,
     load_nim_credential,
 )
-from javis_core.runtime_models import ExecutionResult
-from javis_core.skill_study import (
+from skilla_core.runtime_models import ExecutionResult
+from skilla_core.skill_study import (
     SkillStudyCondition,
     SkillStudyScheduleCell,
     build_skill_study_schedule,
     evaluate_skill_study,
 )
-from javis_core.skill_study_collection import SkillStudyCollector
+from skilla_core.skill_study_collection import SkillStudyCollector
 from tools.explorer_folder_smoke import _close_exact_window
 from tools.run_safe_file_sort_pilot import _policy_context
 from tools.run_skill_study_pilot import (

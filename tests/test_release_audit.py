@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from javis_core.package_manifest import write_package_manifest
-from javis_core.release_audit import audit_windows_release
+from skilla_core.package_manifest import write_package_manifest
+from skilla_core.release_audit import audit_windows_release
 
 
 class FakePublisherVerifier:

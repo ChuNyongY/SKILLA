@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from javis_core import MockIntegratedScenarioRunner, load_integrated_scenarios
+from skilla_core import MockIntegratedScenarioRunner, load_integrated_scenarios
 
 
 def test_s06_and_s13_run_without_external_effect_or_mutation() -> None:

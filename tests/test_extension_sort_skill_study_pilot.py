@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from javis_core import Action, Plan, PolicyDecision, RiskLevel
-from javis_core.models import Decision
-from javis_core.observation_loop import ObservationLoopResult, ObservationLoopStatus
-from javis_core.skill_study import SkillStudyCondition
+from skilla_core import Action, Plan, PolicyDecision, RiskLevel
+from skilla_core.models import Decision
+from skilla_core.observation_loop import ObservationLoopResult, ObservationLoopStatus
+from skilla_core.skill_study import SkillStudyCondition
 from tools.run_extension_sort_skill_study_pilot import (
     CONTENTS,
     TARGET_BY_NAME,

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from javis_core.always_on_runtime import AlwaysOnState, RuntimeStatusSnapshot
-from javis_core.windows_tray import (
+from skilla_core.always_on_runtime import AlwaysOnState, RuntimeStatusSnapshot
+from skilla_core.windows_tray import (
     TrayCommand,
     WindowsTrayController,
     runtime_status_message,

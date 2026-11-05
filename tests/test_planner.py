@@ -9,7 +9,7 @@ import pytest
 from pydantic import SecretStr
 from pytest import MonkeyPatch
 
-from javis_core import (
+from skilla_core import (
     NimChatTransport,
     NimTransportMetrics,
     PlannerError,

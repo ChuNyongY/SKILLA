@@ -11,15 +11,15 @@ from uuid import uuid4
 
 import pytest
 
-from javis_core import explorer_folder_worker
-from javis_core.cancellation import CancellationToken
-from javis_core.explorer_folder import (
+from skilla_core import explorer_folder_worker
+from skilla_core.cancellation import CancellationToken
+from skilla_core.explorer_folder import (
     ExplorerFolderOpenExecutor,
     ExplorerFolderVerifier,
     SubprocessExplorerFolderLauncher,
     explorer_folder_target_identity,
 )
-from javis_core.explorer_folder_ipc import (
+from skilla_core.explorer_folder_ipc import (
     ExplorerFolderRequest,
     ExplorerFolderResponse,
     ExplorerWorkerError,
@@ -27,8 +27,8 @@ from javis_core.explorer_folder_ipc import (
     SubprocessExplorerFolderChecker,
     parse_explorer_request,
 )
-from javis_core.models import Action, Postcondition
-from javis_core.process_launch import RegisteredApp
+from skilla_core.models import Action, Postcondition
+from skilla_core.process_launch import RegisteredApp
 
 
 class Lease:

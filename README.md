@@ -84,8 +84,8 @@ Wake/VAD/STT
   전체 초안을 확인한 뒤 승인·거절한다.
 - 선택된 VERIFIED 스킬의 capability allowlist에 Plan을 결합하는 `SkillAwarePlanner`
 - 제품 서비스의 스킬 카탈로그와 스킬 우선 Planner 연결. 소스 실행은 `state/skills.sqlite3`,
-  기존 사용자 데이터와의 호환을 위해 검증된 설치본은 `%LOCALAPPDATA%/JAVIS-PC/state/<version>/skills.sqlite3`을 사용해 package
-  manifest와 사용자 상태를 분리
+  검증된 설치본은 `%LOCALAPPDATA%/SKILLA/state/v1/skills.sqlite3`을 사용해 package
+  manifest와 사용자 상태를 분리. 기존 `JAVIS-PC` 저장소는 새 위치로 복사하며 새 데이터는 덮어쓰지 않음
 - Pydantic 기반 Plan, Action, Capability, Policy, Approval, Verification 계약
 - 불변 capability registry와 기본 R0~R4 위험 하한
 - GREEN/YELLOW/RED/DENY 정책 엔진
@@ -166,7 +166,7 @@ snapshot VM 위험 작업, 고급 procedural memory다.
 현재 PC용 앱 registry 검증:
 
 ```powershell
-.\.venv\Scripts\python.exe -m javis_core.cli validate-app-registry config/apps.json --require-publisher
+.\.venv\Scripts\python.exe -m skilla_core.cli validate-app-registry config/apps.json --require-publisher
 ```
 
 Windows Update로 실행 파일 hash가 바뀌면 자동 우회하지 말고 새 파일의 서명과 publisher를
@@ -202,20 +202,20 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev,voice,uia,trash,audio-control,packaging]"
 pytest
-python -m javis_core.cli doctor (Get-Location).Path
+python -m skilla_core.cli doctor (Get-Location).Path
 # Setup 설치본은 첫 실행 시 마스킹된 초기 설정 창에서 키를 받아
 # 현재 사용자의 Windows Credential Manager에 저장하고 재검증한 뒤 시작한다.
 # 개발 환경이나 수동 복구에서는 다음 echo 없는 prompt 명령을 사용할 수 있다.
-python -m javis_core.cli provision-nim-credential
-python -m javis_core.cli preflight-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
-python -m javis_core.cli check-product-service-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
+python -m skilla_core.cli provision-nim-credential
+python -m skilla_core.cli preflight-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
+python -m skilla_core.cli check-product-service-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
 # 실제 마이크와 tray를 시작하므로 사용자 참여 상태에서만 실행
 # tray의 "실행 기록 검토"에서 동의 후 DRAFT를 만들고, "스킬 검토"에서 승인·거절할 수 있음
-python -m javis_core.cli run-product-tray-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
+python -m skilla_core.cli run-product-tray-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
 # Tk HUD 대체 실행 경로
-python -m javis_core.cli run-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
-python -m javis_core.cli foreground-context config/apps.json --require-publisher
-python -m javis_core.cli smoke-system-info
+python -m skilla_core.cli run-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
+python -m skilla_core.cli foreground-context config/apps.json --require-publisher
+python -m skilla_core.cli smoke-system-info
 python tools/run_safe_file_sort_pilot.py
 # 기존의 빈 절대 출력 폴더를 지정하는 1블록 SK0~SK3 실제 파일럿
 python -m tools.run_skill_study_pilot C:\absolute\empty-pilot-output
@@ -223,19 +223,19 @@ python -m tools.run_pdf_open_skill_study_pilot C:\absolute\empty-pdf-pilot-outpu
 python -m tools.run_skill_revision_candidate_pilot C:\absolute\empty-candidate-output
 python -m tools.bundle_skill_study C:\absolute\empty-bundle-output --source C:\absolute\first-observations.json C:\absolute\first-evidence --source C:\absolute\second-observations.json C:\absolute\second-evidence
 python -m tools.run_skill_search_pilot C:\absolute\empty-search-output
-python -m javis_core.cli evaluate-skill-revision-candidate C:\absolute\paired-candidate-trials.json
-python -m javis_core.cli evaluate evaluation/example_trials.json
-python -m javis_core.cli intent-scenarios evaluation/intent_scenarios.json
-python -m javis_core.cli validate-integrated-scenarios evaluation/integrated_scenarios.json
-python -m javis_core.cli validate-benchmark-tasks evaluation/benchmark_tasks.json evaluation/integrated_scenarios.json
-python -m javis_core.cli analyze-benchmark-results evaluation/benchmark_tasks.json evaluation/integrated_scenarios.json C:\absolute\benchmark-observations.json C:\absolute\benchmark-evidence
-python -m javis_core.cli evaluate-wakeword-corpus C:\absolute\wake-corpus\manifest.json C:\absolute\wake-corpus models/openwakeword/manifest.json --threshold 0.5
-python -m javis_core.cli evaluate-repcnn-wakeword-corpus C:\absolute\wake-corpus\manifest.json C:\absolute\wake-corpus C:\absolute\model\jarvis.onnx <64자리-model-sha256> --threshold 0.7
-python -m javis_core.cli run-host-safe-scenarios evaluation/integrated_scenarios.json (Get-Location).Path
-python -m javis_core.cli run-mock-scenarios evaluation/integrated_scenarios.json
-python -m javis_core.cli run-fixture-scenarios evaluation/integrated_scenarios.json
-python -m javis_core.cli audit-scenario-capabilities evaluation/integrated_scenarios.json
-python -m javis_core.cli run-safe-evaluation evaluation/integrated_scenarios.json (Get-Location).Path
+python -m skilla_core.cli evaluate-skill-revision-candidate C:\absolute\paired-candidate-trials.json
+python -m skilla_core.cli evaluate evaluation/example_trials.json
+python -m skilla_core.cli intent-scenarios evaluation/intent_scenarios.json
+python -m skilla_core.cli validate-integrated-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli validate-benchmark-tasks evaluation/benchmark_tasks.json evaluation/integrated_scenarios.json
+python -m skilla_core.cli analyze-benchmark-results evaluation/benchmark_tasks.json evaluation/integrated_scenarios.json C:\absolute\benchmark-observations.json C:\absolute\benchmark-evidence
+python -m skilla_core.cli evaluate-wakeword-corpus C:\absolute\wake-corpus\manifest.json C:\absolute\wake-corpus models/openwakeword/manifest.json --threshold 0.5
+python -m skilla_core.cli evaluate-repcnn-wakeword-corpus C:\absolute\wake-corpus\manifest.json C:\absolute\wake-corpus C:\absolute\model\jarvis.onnx <64자리-model-sha256> --threshold 0.7
+python -m skilla_core.cli run-host-safe-scenarios evaluation/integrated_scenarios.json (Get-Location).Path
+python -m skilla_core.cli run-mock-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli run-fixture-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli audit-scenario-capabilities evaluation/integrated_scenarios.json
+python -m skilla_core.cli run-safe-evaluation evaluation/integrated_scenarios.json (Get-Location).Path
 python tools/s01_chrome_smoke.py
 python tools/s02_volume_smoke.py
 python tools/s03_memory_pdf_smoke.py

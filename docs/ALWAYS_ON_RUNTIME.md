@@ -9,10 +9,11 @@
 
 - `IDLE`: 새 발화를 받아 task별 cancellation token과 worker를 만든다.
 - `PLANNING`: 전경 컨텍스트 수집, intent 분류, typed planning을 worker에서 수행한다.
+- `REVIEWING`: 기존 스킬 재사용 또는 새 스킬 등록 후보를 표시하고 정확한 예·아니요를 기다린다.
 - `EXECUTING`: 같은 token으로 Orchestrator와 고정 feedback을 수행한다.
 - `CLOSED`: 새 발화를 거부하고 활성 token을 취소한다.
 
-`PLANNING` 또는 `EXECUTING`에서는 `LocalStopDetector`의 exact-match 한국어 STOP만 동기적으로
+`PLANNING`, `REVIEWING` 또는 `EXECUTING`에서는 `LocalStopDetector`의 exact-match 한국어 STOP만 동기적으로
 수락한다. 이 경로는 컨텍스트 공급자, intent classifier, NIM Planner를 호출하지 않는다. 다른
 발화는 `BUSY_IGNORED`로 반환한다. 느리거나 멈춘 컨텍스트 공급자도 STOP 전달을 막지 않으며,
 취소 확인 뒤에는 classifier와 Planner를 호출하지 않는다.
@@ -48,7 +49,7 @@ widget을 호출하지 않는다. 창 닫기·숨기기는 HUD만 종료하고 a
 제공한다. callback 예외는 고정 오류로 축약되고 `WM_DESTROY`는 아이콘 제거와 quit만 수행해 재귀
 destroy를 피한다. 운영 기본인 `run-product-tray-credential`이 실제 capture pump와 runtime을
 Credential Manager key로 조립하며, 기존 `run-product-tray` 파일 경로도 호환용으로 유지한다. autostart는 사용자
-명령으로만 현재 사용자 `JAVIS.lnk`를 등록하고 정확히 소유한 shortcut만 제거한다.
+명령으로만 현재 사용자 `SKILLA.lnk`를 등록하고 정확히 소유한 shortcut만 제거한다.
 
 ## 검증 범위와 한계
 

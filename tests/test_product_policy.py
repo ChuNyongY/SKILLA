@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.models import Action
-from javis_core.product_policy import build_windows_policy_context_provider
+from skilla_core.models import Action
+from skilla_core.product_policy import build_windows_policy_context_provider
 
 
 @pytest.mark.parametrize(
@@ -155,7 +155,7 @@ def test_memory_search_requires_a_registered_store_target(tmp_path: Path) -> Non
 
 
 def test_explorer_folder_policy_binds_root_relative_path_and_digest(tmp_path: Path) -> None:
-    from javis_core.explorer_folder import explorer_folder_target_identity
+    from skilla_core.explorer_folder import explorer_folder_target_identity
 
     folder = tmp_path / "folder"
     folder.mkdir()

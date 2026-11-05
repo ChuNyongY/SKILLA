@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.skill_study import SkillStudyCondition
+from skilla_core.skill_study import SkillStudyCondition
 from tools.run_skill_study_pilot import (
     _bounded_repetitions,
     _condition_context,

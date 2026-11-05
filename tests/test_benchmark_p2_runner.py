@@ -3,17 +3,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from javis_core.benchmark_collection import (
+from skilla_core.benchmark_collection import (
     BenchmarkExperimentCollector,
     CollectionAttemptStatus,
 )
-from javis_core.benchmark_p2_runner import ExistingP2ScenarioRunner
-from javis_core.benchmark_tasks import load_benchmark_tasks
-from javis_core.integrated_scenarios import (
+from skilla_core.benchmark_p2_runner import ExistingP2ScenarioRunner
+from skilla_core.benchmark_tasks import load_benchmark_tasks
+from skilla_core.integrated_scenarios import (
     ScenarioEnvironment,
     load_integrated_scenarios,
 )
-from javis_core.study_analysis import StudyCondition
+from skilla_core.study_analysis import StudyCondition
 
 
 class _NominalS03Evidence:

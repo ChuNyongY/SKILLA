@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     MemorySearchExecutor,
@@ -13,7 +13,7 @@ from javis_core import (
     SemanticMemoryRecord,
     SqliteMemoryRepository,
 )
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.runtime_models import ExecutionResult
 
 
 class Acl:

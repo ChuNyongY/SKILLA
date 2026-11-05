@@ -78,7 +78,7 @@ evaluator `1.0.0`의 70개 ledger hash/content/assertion binding과 동일 readi
 재현 명령:
 
 ```powershell
-python -m javis_core.cli collect-available-benchmark `
+python -m skilla_core.cli collect-available-benchmark `
   evaluation/benchmark_tasks.json `
   evaluation/integrated_scenarios.json `
   (Get-Location).Path `

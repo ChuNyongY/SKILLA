@@ -5,8 +5,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from javis_core import display_target
-from javis_core.display_target import (
+from skilla_core import display_target
+from skilla_core.display_target import (
     DisplayBounds,
     DisplayDescriptor,
     DisplaySelectionStore,

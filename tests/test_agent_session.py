@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 
-from javis_core import (
+from skilla_core import (
     Action,
     ApprovalTokenService,
     AudioFrame,
@@ -21,9 +21,9 @@ from javis_core import (
     VoicePipeline,
     default_registry,
 )
-from javis_core.agent_session import AgentSession, AgentSessionStatus
-from javis_core.intent import InputSource
-from javis_core.voice_feedback import VoiceFeedbackPresenter
+from skilla_core.agent_session import AgentSession, AgentSessionStatus
+from skilla_core.intent import InputSource
+from skilla_core.voice_feedback import VoiceFeedbackPresenter
 
 FRAME = AudioFrame(pcm_s16le=b"\0\0" * 80)
 

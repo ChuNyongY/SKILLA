@@ -1,4 +1,6 @@
-from javis_core import (
+import pytest
+
+from skilla_core import (
     AudioFrame,
     CaptureStatus,
     KoreanWakeVoicePipeline,
@@ -51,6 +53,18 @@ def test_non_wake_audio_is_ignored() -> None:
     assert voice.diagnostics.speech_frame_count == 1
     assert voice.diagnostics.max_wake_confidence == 0.1
     assert not voice.diagnostics.wake_detected
+
+
+def test_korean_pipeline_reports_live_input_level_and_silence() -> None:
+    import struct
+
+    voice = KoreanWakeVoicePipeline(FakeVad(), FakeStt())
+    voice.feed(AudioFrame(pcm_s16le=struct.pack("<100h", *([2000] * 100))))
+    quiet = voice.diagnostics.input_level
+    voice.feed(AudioFrame(pcm_s16le=struct.pack("<100h", *([5000] * 100))))
+    assert 0 < quiet < voice.diagnostics.input_level <= 1
+    voice.feed(AudioFrame(pcm_s16le=b"\x00\x00" * 100))
+    assert voice.diagnostics.input_level == 0
 
 
 def test_wake_speech_and_silence_produce_transcript() -> None:
@@ -183,6 +197,43 @@ def test_korean_unaddressed_speech_is_transcribed_once_and_ignored() -> None:
     assert not voice.is_capturing
 
 
+def test_bare_confirmation_is_forwarded_only_while_review_is_active() -> None:
+    voice = korean_pipeline(SequencedStt("네", "네", "네"))
+
+    def utterance():
+        voice.feed(frame(b"A"))
+        voice.feed(frame(b"A"))
+        return voice.feed(frame(b"S"))
+
+    assert utterance() is None
+    voice.set_review_active(True)
+    result = utterance()
+    assert result is not None and result.transcript == "네"
+    voice.set_review_active(False)
+    assert utterance() is None
+
+
+def test_entering_review_discards_an_in_progress_command_utterance() -> None:
+    stt = SequencedStt("예")
+    voice = korean_pipeline(stt)
+
+    voice.feed(frame(b"A"))
+    voice.feed(frame(b"A"))
+    assert voice.is_capturing
+
+    voice.set_review_active(True)
+
+    assert not voice.is_capturing
+    assert voice.diagnostics.recognition_reason == "REVIEW_WAITING"
+    assert stt.calls == 0
+    voice.feed(frame(b"A"))
+    voice.feed(frame(b"A"))
+    result = voice.feed(frame(b"S"))
+    assert result is not None
+    assert result.transcript == "예"
+    assert stt.calls == 1
+
+
 def test_korean_exact_stop_is_available_without_wake_word() -> None:
     voice = korean_pipeline(SequencedStt("멈춰"))
 
@@ -241,4 +292,14 @@ def test_korean_unrelated_word_is_not_treated_as_fuzzy_wake_word() -> None:
     assert voice.feed(frame(b"S")) is None
 
     assert voice.diagnostics.last_transcript == "서비스 시스템 정보 알려줘"
+    assert voice.diagnostics.recognition_reason == "WAKE_WORD_NOT_FOUND"
+
+
+@pytest.mark.parametrize("transcript", ["스킬 시스템 정보 알려줘", "스키라 시스템 정보 알려줘"])
+def test_korean_unlisted_near_wake_words_do_not_activate(transcript: str) -> None:
+    voice = korean_pipeline(SequencedStt(transcript))
+
+    voice.feed(frame(b"A"))
+    voice.feed(frame(b"B"))
+    assert voice.feed(frame(b"S")) is None
     assert voice.diagnostics.recognition_reason == "WAKE_WORD_NOT_FOUND"

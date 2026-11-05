@@ -11,14 +11,14 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from javis_core import (
+from skilla_core import (
     LocalSkillCatalog,
     SkillProposal,
     SkillStatus,
     evaluate_skill_search,
     load_skill_search_cases,
 )
-from javis_core.registry import default_registry
+from skilla_core.registry import default_registry
 
 _ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CASES = (_ROOT / "evaluation" / "skill_search_pilot_cases.json").resolve()

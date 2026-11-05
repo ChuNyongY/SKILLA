@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "source_repository": "dropbox-dash/faster-whisper-large-v3-turbo",
+  "source_revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+  "files": {
+    "config.json": {
+      "path": "config.json",
+      "sha256": "b0253ea6c0d3bea6b1e19e91a02acfd3b53f4467362efcb5a3e6b16c9b3a9b7e",
+      "size": 2263
+    },
+    "model.bin": {
+      "path": "model.bin",
+      "sha256": "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da",
+      "size": 1617884929
+    },
+    "tokenizer.json": {
+      "path": "tokenizer.json",
+      "sha256": "297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd",
+      "size": 2710337
+    },
+    "vocabulary.json": {
+      "path": "vocabulary.json",
+      "sha256": "c69260f2ab26d659b7c398f9a2b2b48ed0df16c3b47d7326782fd9cba71690c1",
+      "size": 1068114
+    }
+  }
+}

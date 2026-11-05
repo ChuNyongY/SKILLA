@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     FixtureReadError,
@@ -11,7 +11,7 @@ from javis_core import (
     FixtureSourceCatalog,
     Postcondition,
 )
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.runtime_models import ExecutionResult
 
 
 def catalog(tmp_path: Path) -> FixtureSourceCatalog:

@@ -10,8 +10,8 @@ from typing import Any, cast
 import pytest
 from pydantic import ValidationError
 
-from javis_core import CancellationToken
-from javis_core.tts_ipc import (
+from skilla_core import CancellationToken
+from skilla_core.tts_ipc import (
     TtsError,
     TtsProbeRequest,
     TtsRenderRequest,
@@ -176,7 +176,11 @@ def test_speak_uses_fixed_isolated_worker_and_minimal_environment(
     process = FakeProcessFactory()
     TtsWorkerRunner(tmp_path.resolve(), process_factory=process).speak("안녕하세요")
     call = process.calls[0]
-    assert call["command"][1:] == ["-I", "-m", "javis_core.tts_worker"]
+    assert call["command"][1:] == [
+        "-I",
+        str(Path(__file__).resolve().parents[1] / "src/skilla_core/_worker_bootstrap.py"),
+        "skilla_core.tts_worker",
+    ]
     assert call["shell"] is False
     assert "NVIDIA_API_KEY" not in call["env"]
     assert call["stderr"] is subprocess.DEVNULL

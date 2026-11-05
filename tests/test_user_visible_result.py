@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from javis_core.models import Action, VerificationResult
-from javis_core.runtime_models import ExecutionResult
-from javis_core.user_visible_result import UserVisibleResultStore
+from skilla_core.models import Action, VerificationResult
+from skilla_core.runtime_models import ExecutionResult
+from skilla_core.user_visible_result import UserVisibleResultStore
 
 
 def test_system_information_is_rendered_with_allowlisted_korean_labels() -> None:

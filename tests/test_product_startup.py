@@ -7,13 +7,13 @@ from types import ModuleType
 import pytest
 from pydantic import SecretStr
 
-from javis_core.credential_store import CredentialStatus
-from javis_core.product_host import (
+from skilla_core.credential_store import CredentialStatus
+from skilla_core.product_host import (
     ProductPreflightItem,
     ProductPreflightReport,
     ProductPreflightStatus,
 )
-from javis_core.product_startup import (
+from skilla_core.product_startup import (
     CredentialSetupResult,
     ProductStartupExitCode,
     run_tk_nim_credential_setup,

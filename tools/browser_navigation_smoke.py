@@ -5,11 +5,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from javis_core.app_registry import AppRegistryLoader
-from javis_core.browser_navigation import BrowserNavigateExecutor, BrowserNavigationVerifier
-from javis_core.models import Action, Postcondition
-from javis_core.product_host import load_product_host_config
-from javis_core.window_handoff import WindowsRuntimeWindowResolver
+from skilla_core.app_registry import AppRegistryLoader
+from skilla_core.browser_navigation import BrowserNavigateExecutor, BrowserNavigationVerifier
+from skilla_core.models import Action, Postcondition
+from skilla_core.product_host import load_product_host_config
+from skilla_core.window_handoff import WindowsRuntimeWindowResolver
 
 _WM_CLOSE = 0x0010
 

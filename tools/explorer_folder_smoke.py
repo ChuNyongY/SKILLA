@@ -6,14 +6,14 @@ import time
 from pathlib import Path
 from typing import Any
 
-from javis_core.app_registry import AppRegistryLoader
-from javis_core.explorer_folder import (
+from skilla_core.app_registry import AppRegistryLoader
+from skilla_core.explorer_folder import (
     ExplorerFolderOpenExecutor,
     ExplorerFolderVerifier,
     explorer_folder_target_identity,
 )
-from javis_core.models import Action, Postcondition
-from javis_core.window_handoff import WindowsRuntimeWindowResolver
+from skilla_core.models import Action, Postcondition
+from skilla_core.window_handoff import WindowsRuntimeWindowResolver
 
 _WM_CLOSE = 0x0010
 

@@ -7,8 +7,8 @@ import pytest
 from pydantic import SecretStr
 from pytest import MonkeyPatch
 
-from javis_core import product_service
-from javis_core.product_host import (
+from skilla_core import product_service
+from skilla_core.product_host import (
     ProductHostError,
     ProductPreflightItem,
     ProductPreflightReport,

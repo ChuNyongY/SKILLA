@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from javis_core import AuditEvent, JsonlAuditSink, WindowsUserOnlyAcl
+from skilla_core import AuditEvent, JsonlAuditSink, WindowsUserOnlyAcl
 
 
 def test_acl_hardener_applies_and_verifies_exact_dacl(tmp_path: Path) -> None:

@@ -32,7 +32,7 @@ unsigned apphost를 허용하지 않는다.
 ## 무부작용 사전점검
 
 ```powershell
-python -m javis_core.cli doctor (Get-Location).Path
+python -m skilla_core.cli doctor (Get-Location).Path
 ```
 
 doctor는 Windows/Python, SQLite FTS5, 앱 registry publisher, Hello manifest, wake/STT bundle,
@@ -47,8 +47,8 @@ UI나 실제 음성 출력을 실행하지 않는다.
 
 ```powershell
 $root = (Get-Location).Path
-python -m javis_core.cli provision-nim-credential
-python -m javis_core.cli preflight-product-host-credential `
+python -m skilla_core.cli provision-nim-credential
+python -m skilla_core.cli preflight-product-host-credential `
   $root `
   (Resolve-Path .\config\product_host.json).Path
 ```
@@ -97,7 +97,7 @@ python tools\build_windows_package.py
 python tools\build_windows_installer.py
 Get-FileHash .\dist\JAVIS-PC-0.1.0-Setup.exe -Algorithm SHA256
 # 서명 인증서의 exact Subject를 사용한다. 현재 unsigned build는 exit 1이 정상이다.
-python -m javis_core.cli audit-windows-release `
+python -m skilla_core.cli audit-windows-release `
   (Resolve-Path .\dist\JAVIS-PC-0.1.0).Path `
   (Resolve-Path .\dist\JAVIS-PC-0.1.0-Setup.exe).Path `
   'CN=배포 인증서의 정확한 Subject'

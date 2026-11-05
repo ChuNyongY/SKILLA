@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from javis_core import AudioFrame, RepCnnWakeWordDetector
+from skilla_core import AudioFrame, RepCnnWakeWordDetector
 
 
 @dataclass(frozen=True)

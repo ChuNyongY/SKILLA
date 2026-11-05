@@ -1,5 +1,19 @@
 # 음성 출력 경계
 
+## 2026-11-05 변경
+
+사용자 요청에 따라 소스 실행 제품의 기본 출력기를 `SupertonicTtsRunner`로 변경했다.
+Edge 음성은 제품 조립 경로에서 제거했다. `sherpa-onnx 1.13.8`과 프로젝트의
+`models/supertonic3`에 고정한 Supertonic 3 int8 모델로 한국어를 CPU에서 생성한다.
+API 호출이나 음성의 외부 전송은 없다. 모델은 SHA-256 manifest로 검사되고 Windows 패키지에 포함된다.
+모델 실행기는 한 번만 메모리에 올린 뒤 다음 문장에서도 재사용한다.
+생성 실패 시 Windows SAPI를 예비 경로로 유지한다. 실행 중인 제품은 재시작해야 변경을 적용한다.
+
+`output/supertonic_portable_smoke_1.wav`과 `output/supertonic_portable_smoke_2.wav`의 실제 한국어
+생성과 PCM WAV 검사를 통과했다. 같은 실행에서 각각 1.830초와 0.603초가 걸렸다.
+이번 작업에서는 스피커 자동 재생과 사람 대상 자연스러움 평가는 수행하지 않았다.
+아래 Edge 설명은 이전 구성 기록이며 현재 기본 출력기를 뜻하지 않는다.
+
 2026-10-30부터 실제 제품 실행은 무료 Microsoft Edge 한국어 신경망 음성
 `ko-KR-SunHiNeural`을 우선 사용한다. 이 방식은 API 키나 사용료가 없지만 인터넷 연결이 필요하며,
 출력할 고정 문장이 Microsoft 음성 서비스로 전송된다. 서비스 또는 인터넷 연결이 실패하면 기존
@@ -13,7 +27,7 @@ Windows SAPI 로컬 음성으로 자동 전환한다. 설치는
 현재 Heami 품질 평가와 Piper·Kokoro·Supertonic 3 비교, 격리 CPU 측정 및 채택 기준은
 [한국어 로컬 TTS 후보 감사](TTS_CANDIDATE_AUDIT.md)에 있다.
 
-JAVIS의 대체 TTS 구현은 Windows SAPI를 별도 Python worker process에서 호출한다. SAPI로
+SKILLA의 대체 TTS 구현은 Windows SAPI를 별도 Python worker process에서 호출한다. SAPI로
 전환된 경우 텍스트는 네트워크나 NIM으로 보내지 않으며, worker에는 `speak` 또는 `render_wav`의
 strict JSON 요청만 전달한다. 어느 출력기를 사용해도 이 모듈은 응답 문장 생성기가 아니라 이미
 확정된 짧은 문장을 음성으로 출력하는 제한된 sink다.
@@ -22,7 +36,7 @@ strict JSON 요청만 전달한다. 어느 출력기를 사용해도 이 모듈�
 
 - 입력 텍스트는 1~500자이며 NUL을 거부한다.
 - 속도는 -5~5, 음량은 0~100으로 제한한다.
-- worker는 고정된 `python -I -m javis_core.tts_worker` 명령, `shell=False`, 최소 환경으로 실행한다.
+- worker는 고정된 `python -I -m skilla_core.tts_worker` 명령, `shell=False`, 최소 환경으로 실행한다.
 - 요청·응답은 각각 8 KiB, 실행은 최대 30초로 제한하며 stderr와 내부 예외는 외부에 내보내지 않는다.
 - JSON duplicate key, NaN/Infinity, extra field와 타입 coercion을 거부한다.
 - SAPI `Speak`에는 plain-text 플래그를 사용해 XML/SSML 해석을 비활성화한다.
@@ -76,5 +90,5 @@ worker 응답과 일치했다. 유효 파일은 `output/tts-natural-copy-smoke-2
 `output/archive-incomplete-tts-natural-copy-smoke-20261016-response-field-mismatch`로 분리했다.
 WAV 생성 성공은 문구가 자연스럽게 들린다는 사람 평가를 대신하지 않는다.
 
-배포 전 `javis doctor`는 5초 제한 worker에서 이 `probe`를 실행한다. 실패는 내부 COM 예외나
+배포 전 `skilla doctor`는 5초 제한 worker에서 이 `probe`를 실행한다. 실패는 내부 COM 예외나
 경로를 내보내지 않고 `tts.sapi` / `SAPI_UNAVAILABLE`로만 보고한다.

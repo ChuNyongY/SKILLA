@@ -5,9 +5,9 @@ import pytest
 from pydantic import ValidationError
 from pytest import MonkeyPatch
 
-import javis_core.memory_pdf_scenario as scenario_module
-from javis_core import Action, ExecutionResult, Postcondition
-from javis_core.memory_pdf_scenario import (
+import skilla_core.memory_pdf_scenario as scenario_module
+from skilla_core import Action, ExecutionResult, Postcondition
+from skilla_core.memory_pdf_scenario import (
     MemoryPdfScenarioResult,
     S03MemoryPdfScenarioRunner,
     _write_minimal_pdf,

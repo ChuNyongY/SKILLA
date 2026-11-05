@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.integrated_scenarios import (
+from skilla_core.integrated_scenarios import (
     ExpectedAuthorization,
     ScenarioEnvironment,
     ScenarioManifestError,

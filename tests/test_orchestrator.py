@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     ApprovalArtifact,
@@ -17,8 +17,8 @@ from javis_core import (
     RetryBudget,
     default_registry,
 )
-from javis_core.cancellation import CancellationToken
-from javis_core.models import PolicyDecision
+from skilla_core.cancellation import CancellationToken
+from skilla_core.models import PolicyDecision
 
 
 def safe_context(**overrides: object) -> PolicyContext:

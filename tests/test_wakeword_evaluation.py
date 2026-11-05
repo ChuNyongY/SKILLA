@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     AudioFrame,
     WakeWordCalibrationStatus,
     calibrate_wakeword_threshold,
 )
-from javis_core.voice_evaluation import VoiceCorpusError
-from javis_core.wakeword_evaluation import (
+from skilla_core.voice_evaluation import VoiceCorpusError
+from skilla_core.wakeword_evaluation import (
     WakeWordCorpusManifest,
     WakeWordCorpusSample,
     WakeWordDistanceBand,

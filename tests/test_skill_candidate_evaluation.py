@@ -2,7 +2,7 @@ from uuid import UUID
 
 import pytest
 
-from javis_core.skill_candidate_evaluation import (
+from skilla_core.skill_candidate_evaluation import (
     SkillCandidateDecision,
     SkillCandidateEvaluationError,
     SkillCandidateTrial,

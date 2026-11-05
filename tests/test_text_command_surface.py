@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from javis_core.always_on_runtime import (
+from skilla_core.always_on_runtime import (
     AlwaysOnState,
     RuntimeEvent,
     RuntimeEventType,
     RuntimeStatusSnapshot,
 )
-from javis_core.text_command_surface import TextCommandPresenter, invoke_surface_action
-from javis_core.user_visible_result import UserVisibleResultSnapshot
+from skilla_core.text_command_surface import TextCommandPresenter, invoke_surface_action
+from skilla_core.user_visible_result import UserVisibleResultSnapshot
 
 
 class Runtime:

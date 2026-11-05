@@ -2,8 +2,8 @@ $ErrorActionPreference = "Stop"
 $projectRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..")).Path
 $dotnet = Join-Path $projectRoot ".dotnet\dotnet.exe"
 $project = Join-Path $PSScriptRoot "WindowsHelloHelper.csproj"
-$publish = Join-Path $PSScriptRoot "publish-fdd"
-$entrypoint = Join-Path $publish "Javis.WindowsHelloHelper.dll"
+$publish = Join-Path $PSScriptRoot "publish-skilla-fdd"
+$entrypoint = Join-Path $publish "Skilla.WindowsHelloHelper.dll"
 $manifest = Join-Path $projectRoot "config\windows_hello_helper.json"
 $hostExecutable = (Get-Command dotnet.exe -ErrorAction Stop).Source
 
@@ -29,7 +29,7 @@ $files = @(
         Sort-Object -Property Name |
         ForEach-Object {
             [ordered]@{
-                path = "native/WindowsHelloHelper/publish-fdd/$($_.Name)"
+                path = "native/WindowsHelloHelper/publish-skilla-fdd/$($_.Name)"
                 sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             }
         }
@@ -42,7 +42,7 @@ $payload = [ordered]@{
     schema_version = "1.1"
     host_executable = $hostExecutable
     host_sha256 = $hostDigest
-    entrypoint = "native/WindowsHelloHelper/publish-fdd/Javis.WindowsHelloHelper.dll"
+    entrypoint = "native/WindowsHelloHelper/publish-skilla-fdd/Skilla.WindowsHelloHelper.dll"
     files = $files
 } | ConvertTo-Json -Depth 4
 $temporary = "$manifest.tmp"

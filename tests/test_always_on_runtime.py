@@ -4,7 +4,7 @@ import threading
 import time
 from collections.abc import Callable, Mapping
 
-from javis_core import (
+from skilla_core import (
     Action,
     ApprovalTokenService,
     CancellationToken,
@@ -28,12 +28,12 @@ from javis_core import (
     VoiceCommandCoordinator,
     default_registry,
 )
-from javis_core.always_on_runtime import (
+from skilla_core.always_on_runtime import (
     AlwaysOnAgentRuntime,
     AlwaysOnState,
     RuntimeEventType,
 )
-from javis_core.intent import InputSource
+from skilla_core.intent import InputSource
 
 
 def capture(text: str) -> VoiceCaptureResult:

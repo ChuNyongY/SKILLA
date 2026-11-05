@@ -1,6 +1,6 @@
 import hashlib
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     NotepadProfile,

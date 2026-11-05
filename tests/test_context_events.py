@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     ContextEvent,
     ContextEventError,
     ContextEventType,

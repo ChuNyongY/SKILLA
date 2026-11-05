@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.wakeword_bundle import WakeWordBundleError, load_wakeword_bundle
+from skilla_core.wakeword_bundle import WakeWordBundleError, load_wakeword_bundle
 
 
 def write_bundle(root: Path) -> Path:

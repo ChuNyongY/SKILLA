@@ -23,7 +23,7 @@ executor는 절대 경로이며 symlink가 아닌 등록 root만 허용한다. v
 `external_effect_count=0`이다.
 
 ```powershell
-python -m javis_core.cli run-mock-scenarios evaluation/integrated_scenarios.json
+python -m skilla_core.cli run-mock-scenarios evaluation/integrated_scenarios.json
 ```
 
 실제 파일 정리, 휴지통 이동, 삭제 복구 검증은 이 경계에 포함되지 않는다.

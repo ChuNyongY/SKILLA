@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from javis_core.skill_study import (
+from skilla_core.skill_study import (
     SkillTrialObservation,
     evaluate_skill_study,
     load_skill_study_observations,

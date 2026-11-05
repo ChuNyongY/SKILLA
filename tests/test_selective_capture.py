@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     CapabilityRegistry,

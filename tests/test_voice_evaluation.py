@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import AudioFrame
-from javis_core.voice_evaluation import (
+from skilla_core import AudioFrame
+from skilla_core.voice_evaluation import (
     VoiceCorpusError,
     VoiceCorpusManifest,
     VoiceCorpusSample,
@@ -154,4 +154,4 @@ def test_manifest_loader_round_trip(tmp_path: Path) -> None:
     )
 
     assert load_voice_corpus_manifest(path) == expected
-    assert normalize_korean_transcript("  ＪＡＶＩＳ\n열어 ") == "JAVIS 열어"
+    assert normalize_korean_transcript("  ＳＫＩＬＬＡ\n열어 ") == "SKILLA 열어"

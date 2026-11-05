@@ -5,8 +5,8 @@ from collections.abc import Iterable
 
 import pytest
 
-from javis_core.voice import AudioFrame
-from javis_core.vosk_wakeword import VoskKoreanWakeWordDetector
+from skilla_core.voice import AudioFrame
+from skilla_core.vosk_wakeword import VoskKoreanWakeWordDetector
 
 
 class Recognizer:

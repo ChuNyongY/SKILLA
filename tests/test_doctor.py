@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.doctor import DoctorCheck, DoctorStatus, default_doctor_checks, run_doctor
+from skilla_core.doctor import DoctorCheck, DoctorStatus, default_doctor_checks, run_doctor
 
 
 def test_doctor_separates_required_failures_from_optional_warnings(tmp_path: Path) -> None:
@@ -57,4 +57,6 @@ def test_default_doctor_requires_bounded_sapi_probe() -> None:
 
     assert checks["tts.sapi"].required
     assert checks["tts.sapi"].failure_code == "SAPI_UNAVAILABLE"
+    assert checks["tts.supertonic"].required
+    assert checks["tts.supertonic"].failure_code == "SUPERTONIC_UNAVAILABLE"
     assert not checks["dependency.pycaw"].required

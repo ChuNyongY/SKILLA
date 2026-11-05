@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.benchmark_results import (
+from skilla_core.benchmark_results import (
     BenchmarkEvidenceProvenance,
     BenchmarkObservation,
     BenchmarkObservationSet,
@@ -14,15 +14,15 @@ from javis_core.benchmark_results import (
     evaluate_benchmark_observations,
     load_benchmark_observations,
 )
-from javis_core.benchmark_tasks import load_benchmark_tasks
-from javis_core.cli import main
-from javis_core.evaluation import TrialResult
-from javis_core.integrated_scenarios import (
+from skilla_core.benchmark_tasks import load_benchmark_tasks
+from skilla_core.cli import main
+from skilla_core.evaluation import TrialResult
+from skilla_core.integrated_scenarios import (
     BaselineIsolation,
     ScenarioEnvironment,
     load_integrated_scenarios,
 )
-from javis_core.study_analysis import StudyCondition
+from skilla_core.study_analysis import StudyCondition
 
 TASKS = load_benchmark_tasks(Path("evaluation/benchmark_tasks.json").resolve())
 TASK_PATH = Path("evaluation/benchmark_tasks.json").resolve()

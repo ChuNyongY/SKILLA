@@ -1,7 +1,7 @@
 # Product host 사전점검 계약
 
 `config/product_host.json`은 실제 capture/runtime 조립에 사용할 비밀정보 없는 설정이다. 앱 registry,
-Windows Hello helper, wakeword/STT manifest의 project-root 상대경로와 NIM model ID, 음성·HUD 상한만
+Windows Hello helper, STT manifest의 project-root 상대경로와 NIM model ID, 음성·HUD 상한만
 포함한다. API key, transcript, 사용자 경로, 승인 token은 이 파일에 넣을 수 없다.
 
 loader는 절대경로의 project root와 그 아래 `config`에 있는 non-symlink JSON만 허용한다. 중복 key,
@@ -9,7 +9,7 @@ loader는 절대경로의 project root와 그 아래 `config`에 있는 non-syml
 설정 검증은 모델을 메모리에 올리거나 마이크·앱·HUD를 열지 않는다.
 
 운영 기본 경로는 현재 사용자의 Windows Credential Manager generic credential
-`JAVIS-PC/NVIDIA-NIM`이다. key는 echo 없는 prompt로만 받고 CLI 인자, 설정, preflight report와 로그에
+`SKILLA/NVIDIA-NIM`이다. key는 echo 없는 prompt로만 받고 CLI 인자, 설정, preflight report와 로그에
 포함하지 않는다. 저장 전후에 bounded `nvapi-` 형식을 검사하며 create-only가 기본이다. 같은 target의
 교체는 라이브러리의 명시적 `replace=True`에서만 가능하고, CLI는 덮어쓰기를 제공하지 않는다.
 Credential Manager API 자체가 원자적 create-only를 제공하지 않으므로 read-before-write는 동시 실행
@@ -22,9 +22,9 @@ LocalSystem으로 보호됐는지 먼저 확인한다.
 ```powershell
 $root = (Get-Location).Path
 $config = (Resolve-Path .\config\product_host.json).Path
-python -m javis_core.cli provision-nim-credential
-python -m javis_core.cli nim-credential-status
-python -m javis_core.cli preflight-product-host-credential $root $config
+python -m skilla_core.cli provision-nim-credential
+python -m skilla_core.cli nim-credential-status
+python -m skilla_core.cli preflight-product-host-credential $root $config
 ```
 
 preflight는 `config`, `secret.nim`, `doctor` 세 항목만 stable code로 보고한다. 셋 중 하나라도 실패하면
@@ -44,7 +44,9 @@ capture-stop 다음 runtime-stop을 호출하고 최대 30초 이내에 non-daem
 마이크 없이 lifecycle을 검증할 수 있다.
 
 `build_product_voice_stack()`은 preflight가 반환한 trusted manifest 경로를 다시 로드·hash 검증한 뒤
-openWakeWord, faster-whisper, bounded VAD, `VoicePipeline`, `SoundDeviceFrameSource`를 조립한다. bundle
+Whisper large-v3-turbo 한국어 호출어 감지, bounded VAD, `KoreanWakeVoicePipeline`,
+`SoundDeviceFrameSource`를 조립한다. 현재 호출어는 “스킬라”이며 별도의 과거 JARVIS 호출 모델을
+제품 배포물에 넣지 않는다. 선택 구성인 `openwakeword` 모드는 별도 manifest가 있을 때만 허용한다. bundle
 검증이 먼저 실패하면 어떤 runtime component도 생성하지 않는다. frame source 생성은 장치를 열지
 않으며 실제 capture는 lifecycle이 `frames()`를 소비할 때만 시작된다. 이 PC의 실제 로컬 bundle로
 `OpenWakeWordDetector`와 `FasterWhisperSpeechToText` 초기화를 포함한 구성 smoke가 성공했고

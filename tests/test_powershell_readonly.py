@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pytest import MonkeyPatch
 
-from javis_core import Action, PowerShellReadOnlyExecutor
+from skilla_core import Action, PowerShellReadOnlyExecutor
 
 
 class FakeRunner:
@@ -57,7 +57,7 @@ def test_path_is_passed_only_through_limited_environment(
     assert result.success
     arguments, environment, _timeout = runner.calls[0]
     assert str(target) not in " ".join(arguments)
-    assert environment["JAVIS_TARGET_PATH"] == str(target.resolve())
+    assert environment["SKILLA_TARGET_PATH"] == str(target.resolve())
     assert "-EncodedCommand" in arguments
 
 

@@ -5,16 +5,16 @@ from datetime import UTC, datetime, timedelta
 from threading import Event, get_ident
 from uuid import UUID, uuid4
 
-from javis_core.skill_authoring import (
+from skilla_core.skill_authoring import (
     SkillDraftArtifact,
     SkillExecutionTrace,
     SkillTraceStep,
 )
-from javis_core.skill_draft_workflow import (
+from skilla_core.skill_draft_workflow import (
     InitialSkillDraftWorkflow,
     SkillDraftWorkflowCode,
 )
-from javis_core.skill_runtime import (
+from skilla_core.skill_runtime import (
     SkillOutcome,
     SkillPerformanceSummary,
     SkillRecord,
@@ -22,7 +22,7 @@ from javis_core.skill_runtime import (
     SkillRevisionDecision,
     SkillStatus,
 )
-from javis_core.skill_trace_review_surface import (
+from skilla_core.skill_trace_review_surface import (
     DraftFailure,
     DraftSuccess,
     DraftWork,
@@ -32,7 +32,7 @@ from javis_core.skill_trace_review_surface import (
     TraceReviewConfirmation,
     TraceReviewDisplay,
 )
-from javis_core.skill_trace_store import PendingSkillTrace
+from skilla_core.skill_trace_store import PendingSkillTrace
 
 
 def trace() -> SkillExecutionTrace:

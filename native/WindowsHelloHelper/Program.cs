@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Windows.Security.Credentials.UI;
 
-namespace Javis.WindowsHelloHelper;
+namespace Skilla.WindowsHelloHelper;
 
 internal static class Program
 {
@@ -135,7 +135,7 @@ internal sealed class VerificationWindow : Form
     internal VerificationWindow(Request request)
     {
         this.request = request;
-        Text = "JAVIS Windows Hello verification";
+        Text = "SKILLA Windows Hello verification";
         ClientSize = new Size(360, 90);
         ControlBox = false;
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -149,7 +149,7 @@ internal sealed class VerificationWindow : Form
         {
             AutoSize = false,
             Dock = DockStyle.Fill,
-            Text = "Windows Hello에서 JAVIS 작업을 확인하세요.",
+            Text = "Windows Hello에서 SKILLA 작업을 확인하세요.",
             TextAlign = ContentAlignment.MiddleCenter,
         });
 

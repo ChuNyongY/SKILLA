@@ -4,6 +4,10 @@
 models/**/.cache/
 models/faster-whisper-small/*
 !models/faster-whisper-small/manifest.json
+models/faster-whisper-large-v3-turbo/*
+!models/faster-whisper-large-v3-turbo/manifest.json
+models/supertonic3/*
+!models/supertonic3/manifest.json
 .dotnet/
 __pycache__/
 *.py[cod]

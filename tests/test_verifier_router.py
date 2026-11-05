@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from javis_core.models import Action, VerificationResult
-from javis_core.runtime_models import ExecutionResult
-from javis_core.verifier_router import CapabilityVerifierRouter
+from skilla_core.models import Action, VerificationResult
+from skilla_core.runtime_models import ExecutionResult
+from skilla_core.verifier_router import CapabilityVerifierRouter
 
 
 class RecordingVerifier:

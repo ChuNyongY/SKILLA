@@ -1,4 +1,4 @@
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     ApprovalTokenService,
@@ -12,7 +12,7 @@ from javis_core import (
     TaskOutcome,
     default_registry,
 )
-from javis_core.observation_loop import (
+from skilla_core.observation_loop import (
     BoundedObservationAgent,
     ObservationLoopError,
     ObservationLoopStatus,

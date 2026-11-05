@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import Action, ActionStatus, Plan, TaskOutcome
-from javis_core.skill_trace_store import LocalSkillTraceStore, SkillTraceStoreError
+from skilla_core import Action, ActionStatus, Plan, TaskOutcome
+from skilla_core.skill_trace_store import LocalSkillTraceStore, SkillTraceStoreError
 
 
 def test_trace_store_redacts_common_identifiers_and_queues_for_review(tmp_path: Path) -> None:

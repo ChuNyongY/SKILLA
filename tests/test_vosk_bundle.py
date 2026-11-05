@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.vosk_bundle import VoskBundleError, load_vosk_bundle
+from skilla_core.vosk_bundle import VoskBundleError, load_vosk_bundle
 
 FILES = (
     "README",

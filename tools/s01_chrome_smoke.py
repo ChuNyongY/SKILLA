@@ -6,7 +6,7 @@ import secrets
 import time
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     Action,
     ActionStatus,
     AppRegistryLoader,
@@ -29,7 +29,7 @@ from javis_core import (
     default_registry,
     validate_plan_contracts,
 )
-from javis_core.cancellation import CancellationToken
+from skilla_core.cancellation import CancellationToken
 
 
 class RecordingExecutor:

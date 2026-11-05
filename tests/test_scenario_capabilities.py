@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from javis_core import (
+from skilla_core import (
     audit_scenario_capabilities,
     default_registry,
     load_integrated_scenarios,
 )
-from javis_core.cli import main
+from skilla_core.cli import main
 
 MANIFEST = Path("evaluation/integrated_scenarios.json").resolve()
 

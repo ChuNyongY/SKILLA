@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import RiskLevel, TrialResult, evaluate_trials, load_trials
+from skilla_core import RiskLevel, TrialResult, evaluate_trials, load_trials
 
 
 def trial(trial_id: str, **overrides: object) -> TrialResult:

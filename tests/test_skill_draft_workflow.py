@@ -6,17 +6,17 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from javis_core.skill_authoring import (
+from skilla_core.skill_authoring import (
     SkillDraftArtifact,
     SkillExecutionTrace,
     SkillTraceStep,
 )
-from javis_core.skill_draft_workflow import (
+from skilla_core.skill_draft_workflow import (
     InitialSkillDraftWorkflow,
     RevisionDraftTarget,
     SkillDraftWorkflowError,
 )
-from javis_core.skill_runtime import (
+from skilla_core.skill_runtime import (
     SkillOutcome,
     SkillPerformanceSummary,
     SkillRecord,
@@ -24,7 +24,7 @@ from javis_core.skill_runtime import (
     SkillRevisionDecision,
     SkillStatus,
 )
-from javis_core.skill_trace_store import PendingSkillTrace
+from skilla_core.skill_trace_store import PendingSkillTrace
 
 
 def trace() -> SkillExecutionTrace:

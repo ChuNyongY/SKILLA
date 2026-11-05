@@ -2,17 +2,17 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import LocalSkillCatalog, SkillProposal, SkillStatus, default_registry
-from javis_core.skill_candidate_evaluation import (
+from skilla_core import LocalSkillCatalog, SkillProposal, SkillStatus, default_registry
+from skilla_core.skill_candidate_evaluation import (
     SkillCandidateDecision,
     SkillCandidateEvaluationError,
 )
-from javis_core.skill_candidate_runner import (
+from skilla_core.skill_candidate_runner import (
     SkillCandidateRunMeasurement,
     collect_revision_candidate_trials,
     evaluate_catalog_revision_candidate,
 )
-from javis_core.skill_runtime import SkillRecord
+from skilla_core.skill_runtime import SkillRecord
 
 HASH = "a" * 64
 

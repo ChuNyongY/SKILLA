@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import RiskLevel
-from javis_core.study_analysis import (
+from skilla_core import RiskLevel
+from skilla_core.study_analysis import (
     StudyCondition,
     StudyDataError,
     StudyMetric,

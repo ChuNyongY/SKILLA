@@ -3,8 +3,8 @@ import subprocess
 
 import pytest
 
-from javis_core import UiaElementSnapshot, UiaSelector
-from javis_core.uia_ipc import (
+from skilla_core import UiaElementSnapshot, UiaSelector
+from skilla_core.uia_ipc import (
     SubprocessNotepadTextBackend,
     SubprocessUiaBackend,
     UiaFindRequest,

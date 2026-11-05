@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from javis_core import (
+from skilla_core import (
     LocalSkillCatalog,
     SkillAwarePlanner,
     SkillProposal,
@@ -19,9 +19,9 @@ from javis_core import (
     evaluate_skill_search,
     load_skill_search_cases,
 )
-from javis_core.cli import main
-from javis_core.models import Action, Plan
-from javis_core.registry import default_registry
+from skilla_core.cli import main
+from skilla_core.models import Action, Plan
+from skilla_core.registry import default_registry
 
 
 def _catalog(tmp_path: Path) -> LocalSkillCatalog:

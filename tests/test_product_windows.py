@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.file_move import InMemoryMoveJournal
-from javis_core.memory import SemanticMemoryRecord
-from javis_core.models import Action, Postcondition
-from javis_core.process_launch import RegisteredApp
-from javis_core.product_host import LoadedProductHostConfig, ProductHostConfig
-from javis_core.product_windows import build_windows_product_capabilities
+from skilla_core.file_move import InMemoryMoveJournal
+from skilla_core.memory import SemanticMemoryRecord
+from skilla_core.models import Action, Postcondition
+from skilla_core.process_launch import RegisteredApp
+from skilla_core.product_host import LoadedProductHostConfig, ProductHostConfig
+from skilla_core.product_windows import build_windows_product_capabilities
 
 
 class Volume:

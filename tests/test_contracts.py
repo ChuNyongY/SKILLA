@@ -1,6 +1,6 @@
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     Plan,
     PlanContractError,
@@ -91,7 +91,7 @@ def test_settings_open_accepts_only_page_id_and_target() -> None:
 
 
 def test_argument_contract_rejects_invalid_choice_declarations() -> None:
-    from javis_core import ArgumentContract
+    from skilla_core import ArgumentContract
 
     with pytest.raises(ValueError, match="string choices"):
         ArgumentContract({"page_id": "string"}, string_choices={"other": ("x",)})

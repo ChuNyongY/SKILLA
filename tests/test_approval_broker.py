@@ -2,7 +2,7 @@ from uuid import uuid4
 
 from pydantic import SecretStr
 
-from javis_core import (
+from skilla_core import (
     Action,
     ApprovalChannel,
     ApprovalCoordinator,

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from javis_core.intent import GateResult, GateRoute
-from javis_core.models import Action, PolicyContext, RiskLevel
-from javis_core.policy_context import gate_scoped_policy_context_provider
+from skilla_core.intent import GateResult, GateRoute
+from skilla_core.models import Action, PolicyContext, RiskLevel
+from skilla_core.policy_context import gate_scoped_policy_context_provider
 
 
 def action() -> Action:

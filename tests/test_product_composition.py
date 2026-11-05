@@ -7,12 +7,12 @@ from uuid import uuid4
 import pytest
 from pydantic import SecretStr
 
-from javis_core.approval_broker import ApprovalRequest, ApprovalResponse
-from javis_core.audit import InMemoryAuditSink
-from javis_core.cancellation import CancellationToken
-from javis_core.executor import MockExecutor
-from javis_core.models import Action, Plan, PolicyContext, Postcondition
-from javis_core.product_composition import (
+from skilla_core.approval_broker import ApprovalRequest, ApprovalResponse
+from skilla_core.audit import InMemoryAuditSink
+from skilla_core.cancellation import CancellationToken
+from skilla_core.executor import MockExecutor
+from skilla_core.models import Action, Plan, PolicyContext, Postcondition
+from skilla_core.product_composition import (
     ProductCapabilityStack,
     ProductLanguageStack,
     ProductRuntimeStack,
@@ -23,17 +23,17 @@ from javis_core.product_composition import (
     build_product_runtime_stack_from_capabilities,
     build_product_voice_stack,
 )
-from javis_core.product_host import load_product_host_config
-from javis_core.skill_runtime import LocalSkillCatalog, SkillAwarePlanner, SkillProposal
-from javis_core.skill_use_recording import (
+from skilla_core.product_host import load_product_host_config
+from skilla_core.skill_runtime import LocalSkillCatalog, SkillAwarePlanner, SkillProposal
+from skilla_core.skill_use_recording import (
     CatalogSkillUseRecorder,
     product_model_configuration_sha256,
     product_tool_surface_sha256,
 )
-from javis_core.stt_bundle import LoadedSttBundle, SttBundleFiles, SttModelFile
-from javis_core.verifier import PredicateVerifier
-from javis_core.voice import AudioFrame, SpeechToText, VoicePipeline, WakeWordDetector
-from javis_core.wakeword_bundle import LoadedWakeWordBundle
+from skilla_core.stt_bundle import LoadedSttBundle, SttBundleFiles, SttModelFile
+from skilla_core.verifier import PredicateVerifier
+from skilla_core.voice import AudioFrame, SpeechToText, VoicePipeline, WakeWordDetector
+from skilla_core.wakeword_bundle import LoadedWakeWordBundle
 
 ROOT = Path.cwd().resolve()
 CONFIGURATION = load_product_host_config(
@@ -196,24 +196,23 @@ def test_voice_stack_builds_verified_components_without_opening_source(
     assert stack.frame_source is source
     assert not source.opened
     assert observed == {
-        "wake_path": CONFIGURATION.wakeword_manifest,
         "stt_path": CONFIGURATION.stt_manifest,
-        "rms": 500,
-        "frame": (2, 80, 32),
+        "rms": 80,
+        "frame": (1, 80, 256),
     }
 
 
-def test_bundle_failure_prevents_all_runtime_component_construction() -> None:
+def test_stt_bundle_failure_prevents_all_runtime_component_construction() -> None:
     calls: list[str] = []
 
-    def fail_wake(_path: Path) -> LoadedWakeWordBundle:
+    def fail_stt(_path: Path) -> LoadedSttBundle:
         raise ValueError("bundle invalid")
 
-    def unexpected_stt(_path: Path) -> LoadedSttBundle:
-        calls.append("stt")
-        raise AssertionError("STT loader must not run")
+    def unexpected_wake_loader(_path: Path) -> LoadedWakeWordBundle:
+        calls.append("wake-loader")
+        raise AssertionError("wake loader must not run")
 
-    def unexpected_wake(bundle: LoadedWakeWordBundle) -> WakeWordDetector:
+    def unexpected_wake_factory(bundle: LoadedWakeWordBundle) -> WakeWordDetector:
         del bundle
         calls.append("wake")
         raise AssertionError("wake factory must not run")
@@ -236,9 +235,9 @@ def test_bundle_failure_prevents_all_runtime_component_construction() -> None:
     with pytest.raises(ValueError, match="bundle invalid"):
         build_product_voice_stack(
             CONFIGURATION,
-            wake_bundle_loader=fail_wake,
-            stt_bundle_loader=unexpected_stt,
-            wake_factory=unexpected_wake,
+            wake_bundle_loader=unexpected_wake_loader,
+            stt_bundle_loader=fail_stt,
+            wake_factory=unexpected_wake_factory,
             stt_factory=unexpected_stt_model,
             vad_factory=unexpected_vad,
             frame_source_factory=unexpected_source,

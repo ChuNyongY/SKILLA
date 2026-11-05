@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.snapshot_vm import (
+from skilla_core.snapshot_vm import (
     SnapshotEvidenceError,
     SnapshotEvidenceGate,
     SnapshotScenarioManifest,

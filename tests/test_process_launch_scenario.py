@@ -3,11 +3,11 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from javis_core.cancellation import CancellationToken
-from javis_core.models import Action, VerificationResult
-from javis_core.process_launch import RegisteredApp
-from javis_core.process_launch_scenario import S01ProcessLaunchScenarioRunner
-from javis_core.runtime_models import ExecutionResult
+from skilla_core.cancellation import CancellationToken
+from skilla_core.models import Action, VerificationResult
+from skilla_core.process_launch import RegisteredApp
+from skilla_core.process_launch_scenario import S01ProcessLaunchScenarioRunner
+from skilla_core.runtime_models import ExecutionResult
 
 
 class _Resolver:

@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from javis_core.user_validation import (
+from skilla_core.user_validation import (
     ConsoleConsentProvider,
     UserValidationError,
     UserValidationSink,
@@ -143,7 +143,7 @@ def test_console_consent_requires_exact_fresh_phrase() -> None:
 
     assert accepted.request(ValidationStep.MICROPHONE) is not None
     assert "동의 abcdef" in output.getvalue()
-    assert "Hey Jarvis, 시스템 정보 알려줘" in output.getvalue()
+    assert "스킬라, 시스템 정보 알려줘" in output.getvalue()
     with pytest.raises(UserValidationError, match="fresh"):
         accepted.request(ValidationStep.TTS_SPEAKER)
 
@@ -151,10 +151,10 @@ def test_console_consent_requires_exact_fresh_phrase() -> None:
 @pytest.mark.parametrize(
     ("step", "expected_guidance"),
     [
-        (ValidationStep.MICROPHONE, "Hey Jarvis, 시스템 정보 알려줘"),
+        (ValidationStep.MICROPHONE, "스킬라, 시스템 정보 알려줘"),
         (ValidationStep.TTS_SPEAKER, "1~5점"),
         (ValidationStep.WINDOWS_HELLO, "Windows가 표시하는 인증 창"),
-        (ValidationStep.STOP_LATENCY, "Hey Jarvis, 중지"),
+        (ValidationStep.STOP_LATENCY, "스킬라, 중지"),
     ],
 )
 def test_console_consent_explains_the_exact_device_action(

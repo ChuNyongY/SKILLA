@@ -4,13 +4,18 @@ from collections.abc import Callable
 
 import pytest
 
-from javis_core.always_on_runtime import (
+from skilla_core.always_on_runtime import (
     AlwaysOnState,
     RuntimeEventType,
     RuntimeStatusSnapshot,
 )
-from javis_core.status_surface import RuntimeStatusDisplay, RuntimeStatusPresenter
-from javis_core.voice import VoicePipelineDiagnostics
+from skilla_core.status_surface import (
+    RuntimeStatusDisplay,
+    RuntimeStatusPresenter,
+    reactor_level_label,
+    reactor_pulse_geometry,
+)
+from skilla_core.voice import VoicePipelineDiagnostics
 
 
 class FakeView:
@@ -192,6 +197,21 @@ def test_non_wake_background_speech_does_not_show_garbled_transcript() -> None:
     assert "잘못" not in display.voice_label
 
 
+def test_review_waiting_has_an_explicit_voice_instruction() -> None:
+    display = RuntimeStatusPresenter._display(
+        snapshot(AlwaysOnState.REVIEWING),
+        VoicePipelineDiagnostics(
+            frame_count=20,
+            speech_frame_count=0,
+            max_wake_confidence=0.0,
+            wake_detected=False,
+            recognition_reason="REVIEW_WAITING",
+        ),
+    )
+
+    assert display.voice_label == "승인 음성 대기 중 · 예 또는 아니요"
+
+
 def test_presenter_rejects_invalid_poll_interval() -> None:
     for invalid in (99, 5_001, True):
         with pytest.raises(ValueError, match="poll_interval_ms"):
@@ -203,3 +223,27 @@ def test_presenter_rejects_invalid_poll_interval() -> None:
                 view=FakeView(),
                 poll_interval_ms=invalid,
             )
+
+
+def test_reactor_geometry_grows_with_live_microphone_level() -> None:
+    silent = reactor_pulse_geometry(0.0)
+    speaking = reactor_pulse_geometry(0.5)
+    loud = reactor_pulse_geometry(1.0)
+
+    assert silent == (2, 47.0)
+    assert silent[0] < speaking[0] < loud[0]
+    assert silent[1] < speaking[1] < loud[1]
+    assert loud == (8, 67.0)
+
+
+def test_reactor_geometry_clamps_invalid_external_levels() -> None:
+    assert reactor_pulse_geometry(-5) == reactor_pulse_geometry(0)
+    assert reactor_pulse_geometry(5) == reactor_pulse_geometry(1)
+
+
+def test_reactor_level_label_is_readable_and_clamped() -> None:
+    assert reactor_level_label(0.0) == "MIC 00%"
+    assert reactor_level_label(0.42) == "MIC 42%"
+    assert reactor_level_label(1.0) == "MIC 100%"
+    assert reactor_level_label(-1) == "MIC 00%"
+    assert reactor_level_label(2) == "MIC 100%"

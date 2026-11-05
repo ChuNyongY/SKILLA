@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from javis_core import RegisteredApp
-from javis_core.runtime_handoff import WindowsRuntimeProcessResolver
+from skilla_core import RegisteredApp
+from skilla_core.runtime_handoff import WindowsRuntimeProcessResolver
 
 
 class Inspector:

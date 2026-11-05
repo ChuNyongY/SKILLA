@@ -10,7 +10,7 @@ from uuid import UUID
 import pytest
 from pydantic import ValidationError
 
-from javis_core import (
+from skilla_core import (
     AudioFrame,
     ConsoleWakeWordCaptureConsent,
     ConsoleWakeWordCaptureReadiness,
@@ -22,7 +22,7 @@ from javis_core import (
     capture_wakeword_corpus,
     load_wakeword_capture_plan,
 )
-from javis_core.cancellation import CancellationToken
+from skilla_core.cancellation import CancellationToken
 
 
 class FrameSource:

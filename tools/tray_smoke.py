@@ -7,7 +7,7 @@ from threading import Thread
 import win32con  # type: ignore[import-untyped]
 import win32gui  # type: ignore[import-untyped]
 
-from javis_core.windows_tray import TrayCommand, WindowsTrayController
+from skilla_core.windows_tray import TrayCommand, WindowsTrayController
 
 
 def _find_tray_window() -> int | None:
@@ -15,7 +15,7 @@ def _find_tray_window() -> int | None:
 
     def inspect(hwnd: int, _extra: object) -> bool:
         try:
-            if win32gui.GetClassName(hwnd).startswith("JavisPcAgentTray_"):
+            if win32gui.GetClassName(hwnd).startswith("SkillaPcAgentTray_"):
                 matches.append(hwnd)
         except Exception:
             return True

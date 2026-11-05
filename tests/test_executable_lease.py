@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import Action, ProcessLaunchExecutor, RegisteredApp
-from javis_core.executable_lease import PortableExecutableLease, WindowsExecutableLease
+from skilla_core import Action, ProcessLaunchExecutor, RegisteredApp
+from skilla_core.executable_lease import PortableExecutableLease, WindowsExecutableLease
 
 
 class RaisingLauncher:
@@ -75,7 +75,7 @@ def test_launcher_exception_releases_windows_lease(tmp_path: Path) -> None:
 
 
 def test_path_comparison_rejects_different_file(tmp_path: Path) -> None:
-    from javis_core.executable_lease import _same_windows_path
+    from skilla_core.executable_lease import _same_windows_path
 
     left = tmp_path / "left.exe"
     right = tmp_path / "right.exe"

@@ -560,7 +560,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   60초 read timeout으로 끝나 채택 가능한 응답은 없었다. Codex가 `Popen` poll, terminate→kill,
   부분파일 정리와 race 테스트를 직접 구현·감사했다.
 - 실제 worker 취소 smoke에서 10ms 후 shared token을 set했고 stable cancellation, 부분 WAV 없음,
-  남은 `javis_core.tts_worker` process 0개를 확인했다. 정상 렌더도 172,424바이트 WAV와 64자리
+  남은 `skilla_core.tts_worker` process 0개를 확인했다. 정상 렌더도 172,424바이트 WAV와 64자리
   SHA-256 metadata로 재검증했다.
 - timeout, terminate→kill fallback, worker 시작 실패, malformed/failed response, path 경계를 포함해
   테스트를 보강한 뒤 전체 검증은 340 passed, 1 skipped, line coverage 84%, Ruff clean, mypy
@@ -1211,7 +1211,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   검증·정확한 창 정리를 통과했다.
 - frozen one-folder는 1,825 manifest entry, manifest 포함 520,243,699바이트이며 manifest SHA-256은
   `08299aee6b4626f8528ed35d72ca668df9fadde9aa4357ed61d32c2138649a9a`다. `NIM.txt` 0개,
-  실제 로컬 NIM 키 일치 0건이며 `javis_core.benchmark_p2_runner`가 PyInstaller archive에 포함됐다.
+  실제 로컬 NIM 키 일치 0건이며 `skilla_core.benchmark_p2_runner`가 PyInstaller archive에 포함됐다.
   Setup은 260,075,520바이트, SHA-256
   `9ab2456e9ddcfc2af5e7c52ab62c40cdf72773f099f84b4c6735c1fc0f973820`이다. release audit에서
   package manifest와 Setup sidecar hash는 통과했고, 배포 인증서가 없어 console/tray/Setup 세
@@ -1511,7 +1511,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   유지했으며 제품 기본 모델이나 배포 산출물에는 넣지 않았다.
 - 별도 RepCNN 평가 CLI 초안의 첫 NIM 요청은 120초 read timeout으로 결과를 받지 못했다. 범위를 줄인
   재요청은 응답했지만 evaluator 인자 순서를 뒤집고 존재하지 않는 `yourpkg` import와 일반
-  `json.dumps`를 사용했다. 명령·인자 구조만 채택하고 실제 `javis_core` 호출 계약과 Pydantic 보고서
+  `json.dumps`를 사용했다. 명령·인자 구조만 채택하고 실제 `skilla_core` 호출 계약과 Pydantic 보고서
   직렬화에 맞춰 수정했다.
 - 합성 무음 corpus와 공개 예제 모델로 새 CLI를 실제 실행해 inference failure 없이 typed FAR/FRR
   보고서가 생성되는 것을 확인했다. 제품 기본 설정·모델·사용자 음성은 사용하지 않았다. 전체 회귀는

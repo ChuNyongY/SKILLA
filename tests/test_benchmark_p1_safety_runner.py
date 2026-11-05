@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from javis_core.benchmark_collection import BenchmarkExperimentCollector, CollectionAttemptStatus
-from javis_core.benchmark_p1_safety_runner import P1SafetyConditionRunner
-from javis_core.benchmark_tasks import load_benchmark_tasks
-from javis_core.integrated_scenarios import ScenarioEnvironment, load_integrated_scenarios
-from javis_core.study_analysis import StudyCondition
+from skilla_core.benchmark_collection import BenchmarkExperimentCollector, CollectionAttemptStatus
+from skilla_core.benchmark_p1_safety_runner import P1SafetyConditionRunner
+from skilla_core.benchmark_tasks import load_benchmark_tasks
+from skilla_core.integrated_scenarios import ScenarioEnvironment, load_integrated_scenarios
+from skilla_core.study_analysis import StudyCondition
 
 
 def test_p1_safety_controls_record_safe_failure_and_negative_controls(tmp_path: Path) -> None:

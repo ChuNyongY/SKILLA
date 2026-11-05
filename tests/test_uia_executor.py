@@ -1,4 +1,4 @@
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     UiaElementSnapshot,

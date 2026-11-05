@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from javis_core import RegisteredApp
-from javis_core.foreground_context import (
+from skilla_core import RegisteredApp
+from skilla_core.foreground_context import (
     ForegroundContextCollector,
     ForegroundContextError,
     ForegroundSnapshot,

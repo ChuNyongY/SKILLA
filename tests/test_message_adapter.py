@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from javis_core import (
+from skilla_core import (
     Action,
     CancellationToken,
     InMemoryMessageSink,

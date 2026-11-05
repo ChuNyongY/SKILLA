@@ -2,8 +2,7 @@
   "schema_version": "1.0",
   "app_registry": "config/apps.json",
   "hello_manifest": "config/windows_hello_helper.json",
-  "wakeword_manifest": "models/openwakeword/manifest.json",
-  "stt_manifest": "models/faster-whisper-small/manifest.json",
+  "stt_manifest": "models/faster-whisper-large-v3-turbo/manifest.json",
   "browser_allowed_hosts": [
     "developer.nvidia.com",
     "docs.python.org",
@@ -14,11 +13,11 @@
   "nim_model": "z-ai/glm-5.3-flash",
   "wakeword_mode": "whisper_korean",
   "wake_threshold": 0.5,
-  "vad_rms_threshold": 500,
+  "vad_rms_threshold": 80,
   "end_silence_frames": 10,
   "max_capture_frames": 1500,
-  "microphone_device_index": 2,
+  "microphone_device_index": 1,
   "microphone_frame_ms": 80,
-  "microphone_queue_capacity": 32,
+  "microphone_queue_capacity": 256,
   "hud_poll_interval_ms": 250
 }

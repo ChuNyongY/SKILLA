@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from javis_core.autostart import (
+from skilla_core.autostart import (
     AutostartError,
     AutostartStatus,
     ShortcutSpec,
@@ -29,7 +29,7 @@ class MemoryShortcutBackend:
 
 
 def registrar(tmp_path: Path, backend: MemoryShortcutBackend) -> StartupShortcutRegistrar:
-    target = tmp_path / "javis.exe"
+    target = tmp_path / "skilla.exe"
     target.write_bytes(b"fixture")
     startup = tmp_path / "Startup"
     startup.mkdir()
@@ -84,7 +84,7 @@ def test_invalid_target_and_arguments_are_rejected(tmp_path: Path) -> None:
             tmp_path,
             startup_directory_provider=lambda: startup,
         )
-    target = tmp_path / "javis.exe"
+    target = tmp_path / "skilla.exe"
     target.write_bytes(b"fixture")
     with pytest.raises(AutostartError, match="ARGUMENTS_INVALID"):
         StartupShortcutRegistrar(
