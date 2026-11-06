@@ -78,7 +78,7 @@ def _run_one(action: Action, executor: RecordingExecutor, verifier: Verifier) ->
 
 
 def _write_minimal_pdf(path: Path) -> None:
-    stream = b"BT /F1 18 Tf 72 720 Td (JAVIS S03 fixture) Tj ET\n"
+    stream = b"BT /F1 18 Tf 72 720 Td (SKILLA S03 fixture) Tj ET\n"
     objects = (
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
@@ -161,7 +161,7 @@ def main() -> int:
         apps = AppRegistryLoader(require_publisher=True).load(
             Path("config/apps.json").resolve(strict=True)
         )
-        with tempfile.TemporaryDirectory(prefix="javis-s03-", ignore_cleanup_errors=True) as raw:
+        with tempfile.TemporaryDirectory(prefix="skilla-s03-", ignore_cleanup_errors=True) as raw:
             root = Path(raw).resolve(strict=True)
             document = root / "certification-study.pdf"
             _write_minimal_pdf(document)

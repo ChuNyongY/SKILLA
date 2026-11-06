@@ -61,7 +61,7 @@ def main() -> int:
     original_foreground = int(win32gui.GetForegroundWindow())
     context_source = WindowsContextEventSource()
     root = tk.Tk()
-    root.title("JAVIS synthetic vision smoke")
+    root.title("SKILLA synthetic vision smoke")
     root.geometry("240x160+80+80")
     root.attributes("-topmost", True)
     canvas = tk.Canvas(root, width=220, height=130, background="#202020", highlightthickness=0)
@@ -133,7 +133,7 @@ def main() -> int:
         template_pixels = initial.pixels_bgra
         if len(template_pixels) != template_width * template_height * 4:
             raise RuntimeError("SYNTHETIC_TEMPLATE_CROP_FAILED")
-        with tempfile.TemporaryDirectory(prefix="javis-vision-smoke-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="skilla-vision-smoke-") as temporary:
             root_path = Path(temporary)
             (root_path / "target.bgra").write_bytes(template_pixels)
             (root_path / "manifest.json").write_text(

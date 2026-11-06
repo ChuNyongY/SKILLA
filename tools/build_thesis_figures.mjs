@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-const root = "C:\\Users\\YongE\\Desktop\\JAVIS";
+const root = "C:\\Users\\YongE\\Desktop\\SKILLA";
 const out = path.join(root, "output", "figures");
 const purple = "#705781";
 const purpleLight = "#EEE9F2";
@@ -42,7 +42,7 @@ async function save(name, svg) {
 async function main() {
   await fs.mkdir(out, { recursive: true });
 
-  let svg = base("JAVIS의 전체 실행 흐름", "요청 이해부터 독립 검증과 스킬 개정 후보 생성까지");
+  let svg = base("SKILLA의 전체 실행 흐름", "요청 이해부터 독립 검증과 스킬 개정 후보 생성까지");
   const labels = ["사용자 요청", "요청 분석", "스킬 검색", "계획 생성", "권한 검사", "기능 실행", "결과 검증", "실행 기록"];
   labels.forEach((label, i) => {
     const x = 55 + i * 190;
@@ -56,7 +56,7 @@ async function main() {
   svg += text(800, 525, "실행 성공 응답과 별도로 실제 파일·프로세스·창 상태를 다시 확인한다", 26, 400, gray);
   svg += text(800, 840, "개정 후보는 기존 스킬을 자동으로 덮어쓰지 않으며 검토 후 활성화된다", 25, 700, teal);
   svg += `</svg>`;
-  await save("javis_system_flow.png", svg);
+  await save("skilla_system_flow.png", svg);
 
   svg = base("스킬에 저장하는 정보", "반복되는 방법과 실행마다 바뀌는 값을 분리한다");
   svg += `<rect x="90" y="185" width="650" height="585" rx="22" fill="#F6F3F8" stroke="${purple}" stroke-width="4"/>
@@ -70,7 +70,7 @@ async function main() {
   svg += arrow(745, 475, 850, 475, blue);
   svg += text(800, 820, "바뀌는 값은 입력으로 두고 반복되는 방법만 재사용한다", 30, 700, blue);
   svg += `</svg>`;
-  await save("javis_skill_structure.png", svg);
+  await save("skilla_skill_structure.png", svg);
 
   svg = base("네 조건 완전 대응 블록 실험", "같은 작업과 반복 번호 안에서 스킬 제공 방식만 바꾼다");
   const conds = [
@@ -95,7 +95,7 @@ async function main() {
   svg += text(800, 800, "측정: 성공률  실행 시간  LLM 호출 수  토큰 사용량  사용자 확인 횟수", 27, 700, purple);
   svg += text(800, 850, "모델 설정·기능 목록·초기 자료·완료 판정 기준은 블록 안에서 고정", 23, 400, gray);
   svg += `</svg>`;
-  await save("javis_experiment_design.png", svg);
+  await save("skilla_experiment_design.png", svg);
 
   console.log(out);
 }

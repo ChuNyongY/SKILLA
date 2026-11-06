@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Presentation, PresentationFile } from "file:///C:/Users/YongE/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/@oai/artifact-tool/dist/artifact_tool.mjs";
 
-const workspaceDir = "C:\\Users\\YongE\\Desktop\\JAVIS";
+const workspaceDir = "C:\\Users\\YongE\\Desktop\\SKILLA";
 const skillDir = "C:\\Users\\YongE\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1025.11240\\skills\\presentations";
 const runtimePython = "C:\\Users\\YongE\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
-const buildDir = path.join(workspaceDir, ".build", "javis-poster-v3-detailed");
+const buildDir = path.join(workspaceDir, ".build", "skilla-poster-v3-detailed");
 const outputDir = path.join(workspaceDir, "output");
-const finalPptx = path.join(outputDir, "JAVIS_졸업작품_포스터_실행흐름_번호제목_일렬정렬본.pptx");
+const finalPptx = path.join(outputDir, "SKILLA_졸업작품_포스터_실행흐름_번호제목_일렬정렬본.pptx");
 const TEXT_SCALE = 1.32;
 
 const W = 3179;
@@ -139,7 +139,7 @@ async function main() {
   rect(slide, 0, 0, W, 400, DARK);
   rect(slide, 0, 380, W, 20, TEAL);
   textbox(slide, "Windows PC 반복 작업을 위한", 170, 36, W - 340, 66, { fontSizePt: 46, bold: true, color: "#DDE8EE", align: "center", valign: "middle" });
-  textbox(slide, "스킬 생성·재사용·개정형 AI 에이전트 JAVIS", 120, 103, W - 240, 116, { fontSizePt: 72, bold: true, color: WHITE, align: "center", valign: "middle" });
+  textbox(slide, "스킬 생성·재사용·개정형 AI 에이전트 SKILLA", 120, 103, W - 240, 116, { fontSizePt: 72, bold: true, color: WHITE, align: "center", valign: "middle" });
   textbox(slide, "사용자가 반복해서 설명하던 작업 방법을 스킬로 저장하고, 실행 뒤 실제 PC 상태까지 확인한다", 180, 236, W - 360, 64, { fontSizePt: 34, color: WHITE, align: "center", valign: "middle" });
   pill(slide, "요청 이해  ·  스킬 재사용  ·  안전 확인  ·  PC 실행  ·  결과 검증  ·  실패 기반 개정", 360, 318, W - 720, 56, TEAL, WHITE, 29, "#4AA69D");
 
@@ -155,7 +155,7 @@ async function main() {
   infoCard(slide, "연구 질문", "검증된 스킬의 재사용과 실패 기반 개정이 같은 언어 모델의 성공률·시간·토큰에 어떤 영향을 주는가?", s1.x + (cardW + cardGap) * 2, s1.y + 4, cardW, 260, GOLD, GOLD_LIGHT);
   pill(slide, "스킬 = 재사용 절차 + 바뀌는 값의 입력 규칙 + 허용 도구·권한 + 성공 판정 + 버전 기록", s1.x + 120, s1.y + 296, s1.w - 240, 94, DARK, WHITE, 31);
 
-  const s2 = section(slide, 2, "JAVIS의 실행 흐름", margin, 1045, cw, 730, DARK);
+  const s2 = section(slide, 2, "SKILLA의 실행 흐름", margin, 1045, cw, 730, DARK);
   const flow = [
     ["사용자 요청", "음성·텍스트"], ["의도 확인", "명령 대상 확인"], ["스킬 검색", "검증 버전 선택"],
     ["계획 생성", "작업 순서 구성"], ["위험도·승인", "기존 안전 실행 기반"], ["PC 실행", "등록 기능만 사용"],
@@ -234,7 +234,7 @@ async function main() {
   rect(slide, s5.x, s5.y, s5.w, 66, DARK, "none", true);
   textbox(slide, "비교", s5.x, s5.y + 6, 290, 50, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
   textbox(slide, "매크로·일반 에이전트", s5.x + 290, s5.y + 6, 450, 50, { fontSizePt: 26, bold: true, color: WHITE, align: "center" });
-  textbox(slide, "JAVIS", s5.x + 740, s5.y + 6, s5.w - 740, 50, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
+  textbox(slide, "SKILLA", s5.x + 740, s5.y + 6, s5.w - 740, 50, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
   rows.forEach((r, i) => {
     const y = s5.y + 78 + i * 98;
     rect(slide, s5.x, y, s5.w, 86, i % 2 === 0 ? LIGHT : WHITE, LINE, true);
@@ -244,7 +244,7 @@ async function main() {
   });
   pill(slide, "1,091개 자동시험 통과", s5.x, s5.y + 488, 430, 70, LIGHT, NAVY, 28, NAVY);
   pill(slide, "13개 실행 기능 등록", s5.x + 452, s5.y + 488, 390, 70, BLUE_LIGHT, BLUE, 27, BLUE);
-  pill(slide, "JAVIS 0.1.9 시제품", s5.x + 864, s5.y + 488, s5.w - 864, 70, TEAL_LIGHT, TEAL, 27, TEAL);
+  pill(slide, "SKILLA 0.1.9 시제품", s5.x + 864, s5.y + 488, s5.w - 864, 70, TEAL_LIGHT, TEAL, 27, TEAL);
 
   const s6 = section(slide, 6, "실험 환경·방법·결과", margin, 3170, cw, 940, DARK);
   const condGap = 24;
@@ -257,7 +257,7 @@ async function main() {
   const envGap = 24;
   const envW = (s6.w - envGap * 3) / 4;
   const envs = [
-    ["실행 환경", "Windows 11 PC 1대 · JAVIS 0.1.9", TEAL, TEAL_LIGHT],
+    ["실행 환경", "Windows 11 PC 1대 · SKILLA 0.1.9", TEAL, TEAL_LIGHT],
     ["통제 조건", "같은 NIM 모델·설정·도구 목록", BLUE, BLUE_LIGHT],
     ["초기 상태", "매회 새 폴더 생성 · SHA-256 일치", NAVY, LIGHT],
     ["재현 식별자", "developer10 · seed 2026102001", GOLD, GOLD_LIGHT],
@@ -285,10 +285,10 @@ async function main() {
   textbox(slide, "Holm 보정 p≥0.375, 유의하지 않음\nSK3 사용자 확인 평균 1.0회", s6.x + 1970, s6.y + 738, s6.w - 1970, 78, { fontSizePt: 23, bold: true, color: RED, align: "center", valign: "middle" });
 
   const s7 = section(slide, 7, "결론과 연구 기여", margin, 4120, cw, 300, TEAL);
-  textbox(slide, "JAVIS는 반복 작업을 ‘고정 클릭’이 아니라 ‘현재 상태를 다시 확인하는 검증 스킬’로 저장한다.", s7.x + 60, s7.y - 2, s7.w - 120, 64, { fontSizePt: 34, bold: true, color: NAVY, align: "center", valign: "middle" });
+  textbox(slide, "SKILLA는 반복 작업을 ‘고정 클릭’이 아니라 ‘현재 상태를 다시 확인하는 검증 스킬’로 저장한다.", s7.x + 60, s7.y - 2, s7.w - 120, 64, { fontSizePt: 34, bold: true, color: NAVY, align: "center", valign: "middle" });
   textbox(slide, "개인적 불편에서 출발해 스킬 생성·검토·재사용·독립 검증·실패 기반 개정을 하나의 Windows 시제품으로 구현했다. 자체 실험은 구현 가능성과 비용 감소 가능성을 확인했으며, 일반화에는 다수 사용자 실험이 더 필요하다.", s7.x + 60, s7.y + 72, s7.w - 120, 86, { fontSizePt: 27, color: INK, align: "center", valign: "middle" });
 
-  textbox(slide, "방법론: ReAct·Toolformer·Reflexion·Voyager  |  평가 참고: OSWorld·AgentBench  |  구현: JAVIS 0.1.9·자동시험 1,091개·등록 기능 13개  |  실험: 15개 대응 블록·60회", 140, 4420, W - 280, 44, { fontSizePt: 21, color: MUTED, align: "center", valign: "middle" });
+  textbox(slide, "방법론: ReAct·Toolformer·Reflexion·Voyager  |  평가 참고: OSWorld·AgentBench  |  구현: SKILLA 0.1.9·자동시험 1,091개·등록 기능 13개  |  실험: 15개 대응 블록·60회", 140, 4420, W - 280, 44, { fontSizePt: 21, color: MUTED, align: "center", valign: "middle" });
   rect(slide, 0, 4470, W, 24, DARK);
 
   const preview = await presentation.export({ slide, format: "png", scale: 0.45 });

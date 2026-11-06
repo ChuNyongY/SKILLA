@@ -14,14 +14,14 @@ python -m skilla_core.cli run-user-validation `
 단계는 다음 순서로 고정된다.
 
 1. `MICROPHONE`: 동의 직후 공식 영어 호출어 모델에 맞춰 호출어는 영어식으로
-   `Hey Jarvis, 시스템 정보 알려줘`라고 끊지 않고 말한다. 최대 10초 동안 로컬
+   `스킬라, 시스템 정보 알려줘`라고 끊지 않고 말한다. 최대 10초 동안 로컬
    wake/VAD/STT를 실행한다. 인식 문장은 화면에 일시적으로만
    보여주며 사용자가 `예`로 정확성을 확인해야 PASS다.
 2. `TTS_SPEAKER`: 고정 한국어 한 문장만 로컬 SAPI로 재생한다. 1~5점 평가를 받고 3점 이상을
    PASS로 기록한다.
 3. `WINDOWS_HELLO`: hash-pinned helper가 OS-owned Windows Hello 창을 호출한다. helper의
    `VERIFIED` 결과만 PASS다. PIN이나 생체정보는 SKILLA가 받지 않는다.
-4. `STOP_LATENCY`: 동의 직후 호출어는 영어식으로 `Hey Jarvis, 중지`라고 끊지 않고 말한다.
+4. `STOP_LATENCY`: 동의 직후 `스킬라, 중지`라고 끊지 않고 말한다.
    최대 10초 음성 capture에서
    wake word 후 exact 로컬 STOP phrase를 검사한다. latency는
    microphone capture 시작부터 local detector 결정까지의 보수적인 상한이며 acoustic onset

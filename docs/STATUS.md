@@ -4,7 +4,7 @@
 
 ## 2026-10-20 독립 확인 실험과 자동 업데이트 앱 검증
 
-- 예시 논문의 반복측정 설계를 JAVIS 스킬 연구에 맞춰 적용해 결과 확인 전에 `developer10`, seed
+- 예시 논문의 반복측정 설계를 SKILLA 스킬 연구에 맞춰 적용해 결과 확인 전에 `developer10`, seed
   `2026102001`, 5작업×3블록×SK0~SK3의 60관측 계획을 고정하고 실행했다.
 - 15개 완전 대응 블록에서 SK0 10/15, SK1 12/15, SK2 12/15, SK3 14/15 성공했다. SK3의
   평균 시간은 12,367 ms, 평균 호출은 1.867회, 평균 토큰은 3,135.7이었지만 평균 사용자 확인은
@@ -60,7 +60,7 @@
 
 ## 2026-10-18 첫 실행 설정·0.1.7 최종 후보
 
-- NIM 키가 없는 첫 실행에서 콘솔 명령을 요구하던 진입 장벽을 제거했다. 마스킹된 `JAVIS 초기 설정`
+- NIM 키가 없는 첫 실행에서 콘솔 명령을 요구하던 진입 장벽을 제거했다. 마스킹된 `SKILLA 초기 설정`
   창에서 키를 받아 기존 Windows 자격 증명 관리자에 저장하고, 저장 상태를 다시 읽어 `PRESENT`가
   확인된 경우에만 제품 사전점검과 주 창으로 진행한다. 취소는 조용히 종료하고 저장·화면 오류는
   고정 한국어 문구만 표시한다.
@@ -72,15 +72,15 @@
 - 0.1.7 one-folder 1,826개 파일은 manifest `VERIFIED`, Credential 사전점검 3/3, 13-capability
   service `CREATED`, `capture_running=false`를 통과했다. 실제 Setup 최초 설치 `SUCCESS/code=0`,
   재설치 `ALREADY_VERIFIED/code=0`과 설치본 manifest 재검증을 확인했다.
-- 시작 메뉴 링크는 설치된 0.1.7 `JAVIS-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다. 링크를
-  실제 실행해 `JAVIS 텍스트 명령` 창과 응답 상태를 확인한 뒤 정상 종료했으며 시험 process는 남지
+- 시작 메뉴 링크는 설치된 0.1.7 `SKILLA-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다. 링크를
+  실제 실행해 `SKILLA 텍스트 명령` 창과 응답 상태를 확인한 뒤 정상 종료했으며 시험 process는 남지
   않았다.
 - 별도 새 가상환경에 0.1.7 wheel과 선언된 기본 의존성을 설치해 version import와 `javis --help`를
   통과했다. package의 민감한 파일명과 실제 저장된 키의 정확한 byte 일치 검색은 각각 0건이다.
 - 최종 r2 Setup SHA-256은
   `a9003f4465f838b32540827ccb21e91a509e46e54ecbfdf6c94a0cd6de980228`, package manifest는
-  `e4cc23da0bd5e511a10401602f55722e119d52aa28c965cd11271fa48aaadf16`, `JAVIS.exe`는
-  `815c7a5af68ae43b8770c690e5cf24590b277113415121629c0578354b63ef84`, `JAVIS-Tray.exe`는
+  `e4cc23da0bd5e511a10401602f55722e119d52aa28c965cd11271fa48aaadf16`, `SKILLA.exe`는
+  `815c7a5af68ae43b8770c690e5cf24590b277113415121629c0578354b63ef84`, `SKILLA-Tray.exe`는
   `88ff9db277f3e108715227add9b861dbfe7925f3b1e318c120abddb67cc7466d`다. wheel SHA-256은
   `2afadcf28de01c0790447f4a8c48f8c983b32cba655e7c497832cc14edc921b9`다.
 - r2 release audit은 manifest와 Setup hash를 통과하고 세 Authenticode 서명을 정확히 실패했다.
@@ -112,11 +112,11 @@
   `primary`는 특정 장치가 아니라 현재 주 화면이라는 사용자 의도이므로 현재 주 화면 descriptor로
   원자적으로 갱신하고, 명시적인 `device` 고정은 누락·좌표 변화 시 상태를 바꾸지 않고 계속 차단하도록
   수정했다.
-- 최종 0.1.6 `dist/JAVIS-PC-0.1.6-skill-20261018-r1` 1,826개 파일은 manifest `VERIFIED`이고,
+- 최종 0.1.6 `dist/SKILLA-PC-0.1.6-skill-20261018-r1` 1,826개 파일은 manifest `VERIFIED`이고,
   Credential 사전점검 3/3, 13-capability service `CREATED`, `capture_running=false`를 통과했다.
   실제 Setup 최초 설치는 `SUCCESS/code=0`, 재설치는 `ALREADY_VERIFIED/code=0`이었다. 시작 메뉴 링크는
-  설치된 0.1.6 `JAVIS-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다.
-- 시작 메뉴 링크를 실제 실행해 `JAVIS 텍스트 명령` 창을 확인하고 정상 닫았으며 시험 process가 남지
+  설치된 0.1.6 `SKILLA-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다.
+- 시작 메뉴 링크를 실제 실행해 `SKILLA 텍스트 명령` 창을 확인하고 정상 닫았으며 시험 process가 남지
   않았다. 설치 상태의 `primary` descriptor도 실제 `DISPLAY1 2560×1440`과 일치한다. 후속 한국어
   명령 입력 UI 검증은 사용자가 물리적 Escape로 Computer Use를 중지해 반복하지 않았다. 실제 NIM
   명령 E2E 자체는 0.1.3 설치본에서 이미 통과했고, 0.1.6은 같은 runtime 경로의 회귀시험과 창 시작을
@@ -124,8 +124,8 @@
 - 최종 Setup SHA-256은
   `5f90c3cd579db2797ab8d1d5ea062810b78ec1ef63737c98dc248c007888f091`이고 sidecar와 일치한다.
   package manifest는 `cebf8451df2113db437fd3e484489c61c0f532cb763cd3da4f508d7d4749adfd`,
-  `JAVIS.exe`는 `3557663fd0fb5014dda72a92e87fe6a951d557c818103a38ff034882d5046219`,
-  `JAVIS-Tray.exe`는 `61b9b33249f5dd0a1b60f3ed954092e43130cf3995640db6881d596047fb87df`다.
+  `SKILLA.exe`는 `3557663fd0fb5014dda72a92e87fe6a951d557c818103a38ff034882d5046219`,
+  `SKILLA-Tray.exe`는 `61b9b33249f5dd0a1b60f3ed954092e43130cf3995640db6881d596047fb87df`다.
   package의 비밀 파일명·API key 형태 검색은 모두 0건이다.
 - 0.1.6 wheel SHA-256은
   `e4206deedaaa5b787b679f5be37349a3bab0035e3e58912ddc62f3a15aa7e26d`이다. 새 가상환경에
@@ -143,8 +143,8 @@
   해상도 변화와 선택 화면 밖 창은 실행 전에 거부한다. tray의 `작업 화면 선택`과 CLI
   `list-displays`, `select-display`를 연결했다. 실제 다중 모니터 하드웨어 시험은 화면이 하나인
   현재 PC에서는 수행할 수 없었다.
-- 설계도에 있었지만 제품 UI에 빠져 있던 텍스트 명령 창을 구현했다. 더블클릭한 `JAVIS.exe`와
-  `JAVIS-Tray.exe`는 기본적으로 `JAVIS 텍스트 명령` 창을 열며, 이 경로는 마이크·상시 capture를
+- 설계도에 있었지만 제품 UI에 빠져 있던 텍스트 명령 창을 구현했다. 더블클릭한 `SKILLA.exe`와
+  `SKILLA-Tray.exe`는 기본적으로 `SKILLA 텍스트 명령` 창을 열며, 이 경로는 마이크·상시 capture를
   시작하지 않는다. 입력은 기존 NIM planner, 정책, 실행기, 독립 검증기, 실행 기록과 스킬 재사용
   경로를 그대로 사용한다. 소스 루트가 아닌 one-folder 자체와 격리 설치 폴더를 각각 작업 위치로
   두고 실제 EXE의 창 handle·제목 생성을 확인한 뒤 정상 종료했다.
@@ -170,14 +170,14 @@
   생성 도구 오류 107개가 남아 있어 저장소 전체 clean으로 주장하지 않는다.
 - 기존 설치를 덮어쓰지 않는 업그레이드를 위해 최종 제품 버전을 0.1.3으로 올리고 package·installer·
   Python metadata·한국어 안내문의 버전 일치를 시험으로 고정했다. 새 one-folder
-  `dist/JAVIS-PC-0.1.3-skill-20261017-r1`의 1,826개 파일은 manifest 검증을
-  통과했다. 설치본 `JAVIS.exe`도 같은 1,826개를 `VERIFIED`로 판정했고, 실제 화면 열거와
+  `dist/SKILLA-PC-0.1.3-skill-20261017-r1`의 1,826개 파일은 manifest 검증을
+  통과했다. 설치본 `SKILLA.exe`도 같은 1,826개를 `VERIFIED`로 판정했고, 실제 화면 열거와
   Credential 기반 13-capability service `CREATED`를 통과했으며 `capture_running=false`였다.
-- 설치기는 현재 사용자 시작 메뉴에 고정 이름 `JAVIS-PC` 링크를 만들고 target·빈 인자·작업 폴더·
+- 설치기는 현재 사용자 시작 메뉴에 고정 이름 `SKILLA-PC` 링크를 만들고 target·빈 인자·작업 폴더·
   설명·아이콘을 다시 읽어 모두 일치할 때만 성공한다. 다른 대상의 기존 링크는 덮거나 지우지 않는다.
   동일 설치 부모 아래 정확한 이전 버전 링크만 `OUTDATED`로 식별해 새 링크로 바꾼다. 실제
-  0.1.1→0.1.2→0.1.3 설치에서 링크가 갱신됐고, 시작 메뉴 실행은 설치된 0.1.3 `JAVIS-Tray.exe`와 동일
-  hash의 새 process 및 `JAVIS 텍스트 명령` 창을 만들었으며 해당 시험 창만 닫았다.
+  0.1.1→0.1.2→0.1.3 설치에서 링크가 갱신됐고, 시작 메뉴 실행은 설치된 0.1.3 `SKILLA-Tray.exe`와 동일
+  hash의 새 process 및 `SKILLA 텍스트 명령` 창을 만들었으며 해당 시험 창만 닫았다.
 - 새 Setup SHA-256은
   `eca1615f99aa00adf7335c573c7ac28e1fef85648139bba51809b1124f7870a9`이고 sidecar와 일치한다.
   실제 현재 사용자 위치의 0.1.3 최초 설치 영수증은 `SUCCESS/code=0`, 같은 설치 파일 재실행은
@@ -189,7 +189,7 @@
   `LocalCache`로 가상화했다. 따라서 일반 Explorer에서 Setup을 실행한 물리 경로와 같다고 주장하지
   않는다. 다만 영수증·manifest·서비스·링크 target과 실행 process hash는 그 실제 가상화 환경 안에서
   서로 일치했다.
-- package 안의 비밀 이름 파일과 `nvapi-` 형태 검색은 0건이다. `JAVIS.exe`, `JAVIS-Tray.exe`,
+- package 안의 비밀 이름 파일과 `nvapi-` 형태 검색은 0건이다. `SKILLA.exe`, `SKILLA-Tray.exe`,
   Setup은 모두 Authenticode `NotSigned`이므로 이 배포 후보는 로컬 시연·제출용으로 검증됐지만,
   인증서 서명이 필요한 불특정 사용자 공개 배포 완료로 판정하지 않는다.
 
@@ -254,26 +254,26 @@
   PASS했고 생성한 창을 정리했다. allowlisted `github.com` Chrome navigation도 URL digest 결합과
   exact window 정리를 통과했다. 실제 경로·창 내용·장치 상세는 출력하지 않았다. 이 host smoke는
   snapshot VM 50셀이나 사용자 연구를 대신하지 않는다.
-- 최신 소스에서 `dist/JAVIS-PC-0.1.0-skill-20261016-r3`를 새로 만들었다. source verifier가
+- 최신 소스에서 `dist/SKILLA-PC-0.1.0-skill-20261016-r3`를 새로 만들었다. source verifier가
   manifest의 1,826개 항목을 `VERIFIED`로 판정했고 `package-manifest.json` SHA-256은
   `446f6f95ef490de95fa5b3b85ba6cd8a6d8f6bcd62c9b66742a8625bddee7cbd`다. 같은 package의
-  `JAVIS.exe verify-package` 직접 재실행도 1,826개를 `VERIFIED`로 판정했다.
+  `SKILLA.exe verify-package` 직접 재실행도 1,826개를 `VERIFIED`로 판정했다.
 - `dist/wheel-skill-20261016-r4/javis_pc_agent-0.1.0-py3-none-any.whl`은 149개 항목,
   368,497바이트이며 SHA-256은
   `906929d3c5a3f41a43e4d22b8ee088ad8cbe941717f0cc59447f26bfd3ffc27b`다. 새 격리 가상환경에
   의존성과 함께 설치해 스킬 작성·검토·실행 기록 검토 모듈 import와 `javis --help`를 확인했다.
-- 최신 `dist/JAVIS-PC-0.1.0-skill-20261016-r5-Setup.exe`는 260,702,208바이트이며 SHA-256은
+- 최신 `dist/SKILLA-PC-0.1.0-skill-20261016-r5-Setup.exe`는 260,702,208바이트이며 SHA-256은
   `819f36a116b6bd03411af98b21fcbb4fd352a9c1c1f03da72cfede83349dd289`이고 sidecar와 일치한다.
   package·wheel·Setup의 `nvapi-` 접두사 검색은 0건이며 package에서 찾은 유일한 PEM은 의존성
   `certifi`의 공개 CA 묶음이다.
-- 최신 `JAVIS.exe`, `JAVIS-Tray.exe`, Setup은 모두 Authenticode `NotSigned`다. release audit은
+- 최신 `SKILLA.exe`, `SKILLA-Tray.exe`, Setup은 모두 Authenticode `NotSigned`다. release audit은
   package manifest와 Setup hash를 `OK`, 세 서명을 `SIGNATURE_INVALID`로 판정해 `ready=false`,
   exit 1로 닫혔다.
-- 설치 script는 `%LOCALAPPDATA%/JAVIS-PC/install-result-0.1.0.txt`에 schema·version·상태·코드만
+- 설치 script는 `%LOCALAPPDATA%/SKILLA-PC/install-result-0.1.0.txt`에 schema·version·상태·코드만
   직접 기록한다. `SUCCESS`는 staging package 검증과 최종 이동이 모두 끝난 뒤에만 기록하며,
   기존 검증 설치는 `ALREADY_VERIFIED`, 실패는 `FAILED`로 남긴다. 비밀과 절대경로는 기록하지 않는다.
 - 별도 `LOCALAPPDATA`에서 r5 Setup 최초 설치는 영수증 `SUCCESS/code=0`, 설치 폴더 존재와 staging
-  0개를 확인했다. source verifier와 설치본 `JAVIS.exe`가 manifest 1,826개를 모두 `VERIFIED`했고,
+  0개를 확인했다. source verifier와 설치본 `SKILLA.exe`가 manifest 1,826개를 모두 `VERIFIED`했고,
   frozen doctor 필수 항목, Credential preflight 3/3과 13-capability service `CREATED`를 통과했다.
   서비스 조립 뒤 manifest도 다시 `VERIFIED`였으며 package 내부 `state`는 없고 외부 state만 생겼다.
   같은 Setup 재실행은 `ALREADY_VERIFIED/code=0`과 manifest 불변을 확인했다.
@@ -840,7 +840,7 @@ fixture를 Windows 휴지통으로 보내는 실제 smoke test가 성공했으�
 감사 로그는 구조적 secret key redaction을 적용하고 메모리 sink는 기본 최대 10,000개 event만
 유지한다. JSONL sink는 선택적 `AuditRetentionPolicy`로 파일 크기와 backup 수를 제한하며 회전
 뒤 append를 `fsync`한다. audit rotation과 move journal은 별도 `.lock` 파일의 Windows
-byte-range lock을 사용해 여러 JAVIS process의 append/load/rotation을 직렬화하며 기본 lock
+byte-range lock을 사용해 여러 SKILLA process의 append/load/rotation을 직렬화하며 기본 lock
 timeout은 5초다. 데이터 파일과 lock 파일에는 현재 process token의 사용자 SID와 LocalSystem
 SID만 full-control ACE로 허용하는 protected DACL을 적용한다. 적용 직후 DACL을 다시 읽어
 inheritance 차단, 정확한 SID 집합, ACE type·flags·mask를 검증한다. 소유자와 SACL은 변경하지
@@ -944,12 +944,12 @@ recovery는 파일을 이동하거나 삭제하지 않고, 관찰된 상태에 �
   균형 배치하며, 서로 다른 새 동의와 새 출력 폴더가 필요하다. 아직 녹음은 시작하지 않았다.
 # 2026-10-20 졸업논문 초안 작성
 
-- `output/JAVIS_스킬기반_Windows_PC에이전트_졸업논문_초안.docx`를 작성하였다.
+- `output/SKILLA_스킬기반_Windows_PC에이전트_졸업논문_초안.docx`를 작성하였다.
 - 개발 단계 32블록과 별도 확인 실험 15블록을 합치지 않고 구분해 보고하였다.
 - 확인 실험의 성공률, 실행 시간, 호출 수, 토큰 수, McNemar 검정과 Holm 보정 결과를 반영하였다.
 - Microsoft Word로 PDF를 내보낸 뒤 16쪽을 PNG로 렌더링하여 표·문단·페이지 번호의 잘림과 겹침을 확인하였다.
 - 발표 자료는 이 논문 초안과 같은 수치·한계 표현으로 개정할 예정이다.
-- `output/JAVIS_스킬_관련논문_방법론과_적용범위.docx`에 ReAct, Toolformer, Reflexion, Voyager, UFO, OSWorld, AgentBench의 원 방법과 JAVIS 반영 범위·비반영 범위를 8쪽으로 정리하였다.
+- `output/SKILLA_스킬_관련논문_방법론과_적용범위.docx`에 ReAct, Toolformer, Reflexion, Voyager, UFO, OSWorld, AgentBench의 원 방법과 SKILLA 반영 범위·비반영 범위를 8쪽으로 정리하였다.
 
 # 2026-10-20 졸업발표 자료 확인 실험 반영
 
@@ -957,13 +957,13 @@ recovery는 파일을 이동하거나 삭제하지 않고, 관찰된 상태에 �
 - 구현 상태를 전체 1,096개 시험 중 1,091개 통과·5개 제외, 엄격 자료형 검사 151개 파일 통과로 갱신하였다.
 - 실험 설계를 확인 실험 15개 짝 비교 묶음·60개 관측값으로 고치고, SK0 66.67%, SK1 80.00%, SK2 80.00%, SK3 93.33%의 성공률을 반영하였다.
 - SK3와 SK0 비교에서 성공률 +26.67%p, 평균 실행 시간 34.16%, 대형 언어 모델 호출 15.15%, 토큰 16.59% 감소를 표시하였다. Holm 보정 p=0.375로 유의하지 않았다는 한계를 함께 적었다.
-- 관련 연구 슬라이드를 ReAct, Toolformer, Reflexion, Voyager의 원 방법과 JAVIS 적용 원리로 교체하고 원문 링크를 발표자 노트에 기록하였다.
+- 관련 연구 슬라이드를 ReAct, Toolformer, Reflexion, Voyager의 원 방법과 SKILLA 적용 원리로 교체하고 원문 링크를 발표자 노트에 기록하였다.
 - 11쪽 성공률 차트를 PowerPoint에서 편집 가능한 기본 차트로 다시 만들었다. 13장 전체 패키지·레이아웃·글꼴·차트 검증을 통과했고, 모든 슬라이드를 렌더링하여 시각적으로 확인하였다.
 
 # 2026-10-20 논문 제출본과 A1 연구 포스터
 
-- 한국어 논문 제출용 파일 `output/JAVIS_스킬기반_Windows_PC에이전트_졸업논문_제출본.docx`를 생성하였다. 기존 초안의 연구 수치와 한계는 유지하고 표지의 초안 표기를 제거하였다.
+- 한국어 논문 제출용 파일 `output/SKILLA_스킬기반_Windows_PC에이전트_졸업논문_제출본.docx`를 생성하였다. 기존 초안의 연구 수치와 한계는 유지하고 표지의 초안 표기를 제거하였다.
 - Microsoft Word로 16쪽을 PDF와 PNG로 렌더링하여 전 페이지의 한글 글꼴, 표, 문단, 페이지 번호를 확인하였다. 잘림과 겹침은 발견되지 않았다.
-- 제공된 CUBERAG A1 세로형 포스터 두 종의 제목 영역, 번호가 붙은 절 구성, 두 열 배치, 결과표와 참고문헌 구성을 참고하여 `output/JAVIS_스킬기반_Windows_PC에이전트_졸업작품_포스터_최종본_v2.pptx`를 작성하였다.
+- 제공된 CUBERAG A1 세로형 포스터 두 종의 제목 영역, 번호가 붙은 절 구성, 두 열 배치, 결과표와 참고문헌 구성을 참고하여 `output/SKILLA_스킬기반_Windows_PC에이전트_졸업작품_포스터_최종본_v2.pptx`를 작성하였다.
 - 포스터에는 연구 목적, 프로그램 구조, 스킬 계약, 네 실험 조건, 구현 검증 상태, 성공률 차트, 시간·호출·토큰 변화, 작업별 결과, 통계적 한계와 다음 단계를 한 장에 정리하였다.
 - PPTX 패키지·레이아웃·글꼴·편집 가능한 기본 차트 검증을 통과하였다. PowerPoint에서 A1 PDF로 직접 내보낸 뒤 다시 PNG로 렌더링하여 제목과 지표 상자의 줄바꿈까지 수정하였다.

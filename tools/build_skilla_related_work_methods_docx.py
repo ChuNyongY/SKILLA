@@ -12,8 +12,8 @@ from docx.shared import Cm, Pt, RGBColor
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "docs" / "JAVIS_RELATED_WORK_METHODS.md"
-OUTPUT = ROOT / "output" / "JAVIS_스킬_관련논문_방법론과_적용범위.docx"
+SOURCE = ROOT / "docs" / "SKILLA_RELATED_WORK_METHODS.md"
+OUTPUT = ROOT / "output" / "SKILLA_스킬_관련논문_방법론과_적용범위.docx"
 FONT = "Malgun Gothic"
 BLACK = "000000"
 NAVY = "1F4E79"
@@ -142,9 +142,9 @@ def build() -> None:
             if border is not None:
                 p_pr.remove(border)
 
-    doc.core_properties.title = "JAVIS에 반영한 스킬 관련 논문의 방법론"
-    doc.core_properties.subject = "관련 연구 방법과 JAVIS 적용 범위"
-    doc.core_properties.author = "JAVIS 프로젝트"
+    doc.core_properties.title = "SKILLA에 반영한 스킬 관련 논문의 방법론"
+    doc.core_properties.subject = "관련 연구 방법과 SKILLA 적용 범위"
+    doc.core_properties.author = "SKILLA 프로젝트"
 
     index = 0
     references_mode = False

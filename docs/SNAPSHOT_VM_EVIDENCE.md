@@ -1,6 +1,6 @@
 # Snapshot VM 증거 계약
 
-JAVIS core는 hypervisor를 시작·중지·복원하거나 위험 작업을 직접 실행하지 않는다. 별도의 VM
+SKILLA core는 hypervisor를 시작·중지·복원하거나 위험 작업을 직접 실행하지 않는다. 별도의 VM
 harness가 snapshot 복원이 가능한 guest에서 시나리오를 실행하고, core는 그 harness가 내보낸
 서명된 JSON 증거만 검증한다. 이 경계는 host에서 실수로 영구 삭제·종료·초기화 시험을 실행하는
 것을 막기 위한 것이다.

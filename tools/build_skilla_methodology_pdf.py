@@ -23,7 +23,7 @@ from reportlab.platypus import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / "output" / "pdf" / "JAVIS_논문_적용_방법론_정리.pdf"
+OUTPUT = ROOT / "output" / "pdf" / "SKILLA_논문_적용_방법론_정리.pdf"
 FONT_REGULAR = Path(r"C:\Windows\Fonts\malgun.ttf")
 FONT_BOLD = Path(r"C:\Windows\Fonts\malgunbd.ttf")
 
@@ -71,7 +71,7 @@ def method_block(number: str, title: str, source_method: str, applied: str, not_
     body = Table(
         [
             [p("원 논문의 방법", styles["cell_label"]), p(source_method, styles["cell_body"])],
-            [p("JAVIS에 적용", styles["cell_label"]), p(applied, styles["cell_body"])],
+            [p("SKILLA에 적용", styles["cell_label"]), p(applied, styles["cell_body"])],
             [p("적용하지 않음", styles["cell_label"]), p(not_applied, styles["cell_body"])],
         ],
         colWidths=[33 * mm, 139 * mm],
@@ -164,7 +164,7 @@ def draw_page(canvas, doc) -> None:
         canvas.line(20 * mm, height - 14 * mm, width - 20 * mm, height - 14 * mm)
         canvas.setFont("Malgun", 7.5)
         canvas.setFillColor(MUTED)
-        canvas.drawString(20 * mm, height - 10.5 * mm, "JAVIS 논문 적용 방법론 정리")
+        canvas.drawString(20 * mm, height - 10.5 * mm, "SKILLA 논문 적용 방법론 정리")
         canvas.drawRightString(width - 20 * mm, 11 * mm, f"{doc.page}")
     canvas.restoreState()
 
@@ -175,8 +175,8 @@ def build() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     doc = BaseDocTemplate(
         str(OUTPUT), pagesize=A4, leftMargin=19 * mm, rightMargin=19 * mm,
-        topMargin=19 * mm, bottomMargin=18 * mm, title="JAVIS 논문 적용 방법론 정리",
-        author="JAVIS 프로젝트", subject="관련 연구와 실험 방법론의 적용 범위",
+        topMargin=19 * mm, bottomMargin=18 * mm, title="SKILLA 논문 적용 방법론 정리",
+        author="SKILLA 프로젝트", subject="관련 연구와 실험 방법론의 적용 범위",
     )
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="normal")
     doc.addPageTemplates(PageTemplate(id="all", frames=[frame], onPage=draw_page))
@@ -185,11 +185,11 @@ def build() -> None:
     story.extend(
         [
             Spacer(1, 54 * mm),
-            p("JAVIS 논문에 적용한 방법론", styles["cover_title"]),
+            p("SKILLA 논문에 적용한 방법론", styles["cover_title"]),
             p("스킬 기반 Windows PC 에이전트의 설계 근거와 실험 방법", styles["cover_subtitle"]),
             Spacer(1, 15 * mm),
             p("정리 범위", styles["h2"]),
-            p("관련 연구 7편에서 채택한 설계 원리, JAVIS에서 실제 구현한 부분, 적용하지 않은 원 방법, 네 조건 대응 실험과 통계 분석 절차를 구분하여 정리하였다.", styles["body"]),
+            p("관련 연구 7편에서 채택한 설계 원리, SKILLA에서 실제 구현한 부분, 적용하지 않은 원 방법, 네 조건 대응 실험과 통계 분석 절차를 구분하여 정리하였다.", styles["body"]),
             Spacer(1, 42 * mm),
             p("2026년 10월", styles["cover_subtitle"]),
             PageBreak(),
@@ -204,7 +204,7 @@ def build() -> None:
         )
     )
     summary_rows = [
-        ["방법론", "원 연구의 핵심", "JAVIS에 적용한 부분"],
+        ["방법론", "원 연구의 핵심", "SKILLA에 적용한 부분"],
         ["ReAct", "추론, 행동, 관찰의 반복", "계획, 기능 실행, 실제 상태 관찰의 반복"],
         ["Toolformer", "API 호출 시점과 인자의 학습", "기능 이름, 인자, 결과를 갖는 구조화된 호출"],
         ["Reflexion", "언어 피드백을 다음 시도에 재사용", "실패 코드와 검증 근거를 개정 초안 입력으로 사용"],
@@ -374,7 +374,7 @@ def build() -> None:
     ]))
     story.extend([limit_table, Spacer(1, 6 * mm)])
     story.append(p("핵심 정리", styles["h2"]))
-    story.append(p("JAVIS의 방법론은 ReAct의 행동과 관찰 반복, Toolformer의 구조화된 기능 호출, Reflexion의 실패 경험 재사용, Voyager의 스킬 저장과 검색, UFO의 Windows 작업 분리, OSWorld의 실행 기반 판정을 제한된 기능 계약과 사람 승인 절차로 결합한 것이다. 실험에서는 같은 모델과 작업을 유지한 대응 비교로 스킬의 영향을 측정하였다.", styles["body"]))
+    story.append(p("SKILLA의 방법론은 ReAct의 행동과 관찰 반복, Toolformer의 구조화된 기능 호출, Reflexion의 실패 경험 재사용, Voyager의 스킬 저장과 검색, UFO의 Windows 작업 분리, OSWorld의 실행 기반 판정을 제한된 기능 계약과 사람 승인 절차로 결합한 것이다. 실험에서는 같은 모델과 작업을 유지한 대응 비교로 스킬의 영향을 측정하였다.", styles["body"]))
     story.append(PageBreak())
 
     story.append(p("8 참고문헌", styles["h1"]))
@@ -390,7 +390,7 @@ def build() -> None:
     for ref in refs:
         story.append(p(ref, styles["ref"]))
     story.extend([Spacer(1, 8 * mm), p("자료 근거", styles["h2"])])
-    story.append(p("JAVIS 논문 본문, 관련 연구 방법론 정리, 확인 실험 report.json과 60개 실행 근거를 바탕으로 작성하였다. 논문에서 구현하지 않은 학습 절차와 대규모 벤치마크는 적용하지 않은 방법으로 구분하였다.", styles["body"]))
+    story.append(p("SKILLA 논문 본문, 관련 연구 방법론 정리, 확인 실험 report.json과 60개 실행 근거를 바탕으로 작성하였다. 논문에서 구현하지 않은 학습 절차와 대규모 벤치마크는 적용하지 않은 방법으로 구분하였다.", styles["body"]))
 
     doc.build(story)
 

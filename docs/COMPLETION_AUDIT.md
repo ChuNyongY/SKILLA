@@ -9,7 +9,7 @@
 - 절대 경로로 source doctor 15/15, Credential Manager 기반 사전점검 3/3, 13개 기능 서비스 조립
   `ready=true`, `capture_running=false`, `host_state=CREATED`를 다시 확인했다.
 - 설치된 `0.1.9` 패키지는 manifest 1,826개 파일을 모두 검증했고 시작 메뉴 등록 상태는
-  `ALREADY_REGISTERED`였다. 설치본 `JAVIS.exe smoke-system-info`도
+  `ALREADY_REGISTERED`였다. 설치본 `SKILLA.exe smoke-system-info`도
   `SUCCEEDED/ALL_ACTIONS_VERIFIED`로 끝났다.
 - 연결된 주 화면은 `DISPLAY1` 2560×1440이며 저장된 대상과 일치했다. 현재 NIM 자격 증명은
   값 노출 없이 존재 여부만 확인했고 제품 사전점검을 통과했다.
@@ -73,7 +73,7 @@
   새 가상환경 설치·version import·CLI 도움말을 통과했다.
 - 0.1.7 실제 설치는 `SUCCESS`, 재설치는 `ALREADY_VERIFIED`였고 설치본 manifest 1,826개,
   사전점검 3/3, 13개 기능 서비스 조립과 마이크 미개방을 재검증했다. 시작 메뉴 링크의 실제 실행으로
-  `JAVIS 텍스트 명령` 창을 확인하고 정상 종료했다.
+  `SKILLA 텍스트 명령` 창을 확인하고 정상 종료했다.
 - 최종 r2 Setup SHA-256은
   `a9003f4465f838b32540827ccb21e91a509e46e54ecbfdf6c94a0cd6de980228`, package manifest는
   `e4cc23da0bd5e511a10401602f55722e119d52aa28c965cd11271fa48aaadf16`, 두 실행 파일은 각각
@@ -121,7 +121,7 @@
   필요한 텍스트 명령 창과 작업 화면 선택을 제품 조립 경로에 추가했다. 텍스트와 음성은 같은
   planner·정책·executor·verifier·skill trace를 사용하지만, 기본 더블클릭 경로는 마이크를 열지 않는다.
 - 실제 NIM 텍스트 명령에서 `system.info.read` 실행과 독립 검증, 스킬 실행 기록까지 완료했다.
-  one-folder와 격리 설치 폴더를 각각 작업 위치로 둔 배포용 EXE의 실제 `JAVIS 텍스트 명령` 창
+  one-folder와 격리 설치 폴더를 각각 작업 위치로 둔 배포용 EXE의 실제 `SKILLA 텍스트 명령` 창
   생성, 현재 `DISPLAY1` 열거·선택, 13-capability 제품 서비스 조립을 각각 실행해 확인했다.
 - 설치된 0.1.3 기본 텍스트 창의 `작업 화면 선택` 버튼을 실제 화면에서 확인하고 클릭해 주 화면,
   정확한 DISPLAY1, 전면 창 추적 선택지가 표시되는 것을 확인했다. 저장하지 않고 취소했으며
@@ -138,7 +138,7 @@
 - 설치기가 만든 현재 사용자 시작 메뉴 링크는 설치된 0.1.3의 windowed 실행 파일, 빈 인자, 정확한
   작업 폴더·설명·아이콘을 다시 읽어 검증했다. 동일 부모 아래의 정확한 이전 버전 링크만 갱신하고
   외부 링크는 거부한다. 실제 연속 업그레이드 뒤 링크를 실행해 0.1.3 hash의 새 process와
-  `JAVIS 텍스트 명령` 창을 확인했으며, 다른 대상의 기존 링크는 덮거나 제거하지 않는 시험도 통과했다.
+  `SKILLA 텍스트 명령` 창을 확인했으며, 다른 대상의 기존 링크는 덮거나 제거하지 않는 시험도 통과했다.
   package와 wheel의 API key 형태 검색은 0건이다.
 - 기능 완성 관점에서 텍스트 기반 로컬 스킬 에이전트는 시연 가능한 상태다. 다만 실행 파일 세 개가
   `NotSigned`이고, 현재 PC가 단일 화면이므로 실제 다중 화면 이동 시험은 없으며, 음성 호출어 모델은
@@ -216,16 +216,16 @@
   3초 창과 400 ms hop을 검증하지만 제품 기본 경로에는 연결하지 않았다. 공개 `okay-hermes`의 무음
   점수 `0.624035120`과 합성 CLI FAR 0/FRR 1은 연결 증거일 뿐 한국어 성능 근거가 아니다.
 - 실제 고정 한국어 TTS 스피커 재생과 Windows Hello `VERIFIED`는 PASS했다. TTS 사용자 평가는
-  3/5이며 번역기 같은 말투를 개선해야 한다. 실제 동의 한국어 corpus와 맞춤 `Jarvis` 모델은 없다.
+  3/5이며 번역기 같은 말투를 개선해야 한다. 실제 동의 한국어 corpus와 맞춤 `스킬라` 모델은 없다.
 
 ## 2026-10-06 재검증
 
 - Chrome 자동 업데이트로 등록 SHA-256이 달라진 상태를 발견해 Google Authenticode 발행자를 다시 확인하고 `config/apps.json`을 현재 해시로 갱신했다.
 - 최신 Chrome은 인자 없는 재실행에서 새 창을 만들지 않을 수 있으므로, 앱 등록부가 허용하는 고정 `--new-window` 하나만 `process.launch`가 전달하도록 계약을 확장했다. 임의 LLM 인자는 계속 거부한다. 실제 S01에서 새 PID/HWND 확인과 정확한 창 정리가 PASS했고, Explorer와 S03 PDF→Edge 가역 시험도 PASS했다.
 - 전체 회귀는 **766 passed, 3 skipped, line coverage 83%**, Ruff clean, mypy strict 123 source files다. 소스 실행 기준 doctor 15/15, Credential `PRESENT`, preflight 3/3, 13-capability service `CREATED`를 재확인했다.
-- pywin32가 frozen 환경에서 예상 밖 예외를 반환할 때 고정 target을 Windows `CredReadW`로 읽는 제한된 대체 경로를 추가했다. 실제 frozen `JAVIS.exe`에서 Credential `PRESENT`, preflight 3/3, 13-capability service `CREATED`, capture 미실행을 직접 재현했다.
+- pywin32가 frozen 환경에서 예상 밖 예외를 반환할 때 고정 target을 Windows `CredReadW`로 읽는 제한된 대체 경로를 추가했다. 실제 frozen `SKILLA.exe`에서 Credential `PRESENT`, preflight 3/3, 13-capability service `CREATED`, capture 미실행을 직접 재현했다.
 - 새 wheel SHA-256은 `86256abc55e715f9d6748bb3dd385030f95d989a8e599d99973bcee3f4a937c9`다. one-folder manifest 1,826개 항목은 exact verify를 통과했고 manifest SHA-256은 `4127ddbac7d2fee49d6d392031c4f7dac8766d343820d9ec1931ef31ea402abc`다. Setup SHA-256은 `3690062f16e7172fb96e372f603d736f2e2fe81323f3cbb55176070b17c70c22`이며 sidecar와 일치한다. console/tray/Setup은 모두 `NotSigned`다.
-- PowerShell 스크립트가 시스템 정책에 차단되는데도 IExpress가 0을 반환하는 설치 결함을 발견했다. 정책 우회 없이 Windows `cmd`·`certutil`·`tar`와 staged `JAVIS.exe verify-package`를 사용하는 설치 진입부로 교체했다. 깨끗한 `%LOCALAPPDATA%\JAVIS-PC\0.1.0`에 실제 Setup 최초 설치 PASS, 11.5초 내 정상 종료, 설치 manifest와 source manifest 일치, Credential preflight 3/3, 13-capability service `CREATED`, autostart `ABSENT`를 확인했다.
+- PowerShell 스크립트가 시스템 정책에 차단되는데도 IExpress가 0을 반환하는 설치 결함을 발견했다. 정책 우회 없이 Windows `cmd`·`certutil`·`tar`와 staged `SKILLA.exe verify-package`를 사용하는 설치 진입부로 교체했다. 깨끗한 `%LOCALAPPDATA%\SKILLA-PC\0.1.0`에 실제 Setup 최초 설치 PASS, 11.5초 내 정상 종료, 설치 manifest와 source manifest 일치, Credential preflight 3/3, 13-capability service `CREATED`, autostart `ABSENT`를 확인했다.
 - benchmark ledger는 completed 70, ready 0, snapshot VM environment unavailable 50, runner unavailable 0으로 재검증됐다. safe evaluation은 8 PASS / 7 NOT_RUN이다.
 - snapshot VM 전용 exact-cell 요청 50개를 `build/snapshot-vm-handoff-20261006`에 내보냈고 고유 cell ID 50개, 민감정보 표식 0건, 요청 SHA-256 `e2429e43354a4225596f0c805d37b1a4d6d246410b7754116fbff9fb0f145769`을 확인했다. 참가자 연구는 `docs/PARTICIPANT_STUDY_PROTOCOL.md`에 동의·조건 균형화·최소 수집·중단 기준을 고정했지만 실제 참가자 데이터는 아직 없다.
 - 이 PC에는 Hyper-V·VirtualBox·VMware runner와 신뢰된 코드 서명 인증서가 없다. 따라서 snapshot VM 50셀, Authenticode 서명, 새 동의가 필요한 실제 마이크·스피커·Windows Hello·참가자 연구는 완료 증거가 아니다.
@@ -311,7 +311,7 @@
 
 ## 다음 완료 순서
 
-1. 4표본 pilot과 분리된 더 큰 보정·최종시험 corpus를 수집하고 맞춤 `Jarvis` 후보를 같은 FAR/FRR 기준으로 비교한다.
+1. 4표본 pilot과 분리된 더 큰 보정·최종시험 corpus를 수집하고 맞춤 `스킬라` 후보를 같은 FAR/FRR 기준으로 비교한다.
 2. 기준을 통과한 호출어 모델로 상시 capture의 실제 장시간 운용과 concurrent STOP latency를 측정한다.
 3. TTS 말투를 개선하고 사용자 재평가를 수행한다.
 4. 실제 사용자 앱별 semantic Vision profile과 독립 postcondition을 추가한다.

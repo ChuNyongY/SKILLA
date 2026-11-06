@@ -1,6 +1,6 @@
 # 로컬 배포 및 사전점검
 
-JAVIS는 현재 이 Windows PC에 고정된 연구 prototype이다. Windows Update나 앱 업데이트 뒤에는
+SKILLA는 현재 이 Windows PC에 고정된 연구 prototype이다. Windows Update나 앱 업데이트 뒤에는
 실행 파일 hash와 package 경로가 바뀔 수 있으므로 manifest 검증을 우회하지 않는다.
 
 ## 설치
@@ -53,12 +53,12 @@ python -m skilla_core.cli preflight-product-host-credential `
   (Resolve-Path .\config\product_host.json).Path
 ```
 
-운영 기본값은 현재 사용자 Windows Credential Manager의 고정 target `JAVIS-PC/NVIDIA-NIM`이다.
+운영 기본값은 현재 사용자 Windows Credential Manager의 고정 target `SKILLA-PC/NVIDIA-NIM`이다.
 `nim-credential-status`는 `PRESENT`/`ABSENT`만 출력하고, `remove-nim-credential`은 이 고정 target만
 삭제한다. 기존 `NIM.txt` 경로는 마이그레이션·복구 호환용이며 저장소나 wheel에는 포함하지 않는다.
 두 preflight 모두 bounded key 형식, strict product config와 전체 doctor를 검사하며 마이크를 열지 않는다.
 
-사용자 화면을 수집하지 않는 Vision backend 검증은 JAVIS가 만든 일회성 합성 창으로만 수행한다.
+사용자 화면을 수집하지 않는 Vision backend 검증은 SKILLA가 만든 일회성 합성 창으로만 수행한다.
 합성 창을 잠깐 foreground로 만들고 원래 cursor 위치를 복원하며 image/template는 임시 디렉터리와
 함께 폐기한다.
 
@@ -85,21 +85,21 @@ Windows voice extra는 현재 application-control 검증을 통과한 PyAV 18.1 
 
 ## Windows 제품 패키지와 Setup
 
-다음 명령은 console 관리용 `JAVIS.exe`, 창 없는 `JAVIS-Tray.exe`, 검증된 `config`, 로컬 모델,
+다음 명령은 console 관리용 `SKILLA.exe`, 창 없는 `SKILLA-Tray.exe`, 검증된 `config`, 로컬 모델,
 framework-dependent Windows Hello helper를 one-folder로 조립한다. `NIM.txt`, `state`, 테스트와
 빌드 cache는 포함하지 않는다. source asset에 symlink 또는 Windows reparse point가 하나라도 있으면
 실패하고, 산출물의 모든 파일은 정렬된 `package-manifest.json`의 size·SHA-256에 결합된다.
 
 ```powershell
 python tools\build_windows_package.py
-.\dist\JAVIS-PC-0.1.0\JAVIS.exe verify-package `
-  (Resolve-Path .\dist\JAVIS-PC-0.1.0).Path
+.\dist\SKILLA-PC-0.1.0\SKILLA.exe verify-package `
+  (Resolve-Path .\dist\SKILLA-PC-0.1.0).Path
 python tools\build_windows_installer.py
-Get-FileHash .\dist\JAVIS-PC-0.1.0-Setup.exe -Algorithm SHA256
+Get-FileHash .\dist\SKILLA-PC-0.1.0-Setup.exe -Algorithm SHA256
 # 서명 인증서의 exact Subject를 사용한다. 현재 unsigned build는 exit 1이 정상이다.
 python -m skilla_core.cli audit-windows-release `
-  (Resolve-Path .\dist\JAVIS-PC-0.1.0).Path `
-  (Resolve-Path .\dist\JAVIS-PC-0.1.0-Setup.exe).Path `
+  (Resolve-Path .\dist\SKILLA-PC-0.1.0).Path `
+  (Resolve-Path .\dist\SKILLA-PC-0.1.0-Setup.exe).Path `
   'CN=배포 인증서의 정확한 Subject'
 ```
 
@@ -107,13 +107,13 @@ python -m skilla_core.cli audit-windows-release `
 검증된 기존 파일을 덮어쓰지 않으며 Setup의 부모 디렉터리는 미리 존재해야 한다.
 
 ```powershell
-python tools\build_windows_package.py --destination C:\absolute\build\JAVIS-candidate
+python tools\build_windows_package.py --destination C:\absolute\build\SKILLA-candidate
 python tools\build_windows_installer.py `
-  --package C:\absolute\build\JAVIS-candidate `
-  --destination C:\absolute\build\JAVIS-candidate-Setup.exe
+  --package C:\absolute\build\SKILLA-candidate `
+  --destination C:\absolute\build\SKILLA-candidate-Setup.exe
 ```
 
-2026-10-16 최신 소스 후보 `dist/JAVIS-PC-0.1.0-skill-20261016-r3`는 1,826 manifest entry이며
+2026-10-16 최신 소스 후보 `dist/SKILLA-PC-0.1.0-skill-20261016-r3`는 1,826 manifest entry이며
 source verifier에서 `VERIFIED`됐다. manifest SHA-256은
 `446f6f95ef490de95fa5b3b85ba6cd8a6d8f6bcd62c9b66742a8625bddee7cbd`다. 같은 소스의 wheel은
 `dist/wheel-skill-20261016-r4/javis_pc_agent-0.1.0-py3-none-any.whl`이며 149개 항목,
@@ -121,10 +121,10 @@ source verifier에서 `VERIFIED`됐다. manifest SHA-256은
 `906929d3c5a3f41a43e4d22b8ee088ad8cbe941717f0cc59447f26bfd3ffc27b`다. 새 격리 가상환경에서
 설치·핵심 모듈 import·CLI 실행을 통과했다.
 
-최신 Setup은 `dist/JAVIS-PC-0.1.0-skill-20261016-r5-Setup.exe`이며 260,702,208바이트, SHA-256
+최신 Setup은 `dist/SKILLA-PC-0.1.0-skill-20261016-r5-Setup.exe`이며 260,702,208바이트, SHA-256
 `819f36a116b6bd03411af98b21fcbb4fd352a9c1c1f03da72cfede83349dd289`이고 sidecar와 일치한다.
-설치 script는 `%LOCALAPPDATA%/JAVIS-PC/install-result-0.1.0.txt`에 `schema_version`, `version`,
-`status`, `code`만 기록한다. `SUCCESS`는 staging `JAVIS.exe verify-package`와 최종 이동이 모두
+설치 script는 `%LOCALAPPDATA%/SKILLA-PC/install-result-0.1.0.txt`에 `schema_version`, `version`,
+`status`, `code`만 기록한다. `SUCCESS`는 staging `SKILLA.exe verify-package`와 최종 이동이 모두
 성공한 뒤에만 기록되고, 기존 검증 설치는 `ALREADY_VERIFIED`, 실패는 `FAILED`가 된다. IExpress의
 종료 코드만으로 설치 성공을 판정하지 말고 이 영수증, 설치 폴더와 manifest를 함께 확인해야 한다.
 `STARTED`는 최종 성공이 아니라 내부 cmd 진행 중이거나 비정상 종료된 미확정 상태다. 제한 시간 안에
@@ -147,20 +147,20 @@ r4의 임시 파일 `move` 교체가 `STARTED`에 머문 결함은 r5에서 고�
 인증서로 package 실행 파일과 Setup을 서명한 뒤 같은 설치·manifest·doctor·서비스 검증을 다시
 수행해야 공개 배포 관문이 닫힌다.
 
-2026-10-15 직전 후보 `dist/JAVIS-PC-0.1.0-skill-20261015-r2`는 1,826 manifest entry이며 source
+2026-10-15 직전 후보 `dist/SKILLA-PC-0.1.0-skill-20261015-r2`는 1,826 manifest entry이며 source
 verifier와 설치본 verifier로 exact manifest를 통과했다. package manifest SHA-256은
 `0a7f6df25d721dc36a34973e3862bf094332fe1ad71f6a79eb55c0a49c3ad489`다. Setup은 Microsoft 서명된
 시스템 IExpress builder를 사용해 생성한 260,702,208바이트 per-user extractor이며 SHA-256은
 `811c747509a13a1c75a6cb09b89d2ce25178737e8b096735b57a7381a38152a7`이다. 함께 생성된 `.sha256`
 sidecar와 실제 Setup hash도 일치한다.
 내부 설치 진입부는
-PowerShell 실행정책을 우회하지 않고 Windows `cmd`, `certutil`, `tar`와 staged `JAVIS.exe
+PowerShell 실행정책을 우회하지 않고 Windows `cmd`, `certutil`, `tar`와 staged `SKILLA.exe
 verify-package`만 사용한다. 실제 사용자 설치 위치와 분리한 `LOCALAPPDATA`에서 최초 설치,
 설치본 manifest 일치, frozen doctor, Credential preflight와 13-capability 서비스 조립을 통과했다.
 검증용 설치 폴더는 검증 후 제거했다.
 
 설치본의 가변 상태는 설치 폴더에 쓰지 않는다. manifest가 검증된 package root에서는
-`%LOCALAPPDATA%/JAVIS-PC/state/<version>`에 스킬·trace·감사·메모리·이동 journal을 저장한다.
+`%LOCALAPPDATA%/SKILLA-PC/state/<version>`에 스킬·trace·감사·메모리·이동 journal을 저장한다.
 소스 checkout은 개발 호환을 위해 `<root>/state`를 사용한다. 격리 설치본에서 서비스를 조립한 뒤에도
 설치 폴더 manifest 1,826개가 다시 `VERIFIED`였고 설치 폴더 아래 `state`는 생성되지 않았다.
 
@@ -170,17 +170,17 @@ verify-package`만 사용한다. 실제 사용자 설치 위치와 분리한 `LO
 사용하지 않는 새 가상환경에 wheel과 의존성을 설치해 스킬 작성·검토·실행 기록 검토 모듈 import와
 `javis --help`를 확인했다. wheel에는 `.env`, `NIM.txt`, `.pem`, `.key` 파일이 없다.
 
-Setup은 `%LOCALAPPDATA%\JAVIS-PC\0.1.0`이 비어 있을 때만 새로 설치하고, payload SHA-256과 내부
+Setup은 `%LOCALAPPDATA%\SKILLA-PC\0.1.0`이 비어 있을 때만 새로 설치하고, payload SHA-256과 내부
 package manifest를 모두 확인한다. 같은 경로가 이미 있으면 verified 동일 설치만 성공으로 보고,
 손상되거나 다른 파일은 덮어쓰지 않는다. 자동 시작, 마이크, tray 또는 앱을 자동 실행하지 않는다.
-키는 설치 후 `JAVIS.exe provision-nim-credential`의 echo 없는 prompt로 현재 사용자 Credential
+키는 설치 후 `SKILLA.exe provision-nim-credential`의 echo 없는 prompt로 현재 사용자 Credential
 Manager에 별도 저장한다. 자동 시작은 `install-autostart-credential <root> <config>`를 명시적으로
 실행해야 하며 shortcut 인자에 키나 secret 파일 경로가 없다. 삭제 전
 `remove-autostart-credential`과 `remove-nim-credential`을 각각 명시적으로 실행하고 사용자 `state`
 보존 여부를 결정해야 하므로 자동 silent uninstall은 제공하지 않는다.
 
-시스템 IExpress 원본은 Microsoft Authenticode `Valid`였지만 생성된 Setup과 내부 `JAVIS.exe`,
-`JAVIS-Tray.exe`는 현재 모두 `NotSigned`다.
+시스템 IExpress 원본은 Microsoft Authenticode `Valid`였지만 생성된 Setup과 내부 `SKILLA.exe`,
+`SKILLA-Tray.exe`는 현재 모두 `NotSigned`다.
 따라서 이 파일은 manifest 감사용 산출물이며, 외부 배포 및 현재 정책 환경에서 실행하기 전에 조직의
 신뢰된 코드 서명 인증서로 두 실행 파일과 Setup을 서명하고 서명 후 manifest/SHA-256, frozen doctor,
 preflight와 설치·제거 smoke를 다시 생성·기록해야 한다. Smart App Control을 끄는 방식은 검증 절차가

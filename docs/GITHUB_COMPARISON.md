@@ -21,7 +21,7 @@ postcondition, 개인정보 최소화와 실험 증거의 강도 차이다.
 2026-10-07 추가 확인에서 [`ecandersonjr/Jarvis`](https://github.com/ecandersonjr/Jarvis)는
 `models/hey_jarvis_v0.1.onnx`를 별도 학습 모델이라고 설명하지만, commit
 `7b91ecf27922f816a9aff6356e0fc3535972e55a`의 파일 SHA-256은
-`94a13cfe60075b132f6a472e7e462e8123ee70861bc3fb58434a73712ee0d2cb`로 현재 JARVIS-PC가 고정한
+`94a13cfe60075b132f6a472e7e462e8123ee70861bc3fb58434a73712ee0d2cb`로 현재 SKILLA가 고정한
 공식 openWakeWord 파일과 정확히 같았다. 저장소 루트에는 별도 라이선스 파일도 없었다. 따라서 이
 파일을 새로운 한국어 후보나 재배포 가능한 독립 모델로 간주하지 않았고, 같은 파일의 중복 평가는
 생략했다.
@@ -29,11 +29,11 @@ postcondition, 개인정보 최소화와 실험 증거의 강도 차이다.
 ## 결론
 
 두 프로젝트는 경쟁 관계라기보다 최적화 목표가 다르다. GitHub JARVIS는 의존성 다운로드·자동
-모델 선택·repair·phone까지 연결된 **제품형 완전 로컬 비서**에 가깝고, JARVIS-PC는 설치 가능한
+모델 선택·repair·phone까지 연결된 **제품형 완전 로컬 비서**에 가깝고, SKILLA는 설치 가능한
 Windows host를 갖췄지만 잘못 들은 말과 위험한 도구 호출을 어떻게 차단·승인·검증할지 측정하는
 **안전 실행 제어 및 연구형 에이전트**에 가깝다.
 
-| 비교 축 | D3v0ps/JARVIS | 현재 JARVIS-PC |
+| 비교 축 | D3v0ps/JARVIS | 현재 SKILLA |
 |---|---|---|
 | 기본 모델 | 로컬 Ollama/Qwen3 tool calling | NIM typed planner와 로컬 gate; NIM 사용 시 목표 텍스트가 외부 API로 전송됨 |
 | 음성 제품성 | openWakeWord → Silero VAD → faster-whisper → Kokoro/Piper/SAPI가 사용자 앱에 통합 | 같은 계열의 로컬 wake/STT/TTS 경계와 always-on runtime이 있으나 실제 한국어 장시간 사용자 검증은 미완료 |
@@ -48,13 +48,13 @@ Windows host를 갖췄지만 잘못 들은 말과 위험한 도구 호출을 어
 | 연구 평가 | 안전 gate 중심 pytest와 사용자 기능 시나리오 | S01~S15 격리 manifest, B0/B1/P1/P2 exact-grid collector·condition runner·P2 recovery runner·서명된 snapshot-cell consumer·분석기, 현재 826 passed/3 skipped·83% coverage, 현재-PC 70/70셀 수집 |
 
 보조 기준 Axx33284/JARVIS와 비교하면 양쪽 모두 human approval과 fail-closed gate를 갖지만,
-JARVIS-PC는 임의 shell과 runtime-generated Python skill을 제품 capability에서 제외하고 action의
+SKILLA는 임의 shell과 runtime-generated Python skill을 제품 capability에서 제외하고 action의
 capability/target/arguments hash에 승인 토큰을 결합한다. 또 executor의 성공 보고와 별개로 OS·파일·
 PID·hash를 다시 읽고, 위험 시험은 snapshot 복원·서명·artifact binding이 없으면 observation으로
 기록하지 않는다. 반대로 Axx33284/JARVIS는 로컬 Ollama, system-audio hearing, 실제 screen control,
 self-improving skill library와 폭넓은 일상 도구에서 더 완성된 제품 범위를 제공한다.
 
-## JARVIS-PC가 더 강한 부분
+## SKILLA가 더 강한 부분
 
 1. **승인 재사용 방지**: 승인 토큰이 task/action/capability/arguments hash/target/risk/만료/nonce에
    결합되어, “확인” 한 번을 다른 대상이나 인자로 재사용할 수 없다.
@@ -74,13 +74,13 @@ self-improving skill library와 폭넓은 일상 도구에서 더 완성된 제�
 3. Ollama 기반으로 LLM 추론도 로컬이며 API key가 필요 없다.
 4. Kokoro 음성, 실제 microphone/GPU fallback, 사용자용 troubleshooting이 제품 흐름에 연결돼
    있다.
-5. 현재 JARVIS-PC의 exact-host 새 창 탐색보다 넓은 웹 검색·콘텐츠 처리, phone remote,
+5. 현재 SKILLA의 exact-host 새 창 탐색보다 넓은 웹 검색·콘텐츠 처리, phone remote,
    clipboard, media와 다양한 도구가 이미 한 assistant loop에 통합돼 있다.
 
 ## 졸업작품 차별점 문장
 
 > 기존 GitHub JARVIS 계열이 로컬 음성 비서의 기능 폭과 사용자 경험을 중심으로 구성되는 반면,
-> JARVIS-PC는 발화 addressedness, 결정론적 위험 분류, payload-bound 승인, 최소권한 capability,
+> SKILLA는 발화 addressedness, 결정론적 위험 분류, payload-bound 승인, 최소권한 capability,
 > 독립 사후조건 검증과 snapshot-VM 위험 시험을 하나의 폐루프로 결합하고 그 안전 효과를
 > B0/B1/P1/P2 조건에서 정량 평가한다.
 
@@ -95,7 +95,7 @@ self-improving skill library와 폭넓은 일상 도구에서 더 완성된 제�
   항상 거부한다고 설명한다. 또한 transcript와 tool arguments가 로그에 기록된다고 명시한다.
 - Axx33284 README는 로컬 Windows 도구 73개, standard에서 irreversible 확인, strict에서 모든
   destructive 확인, full에서 무확인을 선택하는 gate와 arbitrary shell의 비-sandbox 한계를 명시한다.
-  JARVIS-PC는 사용자 설정과 무관하게 risk별 최소 승인 강도를 낮출 수 없다는 점에서 대비된다.
+  SKILLA는 사용자 설정과 무관하게 risk별 최소 승인 강도를 낮출 수 없다는 점에서 대비된다.
 - ecandersonjr/Jarvis의 README와 실제 ONNX hash를 함께 확인했다. README의 “custom-trained” 설명만
   믿지 않고 byte identity와 재배포 조건을 별도로 검사한 결과이므로 한국어 후보로 채택하지 않았다.
 - 본 비교는 공개 README와 저장소 구조를 기준으로 한 것이다. 상대 저장소의 모든 구현 라인을

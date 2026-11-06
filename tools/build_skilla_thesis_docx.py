@@ -13,8 +13,8 @@ from docx.shared import Cm, Pt, RGBColor
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "docs" / "JAVIS_THESIS_DRAFT.md"
-OUTPUT = ROOT / "output" / "JAVIS_스킬기반_Windows_PC에이전트_졸업논문_초안.docx"
+SOURCE = ROOT / "docs" / "SKILLA_THESIS_DRAFT.md"
+OUTPUT = ROOT / "output" / "SKILLA_스킬기반_Windows_PC에이전트_졸업논문_초안.docx"
 FONT = "Malgun Gothic"
 TEXT_COLOR = "111111"
 ACCENT = "17365D"
@@ -130,7 +130,7 @@ def add_bullet(doc: Document, text: str) -> None:
     set_font(p.add_run(text), 10.0)
 
 
-def build(output: Path = OUTPUT, *, cover_subtitle: str = "JAVIS 연구 보고서", subject: str = "JAVIS 졸업논문 초안") -> None:
+def build(output: Path = OUTPUT, *, cover_subtitle: str = "SKILLA 연구 보고서", subject: str = "SKILLA 졸업논문 초안") -> None:
     lines = SOURCE.read_text(encoding="utf-8").splitlines()
     doc = Document()
     section = doc.sections[0]
@@ -163,7 +163,7 @@ def build(output: Path = OUTPUT, *, cover_subtitle: str = "JAVIS 연구 보고�
     add_page_number(section.footer.paragraphs[0])
     doc.core_properties.title = "Windows PC 반복 작업을 위한 스킬 생성·재사용·개정형 AI 에이전트의 설계 및 평가"
     doc.core_properties.subject = subject
-    doc.core_properties.author = "JAVIS 프로젝트"
+    doc.core_properties.author = "SKILLA 프로젝트"
 
     index = 0
     cover_mode = True
@@ -188,7 +188,7 @@ def build(output: Path = OUTPUT, *, cover_subtitle: str = "JAVIS 연구 보고�
             index += 1
             continue
         if cover_mode and not stripped.startswith("#"):
-            if stripped == "JAVIS 연구 보고서":
+            if stripped == "SKILLA 연구 보고서":
                 stripped = cover_subtitle
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -236,7 +236,7 @@ def build(output: Path = OUTPUT, *, cover_subtitle: str = "JAVIS 연구 보고�
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=OUTPUT)
-    parser.add_argument("--cover-subtitle", default="JAVIS 연구 보고서")
-    parser.add_argument("--subject", default="JAVIS 졸업논문 초안")
+    parser.add_argument("--cover-subtitle", default="SKILLA 연구 보고서")
+    parser.add_argument("--subject", default="SKILLA 졸업논문 초안")
     args = parser.parse_args()
     build(args.output, cover_subtitle=args.cover_subtitle, subject=args.subject)

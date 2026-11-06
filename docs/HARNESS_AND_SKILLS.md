@@ -27,7 +27,7 @@ LLM은 **생각을 제안하는 두뇌**, 하네스는 그 두뇌가 컴퓨터�
 
 ## 용어를 정확히 나누기
 
-| 구성요소 | 하는 일 | JARVIS-PC의 예 |
+| 구성요소 | 하는 일 | SKILLA의 예 |
 |---|---|---|
 | 모델(LLM) | 언어 이해, 후보 계획 생성 | NVIDIA NIM의 GLM 계열 모델 |
 | 도구 | 외부 상태를 읽거나 바꿈 | Native API, UIA, 제한된 PowerShell, 브라우저·Explorer adapter |
@@ -142,20 +142,20 @@ grounding과 실제 조작 지식이 없으면 결과가 나오지 않는다는 
 
 Windows Agent Arena는 실제 Windows 앱과 브라우저를 사용하는 150개 이상의 작업을 만들고 병렬 평가를
 지원했다. 초기 Navi agent 성공률은 19.5%, 비보조 인간은 74.5%였고, 클라우드 병렬화로 전체 평가를
-약 20분까지 줄일 수 있다고 보고했다. JARVIS-PC의 snapshot VM과 exact-cell 평가가 같은 연구 계열에
+약 20분까지 줄일 수 있다고 보고했다. SKILLA의 snapshot VM과 exact-cell 평가가 같은 연구 계열에
 놓인다.
 ([Bonatti et al., 2024](https://arxiv.org/abs/2409.08264))
 
 ### 5. AgentBoard: 최종 성공과 중간 진행을 함께 본다
 
 AgentBoard는 성공/실패 하나만 기록하면 왜 실패했는지 알기 어렵다는 문제를 다루며, subgoal 기반
-progress rate와 multi-turn trajectory 분석을 제공한다. JARVIS-PC에서도 최종 task success를 가장
+progress rate와 multi-turn trajectory 분석을 제공한다. SKILLA에서도 최종 task success를 가장
 중요하게 두되, 실패 원인을 찾기 위한 단계별 observation과 stable error code를 함께 보존할 근거가 된다.
 ([Ma et al., 2024](https://arxiv.org/abs/2401.13178))
 
-## JARVIS-PC에 적용하면
+## SKILLA에 적용하면
 
-JARVIS-PC에서 NIM 모델은 전체 시스템이 아니라 한 부품이다.
+SKILLA에서 NIM 모델은 전체 시스템이 아니라 한 부품이다.
 
 ```text
 사용자 명령

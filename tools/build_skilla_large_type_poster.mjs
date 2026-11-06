@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
-const workspaceDir = "C:\\Users\\YongE\\Desktop\\JAVIS";
+const workspaceDir = "C:\\Users\\YongE\\Desktop\\SKILLA";
 const skillDir = "C:\\Users\\YongE\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1025.11240\\skills\\presentations";
 const runtimePython = "C:\\Users\\YongE\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
-const buildDir = path.join(workspaceDir, ".build", "javis-large-type-poster");
+const buildDir = path.join(workspaceDir, ".build", "skilla-large-type-poster");
 const outputDir = path.join(workspaceDir, "output");
-const finalPptx = path.join(outputDir, "JAVIS_졸업작품_포스터_대형글자_최종본_v2.pptx");
+const finalPptx = path.join(outputDir, "SKILLA_졸업작품_포스터_대형글자_최종본_v2.pptx");
 
 const W = 3179;
 const H = 4494;
@@ -123,7 +123,7 @@ async function main() {
   rect(slide, 0, 0, W, 440, DARK);
   rect(slide, 0, 420, W, 20, TEAL);
   textbox(slide, "Windows PC 반복 작업을 위한", 180, 45, W - 360, 72, { fontSizePt: 42, bold: true, color: "#E8DDED", align: "center", valign: "middle" });
-  textbox(slide, "스킬 생성·재사용·개정형 AI 에이전트 JAVIS", 120, 116, W - 240, 120, { fontSizePt: 68, bold: true, color: WHITE, align: "center", valign: "middle" });
+  textbox(slide, "스킬 생성·재사용·개정형 AI 에이전트 SKILLA", 120, 116, W - 240, 120, { fontSizePt: 68, bold: true, color: WHITE, align: "center", valign: "middle" });
   textbox(slide, "반복해서 겪은 PC 사용 불편을 직접 해결하고 작업 방법을 다음 실행에도 다시 쓰는 Windows 에이전트", 210, 260, W - 420, 64, { fontSizePt: 30, color: WHITE, align: "center", valign: "middle" });
   pill(slide, "완성된 연구용 시제품   음성·텍스트 명령   독립 결과 검증   스킬 버전 관리", 450, 344, W - 900, 58, PURPLE, WHITE, 26, "#8C6D9B");
 
@@ -139,7 +139,7 @@ async function main() {
   textbox(slide, "연구 목적", s1.x + 1970, s1.y + 26, s1.w - 2010, 56, { fontSizePt: 34, bold: true, color: TEAL, align: "center" });
   textbox(slide, "반복되는 작업 방법을 스킬로 저장한다.\n실행할 때 현재 PC 상태를 다시 확인한다.\n실패 기록을 다음 버전의 개선에 사용한다.", s1.x + 1970, s1.y + 102, s1.w - 2010, 132, { fontSizePt: 28, bold: true, color: NAVY, align: "center", valign: "middle" });
 
-  const s2 = section(slide, 2, "JAVIS의 전체 실행 구조", margin, 1050, cw, 650, PURPLE);
+  const s2 = section(slide, 2, "SKILLA의 전체 실행 구조", margin, 1050, cw, 650, PURPLE);
   const flow = [
     ["요청 이해", "음성·텍스트"],
     ["스킬 검색", "검증 버전 선택"],
@@ -209,7 +209,7 @@ async function main() {
   rect(slide, s5.x, s5.y, s5.w, 70, DARK, "none", true);
   textbox(slide, "비교", s5.x, s5.y + 8, 300, 52, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
   textbox(slide, "일반 PC 에이전트", s5.x + 300, s5.y + 8, 460, 52, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
-  textbox(slide, "JAVIS", s5.x + 760, s5.y + 8, s5.w - 760, 52, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
+  textbox(slide, "SKILLA", s5.x + 760, s5.y + 8, s5.w - 760, 52, { fontSizePt: 28, bold: true, color: WHITE, align: "center" });
   rows.forEach((r, i) => {
     const y = s5.y + 84 + i * 102;
     rect(slide, s5.x, y, s5.w, 90, i % 2 === 0 ? LIGHT : WHITE, LINE, true);
@@ -233,11 +233,11 @@ async function main() {
   pill(slide, "실험은 작품의 효과를 확인하는 보조 근거이며, 작품의 중심은 스킬을 만들고 다시 쓰며 개선하는 완성된 시스템이다.", s6.x + 160, s6.y + 508, s6.w - 320, 68, DARK, WHITE, 28);
 
   const s7 = section(slide, 7, "결론", margin, 3970, cw, 350, TEAL);
-  textbox(slide, "JAVIS는 사용자의 요청을 실제 PC 작업으로 실행하고, 반복되는 방법을 스킬로 저장한다.", s7.x + 80, s7.y, s7.w - 160, 62, { fontSizePt: 34, bold: true, color: NAVY, align: "center", valign: "middle" });
+  textbox(slide, "SKILLA는 사용자의 요청을 실제 PC 작업으로 실행하고, 반복되는 방법을 스킬로 저장한다.", s7.x + 80, s7.y, s7.w - 160, 62, { fontSizePt: 34, bold: true, color: NAVY, align: "center", valign: "middle" });
   textbox(slide, "매 실행에서 현재 상태를 다시 확인하고 결과를 독립적으로 검증한다. 실패 기록은 다음 스킬 버전의 개선 근거가 된다. 사용자는 같은 작업을 다시 설명하지 않고 한 문장으로 실행할 수 있다.", s7.x + 100, s7.y + 82, s7.w - 200, 92, { fontSizePt: 28, color: INK, align: "center", valign: "middle" });
   pill(slide, "개인의 반복 불편을 해결한 기능이 사용할수록 작업 방법이 쌓이는 Windows 에이전트로 확장되었다.", s7.x + 220, s7.y + 196, s7.w - 440, 62, PURPLE, WHITE, 28);
 
-  textbox(slide, "관련 방법: ReAct, Toolformer, Reflexion, Voyager, OSWorld, AgentBench   구현 자료: JAVIS 0.1.9, 자동시험 1,091건, 등록 기능 13개   확인 실험: 15개 대응 블록, 60개 실행", 150, 4360, W - 300, 58, { fontSizePt: 22, color: MUTED, align: "center", valign: "middle" });
+  textbox(slide, "관련 방법: ReAct, Toolformer, Reflexion, Voyager, OSWorld, AgentBench   구현 자료: SKILLA 0.1.9, 자동시험 1,091건, 등록 기능 13개   확인 실험: 15개 대응 블록, 60개 실행", 150, 4360, W - 300, 58, { fontSizePt: 22, color: MUTED, align: "center", valign: "middle" });
   rect(slide, 0, 4468, W, 26, DARK);
 
   const preview = await presentation.export({ slide, format: "png", scale: 0.45 });

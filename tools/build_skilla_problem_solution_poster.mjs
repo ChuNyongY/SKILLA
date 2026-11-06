@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
-const workspaceDir = "C:\\Users\\YongE\\Desktop\\JAVIS";
+const workspaceDir = "C:\\Users\\YongE\\Desktop\\SKILLA";
 const skillDir = "C:\\Users\\YongE\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1025.11240\\skills\\presentations";
 const runtimePython = "C:\\Users\\YongE\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
-const buildDir = path.join(workspaceDir, ".build", "javis-problem-solution-poster");
+const buildDir = path.join(workspaceDir, ".build", "skilla-problem-solution-poster");
 const outputDir = path.join(workspaceDir, "output");
-const finalPptx = path.join(outputDir, "JAVIS_졸업작품_포스터_사용자불편해결중심_최종본.pptx");
+const finalPptx = path.join(outputDir, "SKILLA_졸업작품_포스터_사용자불편해결중심_최종본.pptx");
 
 const W = 3179;
 const H = 4494;
@@ -122,7 +122,7 @@ async function main() {
   // Header
   rect(slide, 0, 0, W, 500, NAVY);
   rect(slide, 0, 480, W, 20, CYAN);
-  textbox(slide, "JAVIS", 130, 72, 520, 110, { fontSizePt: 68, bold: true, color: CYAN, valign: "middle" });
+  textbox(slide, "SKILLA", 130, 72, 520, 110, { fontSizePt: 68, bold: true, color: CYAN, valign: "middle" });
   textbox(slide, "반복되는 PC 일을 기억하는\n스킬 기반 개인 에이전트", 650, 52, 2400, 210, { fontSizePt: 57, bold: true, color: WHITE, align: "left", valign: "middle" });
   textbox(slide, "내가 매일 겪던 작은 불편에서 시작해, 한 번 만든 작업 방법을 다음에도 다시 쓰도록 만들었다", 650, 282, 2320, 62, { fontSizePt: 25, color: "#D5E7F8", valign: "middle" });
   pill(slide, "졸업작품·졸업논문  |  Windows 11 로컬 실행  |  스킬 생성·재사용·검증·개정", 650, 374, 2320, 64, NAVY_2, WHITE, "#31597E", 21);
@@ -158,7 +158,7 @@ async function main() {
   textbox(slide, "반복되는 작업 방법은\n스킬로 저장해 다시 쓴다", s1.x + 1920, s1.y + 270, s1.w - 1980, 110, { fontSizePt: 28, bold: true, color: GREEN, align: "center", valign: "middle" });
 
   // 02: Built system
-  const s2 = section(slide, 2, "그래서 만든 것: 요청부터 결과 확인까지 이어지는 JAVIS 실행 구조", margin, 1295, contentW, 790, BLUE);
+  const s2 = section(slide, 2, "그래서 만든 것: 요청부터 결과 확인까지 이어지는 SKILLA 실행 구조", margin, 1295, contentW, 790, BLUE);
   const steps = [
     ["요청 이해", "사용자가 원하는\n작업과 조건 파악"],
     ["스킬 검색", "저장된 작업 방법이\n있는지 먼저 확인"],
@@ -208,7 +208,7 @@ async function main() {
     textbox(slide, phrases[i], s3.x + 1120, y + 52, 564, 128, { fontSizePt: 25, bold: true, color: WHITE, align: "center", valign: "middle" });
     arrow(slide, s3.x + 1745, y + 82, 90, 68, CYAN);
     rect(slide, s3.x + 1864, y, s3.w - 1864, 232, MINT, GREEN, true);
-    textbox(slide, "JAVIS", s3.x + 1894, y + 20, 140, 40, { fontSizePt: 21, bold: true, color: GREEN });
+    textbox(slide, "SKILLA", s3.x + 1894, y + 20, 140, 40, { fontSizePt: 21, bold: true, color: GREEN });
     textbox(slide, after[i], s3.x + 1894, y + 66, s3.w - 1924, 146, { fontSizePt: 18.5, color: INK, align: "center", valign: "middle" });
   }
   textbox(slide, "핵심 변화: 사용자는 목표만 말하고, 반복되는 방법은 스킬이 기억한다.", s3.x + 200, s3.y + 824, s3.w - 400, 60, { fontSizePt: 27, bold: true, color: BLUE, align: "center", valign: "middle" });
@@ -227,7 +227,7 @@ async function main() {
   rect(slide, tx + col1 + col2, ty, col3, 64, MINT, "none", true);
   textbox(slide, "비교 기준", tx, ty + 4, col1, 54, { fontSizePt: 20, bold: true, color: WHITE, align: "center", valign: "middle" });
   textbox(slide, "기존 방식", tx + col1, ty + 4, col2, 54, { fontSizePt: 20, bold: true, color: MUTED, align: "center", valign: "middle" });
-  textbox(slide, "JAVIS", tx + col1 + col2, ty + 4, col3, 54, { fontSizePt: 20, bold: true, color: GREEN, align: "center", valign: "middle" });
+  textbox(slide, "SKILLA", tx + col1 + col2, ty + 4, col3, 54, { fontSizePt: 20, bold: true, color: GREEN, align: "center", valign: "middle" });
   const compare = [
     ["계획", "요청할 때마다 처음부터 생성", "저장된 스킬을 먼저 찾아 재사용"],
     ["성공 판단", "기능 호출이 끝나면 성공으로 보기 쉬움", "실제 파일·프로세스·설정 값을 다시 읽음"],
@@ -271,7 +271,7 @@ async function main() {
   // Footer conclusion
   rect(slide, 0, 4382, W, 112, NAVY);
   textbox(slide, "결론", 130, 4404, 160, 58, { fontSizePt: 27, bold: true, color: CYAN, valign: "middle" });
-  textbox(slide, "JAVIS의 강점은 ‘무엇이든 하는 AI’가 아니라, 내가 자주 하는 PC 작업을 기억하고 다음에는 더 적은 조작으로 끝내게 만든다는 점이다.", 300, 4398, W - 430, 70, { fontSizePt: 24, bold: true, color: WHITE, align: "center", valign: "middle" });
+  textbox(slide, "SKILLA의 강점은 ‘무엇이든 하는 AI’가 아니라, 내가 자주 하는 PC 작업을 기억하고 다음에는 더 적은 조작으로 끝내게 만든다는 점이다.", 300, 4398, W - 430, 70, { fontSizePt: 24, bold: true, color: WHITE, align: "center", valign: "middle" });
 
   const preview = await presentation.export({ slide, format: "png", scale: 0.45 });
   await writeBlob(path.join(buildDir, "poster-preview.png"), preview);

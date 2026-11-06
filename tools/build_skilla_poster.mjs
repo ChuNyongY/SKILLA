@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
-const workspaceDir = "C:\\Users\\YongE\\Desktop\\JAVIS";
+const workspaceDir = "C:\\Users\\YongE\\Desktop\\SKILLA";
 const SKILL_DIR = "C:\\Users\\YongE\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1025.11240\\skills\\presentations";
 const RUNTIME_PYTHON = "C:\\Users\\YongE\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
-const buildDir = path.join(workspaceDir, ".build", "javis-poster");
+const buildDir = path.join(workspaceDir, ".build", "skilla-poster");
 const outputDir = path.join(workspaceDir, "output");
-const FINAL_PPTX = path.join(outputDir, "JAVIS_졸업작품_포스터_예시반영본.pptx");
+const FINAL_PPTX = path.join(outputDir, "SKILLA_졸업작품_포스터_예시반영본.pptx");
 const FONT = "Malgun Gothic";
 const W = 3179;
 const H = 4494;
@@ -100,7 +100,7 @@ async function main() {
   rect(slide, 0, 0, W, 430, PURPLE);
   textbox(slide, "Windows PC 반복 작업을 위한\n스킬 생성·재사용·개정형 AI 에이전트", 190, 68, W - 380, 210,
     { fontSizePt: 54, bold: true, color: WHITE, align: "center", valign: "middle" });
-  textbox(slide, "JAVIS  |  졸업작품 및 졸업논문 연구", 190, 292, W - 380, 56,
+  textbox(slide, "SKILLA  |  졸업작품 및 졸업논문 연구", 190, 292, W - 380, 56,
     { fontSizePt: 24, color: WHITE, align: "center", valign: "middle" });
   textbox(slide, "동일한 언어 모델에서 스킬 재사용과 개정이 실행 성능에 미치는 영향", 190, 354, W - 380, 48,
     { fontSizePt: 20, color: "#E8DFED", align: "center", valign: "middle" });
@@ -114,7 +114,7 @@ async function main() {
 
   const s1 = section(slide, 1, "연구 배경과 목적", x1, 505, col, 770);
   textbox(slide,
-    "같은 PC 작업을 반복해도 기존 에이전트는 매번 계획을 다시 만든다. 호출 수와 토큰이 누적되고, 이전 실패에서 확인한 예외 처리 방법도 남지 않는다.\n\nJAVIS는 반복되는 절차와 판단 기준을 스킬로 저장한다. 파일명과 경로처럼 바뀌는 값은 실행 직전에 다시 확인한다.\n\n연구 목적\n스킬의 재사용과 개정이 성공률, 실행 시간, 호출 수와 토큰 사용량에 주는 영향을 같은 모델과 같은 초기 상태에서 비교한다.",
+    "같은 PC 작업을 반복해도 기존 에이전트는 매번 계획을 다시 만든다. 호출 수와 토큰이 누적되고, 이전 실패에서 확인한 예외 처리 방법도 남지 않는다.\n\nSKILLA는 반복되는 절차와 판단 기준을 스킬로 저장한다. 파일명과 경로처럼 바뀌는 값은 실행 직전에 다시 확인한다.\n\n연구 목적\n스킬의 재사용과 개정이 성공률, 실행 시간, 호출 수와 토큰 사용량에 주는 영향을 같은 모델과 같은 초기 상태에서 비교한다.",
     s1.x, s1.y, s1.w, s1.h, { fontSizePt: 20, color: INK });
 
   const s2 = section(slide, 2, "프로그램 실행 과정", x2, 505, col * 2 + gap, 770);
@@ -194,10 +194,10 @@ async function main() {
     c1 + cw * 2 + 140, s8.y + 100, cw - 40, 360, { fontSizePt: 22, align: "center" });
   rect(slide, s8.x + 80, s8.y + 650, s8.w - 160, 2, GRID);
   textbox(slide,
-    "JAVIS의 차별점: 기능 수를 늘리는 개인 비서가 아니라, 반복 절차를 스킬로 저장하고 같은 조건에서 재사용·개정 효과를 검증하는 연구용 PC 에이전트",
+    "SKILLA의 차별점: 기능 수를 늘리는 개인 비서가 아니라, 반복 절차를 스킬로 저장하고 같은 조건에서 재사용·개정 효과를 검증하는 연구용 PC 에이전트",
     s8.x + 90, s8.y + 700, s8.w - 180, 150, { fontSizePt: 25, bold: true, color: PURPLE_DARK, align: "center", valign: "middle" });
 
-  textbox(slide, "JAVIS 연구 포스터  |  2026년 10월", margin, 4338, W - margin * 2, 52,
+  textbox(slide, "SKILLA 연구 포스터  |  2026년 10월", margin, 4338, W - margin * 2, 52,
     { fontSizePt: 16, color: MUTED, align: "center" });
 
   const preview = await presentation.export({ slide, format: "png", scale: 0.35 });

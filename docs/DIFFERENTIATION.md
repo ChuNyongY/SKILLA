@@ -9,14 +9,14 @@ JARVIS라는 이름의 공개 프로젝트는 매우 많고 기능도 빠르게 
 3. Gemini 기반 Windows 비서: 실시간 음성, Vision, PowerShell, 앱·메시지 제어
 4. desktop-agent 연구 시스템: 계획, UIA+Vision, 다중 앱 실행, 상태 기반 평가
 
-이 기능들은 JAVIS에도 필요하지만 그 자체가 연구적 신규성은 아니다.
+이 기능들은 SKILLA에도 필요하지만 그 자체가 연구적 신규성은 아니다.
 
 아래 비교는 2026-09-22에 공개 GitHub README를 다시 확인한 결과다. 저장소 전체의 부재를
 README만으로 단정하지 않으며, “확인되지 않음”은 “구현되어 있지 않음”과 다르다.
 
 ## 현재 공개 구현과의 구체 비교
 
-| 공개 저장소 | README에서 확인된 강점 | JAVIS가 그대로 경쟁하지 않는 부분 | JAVIS에서 별도로 검증하는 부분 |
+| 공개 저장소 | README에서 확인된 강점 | SKILLA가 그대로 경쟁하지 않는 부분 | SKILLA에서 별도로 검증하는 부분 |
 |---|---|---|---|
 | [Saic2605/jarvis](https://github.com/Saic2605/jarvis) | Claude tool loop, Windows HUD, edge-tts, Obsidian memory | 대화 UX·HUD·TTS·범용 도구 수 | action별 risk floor, exact approval binding, postcondition loop |
 | [dushyant958/J.A.R.V.I.S](https://github.com/dushyant958/J.A.R.V.I.S) | LiveKit STT/LLM/TTS, FastMCP, screenshot·click·shell, Supabase/Redis memory | 실시간 음성·광범위 desktop tool | shell text 대신 typed capability, 각 action 직전 재정책 검사 |
@@ -25,19 +25,19 @@ README만으로 단정하지 않으며, “확인되지 않음”은 “구현�
 | [samonti86/jarvis](https://github.com/samonti86/jarvis) | always-on local wake/STT, 36-tool loop, TTS, vision, sandbox | 도구 폭·음성 출력·vision·운영 규모 | deterministic policy와 verifier를 LLM tool loop 밖에 둔 연구 구조 |
 | [dmrr35/Open.Jarvis](https://github.com/dmrr35/Open.Jarvis) | local-first routing, provider redaction/fallback, plugin permission, path/URL safety, release checks | UI·plugin·provider 운영 기능 | 위험 하한·승인 TOCTOU·bounded retry/replan을 하나의 측정 가능한 폐루프로 결합 |
 
-따라서 “기존 JARVIS는 안전하지 않고 JAVIS만 안전하다”는 주장은 하지 않는다. 현재 공개
+따라서 “기존 JARVIS는 안전하지 않고 SKILLA만 안전하다”는 주장은 하지 않는다. 현재 공개
 프로젝트에도 permission gate, DPAPI, prompt-injection 경고, path/URL 검증, sandbox가 존재한다.
-차이는 안전 기능의 유무보다, JAVIS가 이를 **typed plan → deterministic risk floor → exact-action
+차이는 안전 기능의 유무보다, SKILLA가 이를 **typed plan → deterministic risk floor → exact-action
 approval → OS postcondition**의 공통 계약으로 만들고 B0/B1/P1/P2에서 UER·Unsafe Execution·
 Confirmation Burden을 함께 측정하려는 데 있다.
 
-반대로 현재 JAVIS는 비교 프로젝트보다 TTS, barge-in, HUD, plugin 생태계, 도구 수, signed release,
+반대로 현재 SKILLA는 비교 프로젝트보다 TTS, barge-in, HUD, plugin 생태계, 도구 수, signed release,
 장기 운영 경험이 부족하다. 실제 참가자 결과도 아직 없으므로 “더 안전하다”거나 “더 완성됐다”는
 결론은 실험 전에는 주장할 수 없다.
 
 ## 비교 행렬
 
-| 비교 축 | 일반 음성 비서 | Local-first 비서 | Gemini Windows 비서 | Desktop-agent 연구 | JAVIS의 초점 |
+| 비교 축 | 일반 음성 비서 | Local-first 비서 | Gemini Windows 비서 | Desktop-agent 연구 | SKILLA의 초점 |
 |---|---|---|---|---|---|
 | Wake/STT/TTS | 일반적 | 강조됨 | 일반적 | 제품에 따라 다름 | 입력 계층으로 재사용 |
 | LLM 도구 호출 | 일반적 | 일반적 | 일반적 | 연구 초점 | typed plan만 허용 |

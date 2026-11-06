@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
-const workspaceDir = "C:\\Users\\YongE\\Desktop\\JAVIS";
+const workspaceDir = "C:\\Users\\YongE\\Desktop\\SKILLA";
 const skillDir = "C:\\Users\\YongE\\.codex\\plugins\\cache\\openai-primary-runtime\\presentations\\26.1025.11240\\skills\\presentations";
 const runtimePython = "C:\\Users\\YongE\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
-const buildDir = path.join(workspaceDir, ".build", "javis-system-complete-poster");
+const buildDir = path.join(workspaceDir, ".build", "skilla-system-complete-poster");
 const outputDir = path.join(workspaceDir, "output");
-const finalPptx = path.join(outputDir, "JAVIS_졸업작품_포스터_시스템강조_종합완성본.pptx");
+const finalPptx = path.join(outputDir, "SKILLA_졸업작품_포스터_시스템강조_종합완성본.pptx");
 
 const W = 3179;
 const H = 4494;
@@ -125,7 +125,7 @@ async function main() {
   rect(slide, 0, 0, W, 455, PURPLE_DARK);
   rect(slide, 0, 435, W, 20, TEAL);
   textbox(slide, "Windows PC 반복 작업을 위한", 180, 54, W - 360, 72, { fontSizePt: 36, bold: true, color: "#E9DFF0", align: "center", valign: "middle" });
-  textbox(slide, "스킬 생성·재사용·개정형 AI 에이전트 JAVIS", 150, 118, W - 300, 112, { fontSizePt: 58, bold: true, color: WHITE, align: "center", valign: "middle" });
+  textbox(slide, "스킬 생성·재사용·개정형 AI 에이전트 SKILLA", 150, 118, W - 300, 112, { fontSizePt: 58, bold: true, color: WHITE, align: "center", valign: "middle" });
   textbox(slide, "반복해서 겪은 PC 사용 불편을 직접 해결하고, 같은 작업 방법을 다음 실행에 다시 쓰는 개인용 Windows 에이전트", 220, 246, W - 440, 58, { fontSizePt: 24, color: "#F0EAF3", align: "center", valign: "middle" });
   roundLabel(slide, "완성된 연구용 시제품   ·   음성·텍스트 명령   ·   독립 결과 검증   ·   스킬 버전 관리", 460, 335, W - 920, 60, PURPLE, WHITE, 21, "#896B98");
 
@@ -234,7 +234,7 @@ async function main() {
   rect(slide, s5.x, s5.y, s5.w, 56, PURPLE_DARK, "none", true);
   textbox(slide, "비교 기준", s5.x, s5.y + 4, c1, 46, { fontSizePt: 18, bold: true, color: WHITE, align: "center", valign: "middle" });
   textbox(slide, "일반 PC 에이전트", s5.x + c1, s5.y + 4, c2, 46, { fontSizePt: 18, bold: true, color: WHITE, align: "center", valign: "middle" });
-  textbox(slide, "JAVIS", s5.x + c1 + c2, s5.y + 4, c3, 46, { fontSizePt: 18, bold: true, color: WHITE, align: "center", valign: "middle" });
+  textbox(slide, "SKILLA", s5.x + c1 + c2, s5.y + 4, c3, 46, { fontSizePt: 18, bold: true, color: WHITE, align: "center", valign: "middle" });
   const compare = [
     ["반복 작업", "요청마다 계획을 새로 생성", "검증된 스킬을 검색해 절차 재사용"],
     ["실행 권한", "모델이 선택한 도구 범위에 의존", "등록 기능과 스킬 허용 목록으로 제한"],
@@ -288,11 +288,11 @@ async function main() {
 
   // 07
   const s7 = section(slide, 7, "결론: 작품의 중심은 실험 수치가 아니라 반복 불편을 해결한 완성된 시스템이다", margin, 4130, cw, 255, TEAL);
-  textbox(slide, "JAVIS는 사용자의 한 문장을 실제 PC 작업으로 연결하고, 반복되는 방법을 스킬로 축적한다. 매 실행에서 현재 상태를 다시 확인하고 결과를 독립 검증하며, 실패 기록을 다음 버전의 개선 근거로 남긴다.", s7.x + 10, s7.y + 2, s7.w - 20, 70, { fontSizePt: 22, bold: true, color: NAVY, align: "center", valign: "middle" });
+  textbox(slide, "SKILLA는 사용자의 한 문장을 실제 PC 작업으로 연결하고, 반복되는 방법을 스킬로 축적한다. 매 실행에서 현재 상태를 다시 확인하고 결과를 독립 검증하며, 실패 기록을 다음 버전의 개선 근거로 남긴다.", s7.x + 10, s7.y + 2, s7.w - 20, 70, { fontSizePt: 22, bold: true, color: NAVY, align: "center", valign: "middle" });
   roundLabel(slide, "내가 불편해서 만든 기능이 한 번의 자동화로 끝나지 않고, 사용할수록 작업 방법이 쌓이는 개인용 Windows 에이전트가 되었다.", s7.x + 180, s7.y + 88, s7.w - 360, 54, PURPLE_DARK, WHITE, 20.5);
 
   // References/footer
-  textbox(slide, "관련 방법: ReAct · Toolformer · Reflexion · Voyager · OSWorld · AgentBench    |    구현 근거: JAVIS 0.1.9, 자동시험 1,091건 통과, 13개 기능 조립    |    확인 실험: 15개 완전 대응 블록, 60개 관측", 130, 4406, W - 260, 40, { fontSizePt: 14.5, color: MUTED, align: "center", valign: "middle" });
+  textbox(slide, "관련 방법: ReAct · Toolformer · Reflexion · Voyager · OSWorld · AgentBench    |    구현 근거: SKILLA 0.1.9, 자동시험 1,091건 통과, 13개 기능 조립    |    확인 실험: 15개 완전 대응 블록, 60개 관측", 130, 4406, W - 260, 40, { fontSizePt: 14.5, color: MUTED, align: "center", valign: "middle" });
   rect(slide, 0, 4470, W, 24, PURPLE_DARK);
 
   const preview = await presentation.export({ slide, format: "png", scale: 0.45 });

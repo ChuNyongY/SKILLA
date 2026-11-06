@@ -32,7 +32,7 @@ def main() -> int:
         show_status=lambda: calls.append("show"),
         stop_agent=lambda: calls.append("stop"),
         exit_agent=lambda: calls.append("exit"),
-        tooltip="JAVIS tray smoke",
+        tooltip="SKILLA tray smoke",
     )
 
     def run() -> None:
@@ -41,7 +41,7 @@ def main() -> int:
         except Exception:
             failures.append("TRAY_RUN_FAILED")
 
-    worker = Thread(target=run, name="javis-tray-smoke", daemon=False)
+    worker = Thread(target=run, name="skilla-tray-smoke", daemon=False)
     worker.start()
     deadline = time.monotonic() + 5.0
     window: int | None = None

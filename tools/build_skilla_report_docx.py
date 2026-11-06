@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 
 from docx import Document
-from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
@@ -13,8 +12,8 @@ from docx.shared import Cm, Pt, RGBColor
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "output" / "JAVIS_개발동기_안전한_로컬_AI_비서_보고서.md"
-OUTPUT = ROOT / "output" / "JAVIS_개발동기_안전한_로컬_AI_비서_보고서.docx"
+SOURCE = ROOT / "output" / "SKILLA_개발동기_안전한_로컬_AI_비서_보고서.md"
+OUTPUT = ROOT / "output" / "SKILLA_개발동기_안전한_로컬_AI_비서_보고서.docx"
 
 FONT = "Malgun Gothic"
 ACCENT = "1F4E79"
@@ -241,8 +240,8 @@ def build():
         i += 1
 
     # Avoid a blank final paragraph and set document metadata.
-    doc.core_properties.title = "JAVIS 개발 동기와 안전한 로컬 AI 비서 설계 보고서"
-    doc.core_properties.subject = "JAVIS 프로젝트 보고서"
+    doc.core_properties.title = "SKILLA 개발 동기와 안전한 로컬 AI 비서 설계 보고서"
+    doc.core_properties.subject = "SKILLA 프로젝트 보고서"
     doc.core_properties.author = "YongE"
     doc.core_properties.comments = ""
     doc.save(OUTPUT)

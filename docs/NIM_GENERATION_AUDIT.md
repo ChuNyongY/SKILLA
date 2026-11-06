@@ -655,7 +655,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
 - 이 후속 단계 전체 검증은 389 passed, 1 skipped, line coverage 84%, Ruff clean, mypy strict
   62 files다. doctor 14개 항목은 모두 PASS했고 최신 66-entry wheel에 갱신된 `vision.py`와 CLI
   entry point가 포함됐으며 배포 소스 credential scan은 clean이다.
-- 실제 backend 증거를 얻기 위해 사용자 화면 대신 JAVIS가 생성한 합성 Tk 창의 client 전체를
+- 실제 backend 증거를 얻기 위해 사용자 화면 대신 SKILLA가 생성한 합성 Tk 창의 client 전체를
   일회성 hash-pinned template로 사용했다. 실제 GDI capture, exact grounding, 동일 PID/HWND foreground
   재검증 mouse click과 독립 화면 변경 predicate가 모두 성공했으며 stable 결과는
   `success=true`, `postcondition_verified=true`였다. cursor는 원위치로 복원했고 임시 BGRA와 manifest는
@@ -957,16 +957,16 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
 - NIM에 tray/autostart 초안을 요청했다. 방향은 native tray와 current-user Startup shortcut이었지만
   초안은 `WM_DESTROY` 안에서 다시 `DestroyWindow`를 호출하고 callback 예외를 window procedure 밖으로
   전파했으며 소유권 검증이 불완전했다. Codex는 destroy 재귀를 제거하고 callback 오류를 고정 코드로
-  축약했으며 정확히 일치하는 `JAVIS.lnk`만 제거하는 COM shortcut registrar로 교정했다.
+  축약했으며 정확히 일치하는 `SKILLA.lnk`만 제거하는 COM shortcut registrar로 교정했다.
 - 배포 초안 첫 요청은 120초 timeout이었다. 축약 재요청은 응답을 받았고 PyInstaller one-folder,
   외부 config/models/native, reparse 거부, SHA-256 manifest, per-user 설치와 autostart 기본 해제를
   제안했다. “exe 기준 암묵 경로”는 기존 explicit project-root 계약을 약화하므로 채택하지 않았다.
 - console·windowed 실행 파일을 같은 PyInstaller analysis로 생성했다. 최초 frozen doctor에서 SAPI
-  worker가 source 전용 `python -m`을 호출해 실패한 것을 발견해, 정확한 sibling `JAVIS.exe`와 숨은
+  worker가 source 전용 `python -m`을 호출해 실패한 것을 발견해, 정확한 sibling `SKILLA.exe`와 숨은
   fixed worker token으로 TTS/UIA IPC를 유지하도록 수정했다. 재빌드 후 frozen doctor 필수 항목,
   package manifest 1,825개, preflight 3/3, 10-capability service 조립이 모두 PASS했다.
 - frozen autostart가 console executable을 가리키는 결함을 추가 발견해 packaged mode에서는 정확한
-  sibling `JAVIS-Tray.exe`만 대상으로 고정했다. native Win32 tray smoke는 exit callback 1회와
+  sibling `SKILLA-Tray.exe`만 대상으로 고정했다. native Win32 tray smoke는 exit callback 1회와
   window/icon cleanup을 실제로 통과했다.
 - per-user IExpress Setup은 payload hash와 내부 manifest를 모두 검증하며 기존 설치를 덮어쓰거나
   autostart를 켜지 않는다. 최종 Setup은 259,915,776바이트이고 SHA-256은
@@ -1437,7 +1437,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
 ## 2026-10-05 Windows Credential Manager 전환
 
 - 원 계획서의 배포 요구에 맞춰 current-user generic credential의 고정 target
-  `JAVIS-PC/NVIDIA-NIM`을 쓰는 저장·조회·상태·삭제 adapter와 Credential 전용 product/preflight/tray/
+  `SKILLA-PC/NVIDIA-NIM`을 쓰는 저장·조회·상태·삭제 adapter와 Credential 전용 product/preflight/tray/
   autostart CLI를 구현했다. secret은 argv·stdout·shortcut에 포함되지 않고 create-only가 기본이며,
   읽기·쓰기·삭제 오류는 OS 예외 문자열 대신 stable code로 닫힌다.
 - NIM에 pywin32 기반 구현 초안을 요청했으나 응답이 프로젝트의 Pydantic `SecretStr` 대신 호환되지
@@ -1924,7 +1924,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   시험 초안을 요청했다. 입력 318-token, 출력 1,200-token, usage 누락 0회였다. 고정 필드와 성공
   기록 순서 방향은 채택했지만, 기존 manifest 대신 가짜 `.verified` 파일을 신뢰하고 staging을
   `%TEMP%`로 옮기며 기존 실패 코드를 바꾼 초안은 폐기했다.
-- Codex는 기존 `%LOCALAPPDATA%/JAVIS-PC` staging과 `JAVIS.exe verify-package` 계약을 보존하고,
+- Codex는 기존 `%LOCALAPPDATA%/SKILLA-PC` staging과 `SKILLA.exe verify-package` 계약을 보존하고,
   schema·version·status·code만 임시 파일에서 고정 영수증으로 이동하도록 구현했다. `SUCCESS`가
   검증과 최종 이동 뒤에만 나타나고 비밀·절대경로·가짜 검증 표식이 없음을 시험했다.
 - 새 실제 결과를 전달한 문서 초안은 입력 456-token, 출력 487-token, usage 누락 0회로 성공했다.

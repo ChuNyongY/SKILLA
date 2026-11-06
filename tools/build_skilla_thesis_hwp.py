@@ -7,9 +7,9 @@ from hwpx import HwpxDocument
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "docs" / "JAVIS_THESIS_DRAFT.md"
-REWRITTEN = ROOT / "tmp" / "JAVIS_THESIS_HWP_REWRITE.md"
-OUTPUT = ROOT / "output" / "JAVIS_스킬기반_Windows_PC에이전트_졸업논문_예시반영본_v2.hwp"
+SOURCE = ROOT / "docs" / "SKILLA_THESIS_DRAFT.md"
+REWRITTEN = ROOT / "tmp" / "SKILLA_THESIS_HWP_REWRITE.md"
+OUTPUT = ROOT / "output" / "SKILLA_스킬기반_Windows_PC에이전트_졸업논문_예시반영본_v2.hwp"
 FIGURE_DIR = ROOT / "output" / "figures"
 
 STYLE_NAMES = {
@@ -26,18 +26,18 @@ STYLE_NAMES = {
 }
 
 FIGURES_AFTER_HEADING = {
-    "3.1 전체 구조": (FIGURE_DIR / "javis_system_flow.png", "[그림 3-1] JAVIS의 전체 실행 흐름"),
-    "3.2 스킬 계약": (FIGURE_DIR / "javis_skill_structure.png", "[그림 3-2] 스킬에 저장하는 정보와 실행 시 확인하는 값"),
-    "5.1 연구 방법": (FIGURE_DIR / "javis_experiment_design.png", "[그림 5-1] 네 조건 완전 대응 블록 실험 설계"),
+    "3.1 전체 구조": (FIGURE_DIR / "skilla_system_flow.png", "[그림 3-1] SKILLA의 전체 실행 흐름"),
+    "3.2 스킬 계약": (FIGURE_DIR / "skilla_skill_structure.png", "[그림 3-2] 스킬에 저장하는 정보와 실행 시 확인하는 값"),
+    "5.1 연구 방법": (FIGURE_DIR / "skilla_experiment_design.png", "[그림 5-1] 네 조건 완전 대응 블록 실험 설계"),
 }
 
 
 METHOD_SECTION = r"""
 ### 2.4 선행 연구 방법론의 적용 범위
 
-본 연구는 선행 연구의 이름만 인용하지 않고, 각 연구에서 가져온 설계 원리와 적용하지 않은 범위를 구분하였다. 이는 기존 알고리즘 전체를 재현했다는 오해를 막고, JAVIS의 구현을 어떤 근거로 설계했는지 밝히기 위한 것이다.
+본 연구는 선행 연구의 이름만 인용하지 않고, 각 연구에서 가져온 설계 원리와 적용하지 않은 범위를 구분하였다. 이는 기존 알고리즘 전체를 재현했다는 오해를 막고, SKILLA의 구현을 어떤 근거로 설계했는지 밝히기 위한 것이다.
 
-| 선행 연구 | 가져온 방법 | JAVIS에서의 적용 | 적용하지 않은 범위 |
+| 선행 연구 | 가져온 방법 | SKILLA에서의 적용 | 적용하지 않은 범위 |
 |---|---|---|---|
 | ReAct | 관찰과 행동을 번갈아 수행 | 기능 실행 뒤 Windows 상태를 다시 읽어 다음 단계와 성공 여부를 결정 | 자유 형식 사고 과정의 저장·공개 |
 | Toolformer | 언어 모델과 외부 도구 호출의 결합 | 등록된 기능 이름, 입력 형식과 완료 조건을 계획 계약으로 검사 | 도구 사용을 학습시키는 자기지도 학습 |
@@ -47,7 +47,7 @@ METHOD_SECTION = r"""
 | OSWorld | 초기 상태 복원과 실행 결과 기반 평가 | 작업별 고정 자료를 새로 만들고 실행기와 분리된 검증기로 완료 상태를 판정 | 세 운영체제와 수백 개 과제를 포함한 전체 벤치마크 재현 |
 | AgentBench | 상호작용형 에이전트의 정량 평가 | 성공률, 실행 시간, 호출 수, 토큰 수와 사용자 확인 횟수를 함께 측정 | 여러 환경과 여러 모델을 포괄하는 원 벤치마크 재현 |
 
-따라서 JAVIS는 ReAct, Toolformer, Reflexion 또는 Voyager를 그대로 구현한 프로그램이 아니다. 관찰-행동 반복, 구조화된 기능 호출, 실패 경험의 재사용과 스킬 라이브러리라는 설계 원리를 Windows 반복 작업에 맞게 결합하였다. 평가에서는 OSWorld와 AgentBench의 실행 기반 평가 원리를 좁은 범위로 적용하였다.
+따라서 SKILLA는 ReAct, Toolformer, Reflexion 또는 Voyager를 그대로 구현한 프로그램이 아니다. 관찰-행동 반복, 구조화된 기능 호출, 실패 경험의 재사용과 스킬 라이브러리라는 설계 원리를 Windows 반복 작업에 맞게 결합하였다. 평가에서는 OSWorld와 AgentBench의 실행 기반 평가 원리를 좁은 범위로 적용하였다.
 
 """.strip()
 
@@ -93,8 +93,8 @@ EXPERIMENT_SECTION = r"""
 
 def rewrite_source(text: str) -> str:
     text = text.replace(
-        "JAVIS 연구 보고서\n\n2026년 10월",
-        "졸업논문 제출본\n\nJAVIS 연구 보고서\n\n2026년 10월",
+        "SKILLA 연구 보고서\n\n2026년 10월",
+        "졸업논문 제출본\n\nSKILLA 연구 보고서\n\n2026년 10월",
     )
     text = text.replace(
         "### 2.4 기존 JARVIS 계열과의 차이",
@@ -185,7 +185,7 @@ def restructure_like_reference(text: str) -> str:
 ## 표 목 차
 
 표 2-1 선행 연구별 방법론 적용 범위
-표 3-1 JAVIS의 구성 요소와 역할
+표 3-1 SKILLA의 구성 요소와 역할
 표 4-1 선행 연구 방법과 구현 모듈의 연결
 표 5-1 대응 실험 설계
 표 5-2 비교 조건
@@ -200,7 +200,7 @@ def restructure_like_reference(text: str) -> str:
 
 ## 그 림 목 차
 
-그림 3-1 JAVIS의 전체 실행 흐름
+그림 3-1 SKILLA의 전체 실행 흐름
 
 그림 3-2 스킬에 저장하는 정보와 실행 시 확인하는 값
 
@@ -225,7 +225,7 @@ def restructure_like_reference(text: str) -> str:
 
 {_subsection(text, '3.1 연구 질문')}
 
-2장은 도구 사용 에이전트와 실행 경험 재사용 연구를 정리한다. 3장은 JAVIS의 스킬 계약과 실행 구조를 설명하고, 4장은 실제 구현 모듈과 사용자 인터페이스를 다룬다. 5장은 비교 조건, 평가 작업, 측정 지표와 실험 결과를 제시한다. 6장은 연구 결과와 적용 범위, 후속 연구 과제를 정리한다.
+2장은 도구 사용 에이전트와 실행 경험 재사용 연구를 정리한다. 3장은 SKILLA의 스킬 계약과 실행 구조를 설명하고, 4장은 실제 구현 모듈과 사용자 인터페이스를 다룬다. 5장은 비교 조건, 평가 작업, 측정 지표와 실험 결과를 제시한다. 6장은 연구 결과와 적용 범위, 후속 연구 과제를 정리한다.
 """
 
     chapter2 = f"""## 2. 이론적 배경
@@ -255,7 +255,7 @@ def restructure_like_reference(text: str) -> str:
 
     chapter3 = f"""## 3. 시스템 설계
 
-이 장은 JAVIS의 전체 실행 구조와 스킬 계약, 실행 권한, 결과 검증과 스킬 개정 절차를 설명한다.
+이 장은 SKILLA의 전체 실행 구조와 스킬 계약, 실행 권한, 결과 검증과 스킬 개정 절차를 설명한다.
 
 ### 3.1 전체 구조
 
@@ -553,7 +553,7 @@ def build() -> Path:
     table_no = 0
     table_titles = {
         (2, 1): "선행 연구별 방법론 적용 범위",
-        (3, 1): "JAVIS의 구성 요소와 역할",
+        (3, 1): "SKILLA의 구성 요소와 역할",
         (4, 1): "선행 연구 방법과 구현 모듈의 연결",
         (5, 1): "대응 실험 설계",
         (5, 2): "비교 조건",

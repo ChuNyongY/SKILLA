@@ -4,16 +4,16 @@
 
 GitHub `jarvis-ai` 주제의 대표 구현을 그대로 복사하지 않는다. 조사한 세 프로젝트는 전용 호출어
 모델보다 클라우드 음성 인식 결과에 `jarvis`라는 문자열이 들어 있는지 확인하는 방식에 가깝다.
-JAVIS-PC는 현재의 로컬 호출어 관문을 유지하고, 한국어 맞춤 ONNX 모델을 별도 실험으로 평가한다.
+SKILLA-PC는 현재의 로컬 호출어 관문을 유지하고, 한국어 맞춤 ONNX 모델을 별도 실험으로 평가한다.
 
 ## 확인한 구현
 
-| 프로젝트·방식 | 호출어 판정 | 네트워크·개인정보 경계 | JAVIS-PC 적용 판단 |
+| 프로젝트·방식 | 호출어 판정 | 네트워크·개인정보 경계 | SKILLA-PC 적용 판단 |
 |---|---|---|---|
 | `Likhithsai2580/JARVIS` | 전체 발화를 `recognize_google`로 바꾼 뒤 `jarvis` 문자열 포함 여부 확인 | 호출어 판정 전에 발화가 Google STT로 전달됨 | 복사하지 않음 |
 | `GauravSingh9356/J.A.R.V.I.S` | 매 발화를 `recognize_google(..., language="en-in")`로 처리 | 인터넷과 외부 STT에 의존 | 복사하지 않음 |
 | `kishanrajput23/Jarvis-Desktop-Voice-Assistant` | 매 발화를 `recognize_google(..., language="en-in")`로 처리 | 인터넷과 외부 STT에 의존 | 복사하지 않음 |
-| JAVIS-PC 현재 구조 | 16 kHz 로컬 PCM → 에너지 VAD → openWakeWord ONNX → 로컬 faster-whisper | 호출어와 STT가 로컬이며 원음·인식문을 보고서에 저장하지 않음 | 구조 유지, 모델 교체 실험 |
+| SKILLA-PC 현재 구조 | 16 kHz 로컬 PCM → 에너지 VAD → openWakeWord ONNX → 로컬 faster-whisper | 호출어와 STT가 로컬이며 원음·인식문을 보고서에 저장하지 않음 | 구조 유지, 모델 교체 실험 |
 
 문자열 검사는 구현이 쉽지만 전용 호출어 검출이 아니다. 일반 대화도 먼저 STT해야 하므로 지연과
 계산 비용이 늘고, 네트워크가 끊기면 동작하지 않으며, 단순 부분 문자열 때문에 오작동 경계도 약하다.

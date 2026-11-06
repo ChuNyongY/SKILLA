@@ -60,7 +60,7 @@ PARTICIPANT_ID = "pilot01"
 ROOT_ID = "fixture"
 RELATIVE_PATH = "Study Materials"
 MARKER_NAME = ".study_marker"
-MARKER_CONTENT = b"JAVIS explorer skill study fixture\n"
+MARKER_CONTENT = b"SKILLA explorer skill study fixture\n"
 
 
 def _registry() -> CapabilityRegistry:
@@ -212,7 +212,7 @@ class ExplorerFolderConditionRunner:
             max_tokens=1_800,
         )
         with tempfile.TemporaryDirectory(
-            prefix="javis-explorer-skill-study-",
+            prefix="skilla-explorer-skill-study-",
             ignore_cleanup_errors=True,
         ) as raw:
             root = Path(raw).resolve(strict=True)
@@ -258,7 +258,7 @@ class ExplorerFolderConditionRunner:
                     ),
                     audit=InMemoryAuditSink(),
                     approvals=ApprovalTokenService(
-                        b"javis-explorer-study-approval-key-0001"
+                        b"skilla-explorer-study-approval-key-0001"
                     ),
                 ).run(plan, _policy_context)
                 verified = outcome.status is ActionStatus.SUCCEEDED
