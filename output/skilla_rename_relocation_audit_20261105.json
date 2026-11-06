@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.1",
+  "checked_at": "2026-11-07",
+  "product_name": "SKILLA",
+  "source_package": "skilla_core",
+  "command": "skilla",
+  "executable": "SKILLA.exe",
+  "ui_subtitle": "SKILL LOCAL AI AGENT",
+  "source_root": ".",
+  "latest_package": "dist/SKILLA-PC-0.1.9-release-r15",
+  "latest_package_verification": {
+    "status": "VERIFIED",
+    "version": "0.1.9",
+    "file_count": 1868,
+    "old_brand_relative_path_count": 0,
+    "stt_manifest": "models/faster-whisper-large-v3-turbo/manifest.json",
+    "stt_file_count": 14,
+    "doctor_passed": true
+  },
+  "full_test_suite": {
+    "passed": 1151,
+    "failed": 0,
+    "environment_dependent_skips": 5
+  },
+  "runtime_ui": {
+    "window_title": "SKILLA // CONTROL INTERFACE",
+    "subtitle": "SKILL LOCAL AI AGENT",
+    "microphone_frames_visible": true,
+    "reactor_live_level_visible": true,
+    "observed_level_label": "MIC 01%"
+  },
+  "voice_resilience": {
+    "stt_model": "dropbox-dash/faster-whisper-large-v3-turbo",
+    "low_confidence_rejected": true,
+    "self_tts_frames_suppressed": true,
+    "post_playback_tail_frames_suppressed": 8,
+    "capture_restart_limit": 5,
+    "realtek_status_failure_observed": true,
+    "automatic_capture_recovery_observed": true,
+    "user_spoken_review_approval_observed": true,
+    "review_flow_evidence": "evaluation/voice_review_flow_validation_20261106.json",
+    "recorded_stt_evidence": "evaluation/stt_user_audio_validation_20261107.json"
+  },
+  "intentional_legacy_read_only_inputs": [
+    "JAVIS-PC/NVIDIA-NIM",
+    "JAVIS-PC/state"
+  ],
+  "intentional_external_filename": "models/openwakeword/hey_jarvis_v0.1.onnx",
+  "external_model_in_current_package": false,
+  "github_remote_changed": true,
+  "github_remote": "https://github.com/ChuNyongY/SKILLA.git",
+  "source_folder_rename": {
+    "completed": true,
+    "active_source_root": ".",
+    "old_root_contents": 0,
+    "old_empty_root_cleanup": "PENDING_CURRENT_CODEX_WORKDIR_RELEASE"
+  }
+}

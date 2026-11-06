@@ -74,7 +74,7 @@ def evidence_for(
     started = datetime(2026, 9, 30, 1, 0, tzinfo=UTC)
     return BenchmarkEvidenceProvenance(
         run_id=run_id,
-        evaluator_id="javis-execution-evaluator",
+        evaluator_id="skilla-execution-evaluator",
         evaluator_version="1.0.0",
         declared_environment=task.environment,
         execution_environment=execution_environment,

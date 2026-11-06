@@ -49,7 +49,7 @@ class TtyInput(io.StringIO):
 
 def plan() -> WakeWordCapturePlan:
     return WakeWordCapturePlan(
-        corpus_id="ko-jarvis-smoke",
+        corpus_id="ko-skilla-smoke",
         duration_ms=1_600,
         samples=(
             WakeWordCaptureSample(sample_id="positive-01", target_present=True),
@@ -359,12 +359,12 @@ def test_console_readiness_displays_fixed_korean_capture_condition(
     [
         (
             Path("evaluation/wakeword_capture_plan.calibration.json"),
-            "ko-jarvis-local-calibration-01",
+            "ko-skilla-local-calibration-01",
             10,
         ),
         (
             Path("evaluation/wakeword_capture_plan.final-test.json"),
-            "ko-jarvis-local-final-01",
+            "ko-skilla-local-final-01",
             20,
         ),
     ],

@@ -35,7 +35,7 @@ KEY = b"snapshot-benchmark-test-key-0001"
 KEY_ID = "vm-harness-1"
 PROVIDER = "hyper-v"
 SNAPSHOT = "baseline-sha256-01"
-GUEST = "javis-evaluation-guest-01"
+GUEST = "skilla-evaluation-guest-01"
 
 
 def _snapshot_cell_and_task():  # type: ignore[no-untyped-def]

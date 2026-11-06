@@ -290,7 +290,7 @@
 - Python 전체: 843 passed, 3 skipped, line coverage 83%.
 - Ruff clean, mypy strict 128 source files.
 - Windows Hello helper build: warning 0, error 0.
-- `javis doctor`: SAPI와 optional pycaw를 포함한 15개 check PASS.
+- `skilla doctor`: SAPI와 optional pycaw를 포함한 15개 check PASS.
 - 새 wheel은 132 entry, 311,893바이트, SHA-256 `dd7012317e3667fb6caa9f02eecbbfd3eba9b39f371f393938b1e37562efffe6`이다. 빈 venv에 설치해 Vosk가 없는 기본 환경에서도 package import와 실험 CLI 등록이 성공함을 확인했다.
 - current frozen one-folder는 1,826-entry manifest exact 검증을 통과했고 package manifest SHA-256은 `ab95beca300eaf90b43a4e940dcbf588d4f16917a28fc47b36a6940efb56c087`이다. frozen 비동의 안전 종료, Credential `PRESENT`, preflight 3/3과 13-capability service `CREATED`를 재현했다. 260,386,816-byte per-user Setup SHA-256은 `cb4edd33413732c7f69fc4662c848f22c1fcee7decb2d1caeed65bfd3fd428c5`이며 sidecar와 일치한다. package와 Setup에는 Vosk 모델/native 파일, `NIM.txt`, 실제 key 일치가 0건이다. 새 Setup은 생성·감사했지만 실제 설치는 아직 실행하지 않았다. 이전 산출물의 최초 설치·manifest·preflight·autostart `ABSENT` 증거는 유지된다. console/tray/Setup은 Authenticode 미서명이므로 공개 배포 완료는 아니다.
 - 실제 local voice composition smoke: openWakeWord와 faster-whisper bundle 초기화 및 `VoicePipeline` 조립 PASS, microphone 미개방.

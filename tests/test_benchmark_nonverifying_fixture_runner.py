@@ -22,7 +22,7 @@ def test_b1_and_p1_s04_use_one_task_confirmation_without_verifier(tmp_path: Path
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-nonverifying-fixture",
+        evaluator_id="skilla-nonverifying-fixture",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.B1, ScenarioEnvironment.HOST_FIXTURE_SANDBOX): runner,

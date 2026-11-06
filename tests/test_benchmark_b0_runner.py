@@ -28,7 +28,7 @@ def test_direct_b0_runner_collects_only_mock_isolated_cells(tmp_path: Path) -> N
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-b0-mock",
+        evaluator_id="skilla-b0-mock",
         evaluator_version="1.0.0",
         runners={(StudyCondition.B0, ScenarioEnvironment.MOCK_ONLY): runner},
         environment_available={
@@ -108,7 +108,7 @@ def test_direct_b0_runner_rejects_non_b0_and_non_mock_cells(tmp_path: Path) -> N
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-b0-mock",
+        evaluator_id="skilla-b0-mock",
         evaluator_version="1.0.0",
         runners={(StudyCondition.B0, ScenarioEnvironment.MOCK_ONLY): runner},
         environment_available={environment: True for environment in ScenarioEnvironment},

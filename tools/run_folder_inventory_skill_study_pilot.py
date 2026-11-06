@@ -147,7 +147,7 @@ class FolderInventoryConditionRunner:
         self._tool_surface_sha256 = _canonical_sha256(
             [item.model_dump(mode="json") for item in self._registry.list()]
         )
-        with tempfile.TemporaryDirectory(prefix="javis-inventory-state-") as raw:
+        with tempfile.TemporaryDirectory(prefix="skilla-inventory-state-") as raw:
             root = Path(raw)
             _write_fixture(root)
             hashes = _fixture_hashes(root)
@@ -165,7 +165,7 @@ class FolderInventoryConditionRunner:
             timeout_seconds=60,
             max_tokens=1_000,
         )
-        with tempfile.TemporaryDirectory(prefix="javis-inventory-study-") as raw:
+        with tempfile.TemporaryDirectory(prefix="skilla-inventory-study-") as raw:
             root = Path(raw).resolve(strict=True)
             _write_fixture(root)
             before = _fixture_hashes(root)
@@ -193,7 +193,7 @@ class FolderInventoryConditionRunner:
                     ),
                     audit=InMemoryAuditSink(),
                     approvals=ApprovalTokenService(
-                        b"javis-inventory-study-approval-key-0001"
+                        b"skilla-inventory-study-approval-key-0001"
                     ),
                     verified_result_observer=observer,
                 ).run(plan, _policy_context)

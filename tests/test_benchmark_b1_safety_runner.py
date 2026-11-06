@@ -22,7 +22,7 @@ def test_b1_safety_baseline_records_injection_timeout_and_false_activation(
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-b1-safety",
+        evaluator_id="skilla-b1-safety",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.B1, ScenarioEnvironment.HOST_FIXTURE_SANDBOX): runner,

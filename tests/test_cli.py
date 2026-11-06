@@ -1094,7 +1094,7 @@ def test_evaluate_repcnn_wakeword_corpus_requires_pinned_local_model(
             "evaluate-repcnn-wakeword-corpus",
             "C:/corpus/manifest.json",
             "C:/corpus",
-            "C:/models/jarvis.onnx",
+            "C:/models/skilla.onnx",
             digest,
             "--threshold",
             "0.72",
@@ -1104,7 +1104,7 @@ def test_evaluate_repcnn_wakeword_corpus_requires_pinned_local_model(
     assert result == 0
     assert json.loads(capsys.readouterr().out) == {"false_rejection_rate": 0.0}
     assert observed == {
-        "model_path": Path("C:/models/jarvis.onnx"),
+        "model_path": Path("C:/models/skilla.onnx"),
         "model_sha256": digest,
         "manifest": manifest,
         "root": Path("C:/corpus"),

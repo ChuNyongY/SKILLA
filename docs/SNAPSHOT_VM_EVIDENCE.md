@@ -90,11 +90,11 @@ python -m skilla_core.cli collect-snapshot-benchmark `
   C:\absolute\benchmark-collection `
   C:\absolute\snapshot-evidence `
   C:\protected\snapshot-hmac-key.bin `
-  vm-harness-key-id hyper-v baseline-sha256-01 javis-guest-01
+  vm-harness-key-id hyper-v baseline-sha256-01 skilla-guest-01
 ```
 
 수집기는 hypervisor나 guest에 접속하지 않는다. 디렉터리의 서명된 결과를 읽고 기존
-`javis-available-conditions` evaluator 1.0.0 ledger에 검증된 셀만 추가한다. 증거가 일부만 있으면
+`skilla-available-conditions` evaluator 1.0.0 ledger에 검증된 셀만 추가한다. 증거가 일부만 있으면
 그 셀만 기록하고 나머지는 `RUNNER_UNAVAILABLE`로 유지한다. 기존 70셀 ledger에 50개가 모두 합쳐져야
 120/120이 되며, 누락 증거를 실행 결과로 만들지 않는다. `--repetitions N`은 요청 생성과 수집에서
 동일해야 하고 기존 collection의 반복 수와 달라서는 안 된다.

@@ -187,7 +187,7 @@ class FileSortConditionRunner:
         loop_status = "ERROR"
         rounds = 0
         journal_states: list[str] = []
-        with tempfile.TemporaryDirectory(prefix="javis-skill-study-") as raw_root:
+        with tempfile.TemporaryDirectory(prefix="skilla-skill-study-") as raw_root:
             root = Path(raw_root).resolve(strict=True)
             (root / "math").mkdir()
             (root / "english").mkdir()
@@ -217,7 +217,7 @@ class FileSortConditionRunner:
                     }
                 )
                 approval = CountingSandboxApproval(root)
-                tokens = ApprovalTokenService(b"javis-skill-study-approval-key-0001")
+                tokens = ApprovalTokenService(b"skilla-skill-study-approval-key-0001")
 
                 def orchestrator_factory(
                     observer: InMemoryVerifiedResultObserver,

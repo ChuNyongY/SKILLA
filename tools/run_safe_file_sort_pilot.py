@@ -154,7 +154,7 @@ def _fail(report: dict[str, object], error: Exception) -> NoReturn:
 
 
 def main() -> int:
-    root = Path(tempfile.mkdtemp(prefix="javis-file-sort-pilot-")).resolve(strict=True)
+    root = Path(tempfile.mkdtemp(prefix="skilla-file-sort-pilot-")).resolve(strict=True)
     (root / "math").mkdir()
     (root / "english").mkdir()
     (root / "math_week1.txt").write_text("algebra", encoding="utf-8")
@@ -189,7 +189,7 @@ def main() -> int:
             }
         )
         audit = InMemoryAuditSink()
-        tokens = ApprovalTokenService(b"javis-safe-pilot-approval-key-0001")
+        tokens = ApprovalTokenService(b"skilla-safe-pilot-approval-key-0001")
         broker = SandboxYellowApproval(root)
 
         def orchestrator_factory(

@@ -95,7 +95,7 @@ def test_existing_p2_runner_collects_only_exact_nominal_evidence(
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-existing-p2",
+        evaluator_id="skilla-existing-p2",
         evaluator_version="1.0.0",
         runners=runners,
         environment_available={

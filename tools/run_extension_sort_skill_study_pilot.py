@@ -217,7 +217,7 @@ class ExtensionSortConditionRunner:
         self._tool_surface_sha256 = _canonical_sha256(
             [item.model_dump(mode="json") for item in self._registry.list()]
         )
-        with tempfile.TemporaryDirectory(prefix="javis-extension-state-") as raw:
+        with tempfile.TemporaryDirectory(prefix="skilla-extension-state-") as raw:
             root = Path(raw)
             _write_fixture(root)
             state = _relative_state(root)
@@ -239,7 +239,7 @@ class ExtensionSortConditionRunner:
             timeout_seconds=60,
             max_tokens=1_800,
         )
-        with tempfile.TemporaryDirectory(prefix="javis-extension-study-") as raw:
+        with tempfile.TemporaryDirectory(prefix="skilla-extension-study-") as raw:
             root = Path(raw).resolve(strict=True)
             _write_fixture(root)
             initial_state = _relative_state(root)
@@ -262,7 +262,7 @@ class ExtensionSortConditionRunner:
                 )
                 approval = ExactExtensionSortApproval(root)
                 tokens = ApprovalTokenService(
-                    b"javis-extension-study-approval-key-0001"
+                    b"skilla-extension-study-approval-key-0001"
                 )
 
                 def orchestrator_factory(

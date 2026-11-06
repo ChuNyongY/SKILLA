@@ -39,7 +39,7 @@ hash와 달라졌는지 확인한다. 이 변화 검사는 최소 증거일 뿐 
 
 Windows foreground client GDI capture와 foreground HWND 재확인 mouse backend 코드는 구현됐고,
 pywin32 API를 모사한 테스트에서 top-down BGRA 정규화, PID/HWND 결합과 GDI handle cleanup을
-검증했다. 추가로 JAVIS가 생성한 일회성 합성 Tk client 전체만 template로 사용해 실제 GDI capture,
+검증했다. 추가로 SKILLA가 생성한 일회성 합성 Tk client 전체만 template로 사용해 실제 GDI capture,
 hash-pinned template load, exact grounding, 동일 PID/HWND mouse click, 화면 변경 postcondition을
 end-to-end로 성공 검증했다. 원래 cursor 위치를 복원하고 임시 image/template는 즉시 폐기한다.
 

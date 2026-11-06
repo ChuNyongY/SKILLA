@@ -19,6 +19,6 @@ Planner에는 등록 신원이 검증된 경우에만 `foreground_app_id` 한 �
 HWND, PID, sequence와 시각은 실행 권한이 아니다. 이 컨텍스트는 capability policy, exact-action
 approval token, process session 검증 또는 실행 직전 대상 재검사를 대체하지 않는다.
 
-현재 증거는 계약 테스트 10개와 JAVIS가 만든 일회성 합성 Tk 창에서 실제 WinEvent 포커스 수신,
+현재 증거는 계약 테스트 10개와 SKILLA가 만든 일회성 합성 Tk 창에서 실제 WinEvent 포커스 수신,
 동일 PID/HWND Vision 실행 및 화면 변화 검증이 성공한 것이다. 실제 사용자 앱의 장시간 이벤트
 운용과 포커스 폭주·세션 전환 환경은 아직 검증하지 않았다.

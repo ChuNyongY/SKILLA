@@ -1364,7 +1364,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   요청해 응답을 받았다. NIM은 B0에 verifier가 없는데도 `verifier_declared_success`가 direct outcome을
   따라야 한다고 했고, mutation 없는 suggestion의 `executed=false`를 “실행하지 않았다”로 오해했다.
   두 제안 모두 metric 계약과 충돌해 채택하지 않았다. 키 값은 출력·기록하지 않았다.
-- `javis-available-conditions` evaluator `1.0.0` 실제 수집은 P2 22, B0 4, B1 6, P1 6으로
+- `skilla-available-conditions` evaluator `1.0.0` 실제 수집은 P2 22, B0 4, B1 6, P1 6으로
   completed 38/120, environment unavailable 50, runner unavailable 32다. 38개 ledger/artifact에서
   실제 key 일치와 workspace path는 0건이다.
 - 전체 회귀는 726 passed, 3 skipped, coverage 83%, Ruff clean, mypy strict 114 source files다.
@@ -1393,7 +1393,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
   요청했다. 응답은 저장소에 없는 `PolicyEngine.none()`, `open_once()`, `launch_viewer()`,
   `cell.action_proposed`를 가정했고, B1 negative control을 early-exit 성공처럼 처리해 비교군의 약점을
   지우므로 채택하지 않았다. 키 값은 출력·기록하지 않았다.
-- 실제 `javis-available-conditions` 수집은 B0 4, B1 22, P1 22, P2 22로 completed 70/120,
+- 실제 `skilla-available-conditions` 수집은 B0 4, B1 22, P1 22, P2 22로 completed 70/120,
   environment unavailable 50, runner unavailable 0이다. 70개 ledger/artifact에서 실제 key,
   `nvapi-`, workspace path 일치는 모두 0건이고 B1/P1의 `verifier_declared_success=true`와
   `recovered=true`도 0건이다.
@@ -1437,7 +1437,7 @@ NIM 결과는 그대로 반영하지 않았다. 감사 과정에서 다음 문�
 ## 2026-10-05 Windows Credential Manager 전환
 
 - 원 계획서의 배포 요구에 맞춰 current-user generic credential의 고정 target
-  `SKILLA-PC/NVIDIA-NIM`을 쓰는 저장·조회·상태·삭제 adapter와 Credential 전용 product/preflight/tray/
+  `SKILLA/NVIDIA-NIM`을 쓰는 저장·조회·상태·삭제 adapter와 Credential 전용 product/preflight/tray/
   autostart CLI를 구현했다. secret은 argv·stdout·shortcut에 포함되지 않고 create-only가 기본이며,
   읽기·쓰기·삭제 오류는 OS 예외 문자열 대신 stable code로 닫힌다.
 - NIM에 pywin32 기반 구현 초안을 요청했으나 응답이 프로젝트의 Pydantic `SecretStr` 대신 호환되지

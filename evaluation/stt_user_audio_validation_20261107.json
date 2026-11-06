@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0-redacted",
+  "model": "dropbox-dash/faster-whisper-large-v3-turbo",
+  "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+  "device": "cpu",
+  "compute_type": "int8",
+  "sample_count": 4,
+  "passed": 4,
+  "failed": 0,
+  "samples": [
+    {
+      "id": "realtek-command-repeat-1",
+      "duration_seconds": 8.0,
+      "transcript": "스킬라, 시스템 정보 확인, 스킬라, 시스템 정보 확인, 스킬라, 시스템 정보 확인",
+      "expected_intent": "시스템 정보 확인 3회",
+      "passed": true
+    },
+    {
+      "id": "realtek-command-repeat-2",
+      "duration_seconds": 10.0,
+      "transcript": "스킬라, 내 컴퓨터 시스템 정보를 확인해 줘 스킬라, 내 컴퓨터 시스템 정보를 확인해 줘",
+      "expected_intent": "내 컴퓨터 시스템 정보 확인 2회",
+      "passed": true
+    },
+    {
+      "id": "realtek-live-command",
+      "duration_seconds": 4.0939375,
+      "transcript": "스킬라, 내 컴퓨터 시스템 정보를 확인해 줘.",
+      "expected_intent": "내 컴퓨터 시스템 정보 확인",
+      "passed": true
+    },
+    {
+      "id": "realtek-review-approval",
+      "duration_seconds": 1.35275,
+      "transcript": "예.",
+      "expected_intent": "후보 검토 승인",
+      "passed": true
+    }
+  ],
+  "privacy_note": "사용자 원음은 공개 저장소에 포함하지 않음",
+  "limitation": "한 사용자와 한 입력 장치의 네 녹음에 대한 결과이며 모든 화자·소음 환경을 보장하지 않음"
+}

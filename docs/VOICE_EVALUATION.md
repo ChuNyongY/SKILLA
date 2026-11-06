@@ -135,7 +135,7 @@ python -m skilla_core.cli calibrate-wakeword-threshold `
 python -m skilla_core.cli calibrate-repcnn-wakeword-threshold `
   C:\absolute\calibration-corpus\manifest.json `
   C:\absolute\calibration-corpus `
-  C:\absolute\model\jarvis.onnx `
+  C:\absolute\model\skilla.onnx `
   <64자리-model-sha256> `
   --far-ceiling 0.05
 ```
@@ -158,7 +158,7 @@ mono PCM의 최근 48,000표본(3초)을 보관하고 창이 찬 직후 한 번,
 python -m skilla_core.cli evaluate-repcnn-wakeword-corpus `
   C:\absolute\wake-corpus\manifest.json `
   C:\absolute\wake-corpus `
-  C:\absolute\model\jarvis.onnx `
+  C:\absolute\model\skilla.onnx `
   <64자리-model-sha256> `
   --threshold 0.7
 ```

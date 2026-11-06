@@ -75,7 +75,7 @@
 - 시작 메뉴 링크는 설치된 0.1.7 `SKILLA-Tray.exe`, 빈 인자와 정확한 작업 폴더를 가리킨다. 링크를
   실제 실행해 `SKILLA 텍스트 명령` 창과 응답 상태를 확인한 뒤 정상 종료했으며 시험 process는 남지
   않았다.
-- 별도 새 가상환경에 0.1.7 wheel과 선언된 기본 의존성을 설치해 version import와 `javis --help`를
+- 별도 새 가상환경에 0.1.7 wheel과 선언된 기본 의존성을 설치해 version import와 `skilla --help`를
   통과했다. package의 민감한 파일명과 실제 저장된 키의 정확한 byte 일치 검색은 각각 0건이다.
 - 최종 r2 Setup SHA-256은
   `a9003f4465f838b32540827ccb21e91a509e46e54ecbfdf6c94a0cd6de980228`, package manifest는
@@ -129,7 +129,7 @@
   package의 비밀 파일명·API key 형태 검색은 모두 0건이다.
 - 0.1.6 wheel SHA-256은
   `e4206deedaaa5b787b679f5be37349a3bab0035e3e58912ddc62f3a15aa7e26d`이다. 새 가상환경에
-  `--no-deps`로 설치해 version·시작 오류·화면·스킬 UI 모듈 import와 `javis --help` exit 0을 확인했다.
+  `--no-deps`로 설치해 version·시작 오류·화면·스킬 UI 모듈 import와 `skilla --help` exit 0을 확인했다.
   Setup·두 EXE는 여전히 `NotSigned`이므로 로컬 시연·제출용과 공개 배포 완료를 구분한다.
 - 0.1.6 공개 배포 감사는 package manifest와 Setup hash는 PASS, console·tray·Setup signature는
   `SIGNATURE_INVALID`로 정확히 실패했다. 현재 사용자 인증서 저장소의 private key 포함 유효 코드
@@ -184,7 +184,7 @@
   `ALREADY_VERIFIED/code=0`이었다. wheel SHA-256은
   `265ac23e1040a0e6cdaeedaa20212a94ba1f5e602fb14cb0ff7234c869693b3a`, package manifest는
   `f1cac510b26ffec41b833eb40d21ec0d583fbfdb654579536271e2b874f5611f`다. 새 wheel을 별도
-  가상환경에 설치해 시작 메뉴·텍스트 UI import와 `javis --help`를 확인했다.
+  가상환경에 설치해 시작 메뉴·텍스트 UI import와 `skilla --help`를 확인했다.
 - Codex Microsoft Store 앱 안에서 실행한 실제 설치 시험은 Windows가 `%LOCALAPPDATA%`를 앱 전용
   `LocalCache`로 가상화했다. 따라서 일반 Explorer에서 Setup을 실행한 물리 경로와 같다고 주장하지
   않는다. 다만 영수증·manifest·서비스·링크 target과 실행 process hash는 그 실제 가상화 환경 안에서
@@ -261,7 +261,7 @@
 - `dist/wheel-skill-20261016-r4/javis_pc_agent-0.1.0-py3-none-any.whl`은 149개 항목,
   368,497바이트이며 SHA-256은
   `906929d3c5a3f41a43e4d22b8ee088ad8cbe941717f0cc59447f26bfd3ffc27b`다. 새 격리 가상환경에
-  의존성과 함께 설치해 스킬 작성·검토·실행 기록 검토 모듈 import와 `javis --help`를 확인했다.
+  의존성과 함께 설치해 스킬 작성·검토·실행 기록 검토 모듈 import와 `skilla --help`를 확인했다.
 - 최신 `dist/SKILLA-PC-0.1.0-skill-20261016-r5-Setup.exe`는 260,702,208바이트이며 SHA-256은
   `819f36a116b6bd03411af98b21fcbb4fd352a9c1c1f03da72cfede83349dd289`이고 sidecar와 일치한다.
   package·wheel·Setup의 `nvapi-` 접두사 검색은 0건이며 package에서 찾은 유일한 PEM은 의존성
@@ -602,7 +602,7 @@ Chrome 자동 업데이트로 발생한 등록 해시 drift를 수정했고, 최
 
 ### 배포 사전점검
 
-- 명시적 absolute project root만 받는 privacy-minimized `javis doctor`
+- 명시적 absolute project root만 받는 privacy-minimized `skilla doctor`
 - Windows/Python/FTS5, app publisher, Hello host·파일, 두 model bundle의 무부작용 검증
 - optional dependency와 local .NET SDK를 required failure와 분리한 PASS/WARN/FAIL 계약
 - 경로·예외 원문·환경값·장치명·secret을 보고하지 않는 stable code 출력
@@ -953,7 +953,7 @@ recovery는 파일을 이동하거나 삭제하지 않고, 관찰된 상태에 �
 
 # 2026-10-20 졸업발표 자료 확인 실험 반영
 
-- 기존 13장 발표본의 구조와 디자인을 유지한 새 파일 `output/JARVIS_스킬기반_PC에이전트_졸업발표_확인실험반영_최종본_v3.pptx`를 작성하였다.
+- 기존 13장 발표본의 구조와 디자인을 유지한 새 파일 `output/SKILLA_스킬기반_PC에이전트_졸업발표_확인실험반영_최종본_v3.pptx`를 작성하였다.
 - 구현 상태를 전체 1,096개 시험 중 1,091개 통과·5개 제외, 엄격 자료형 검사 151개 파일 통과로 갱신하였다.
 - 실험 설계를 확인 실험 15개 짝 비교 묶음·60개 관측값으로 고치고, SK0 66.67%, SK1 80.00%, SK2 80.00%, SK3 93.33%의 성공률을 반영하였다.
 - SK3와 SK0 비교에서 성공률 +26.67%p, 평균 실행 시간 34.16%, 대형 언어 모델 호출 15.15%, 토큰 16.59% 감소를 표시하였다. Holm 보정 p=0.375로 유의하지 않았다는 한계를 함께 적었다.

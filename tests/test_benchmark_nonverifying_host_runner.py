@@ -45,7 +45,7 @@ def test_b1_and_p1_host_actions_are_single_pass_without_recovery(tmp_path: Path)
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-nonverifying-host",
+        evaluator_id="skilla-nonverifying-host",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.B1, ScenarioEnvironment.HOST_SAFE): runner,

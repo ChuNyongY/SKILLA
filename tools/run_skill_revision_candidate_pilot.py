@@ -147,7 +147,7 @@ class FileSortRevisionRunner:
             timeout_seconds=60,
             max_tokens=1_800,
         )
-        with tempfile.TemporaryDirectory(prefix="javis-revision-study-") as raw_root:
+        with tempfile.TemporaryDirectory(prefix="skilla-revision-study-") as raw_root:
             root = Path(raw_root).resolve(strict=True)
             (root / "math").mkdir()
             (root / "english").mkdir()
@@ -171,7 +171,7 @@ class FileSortRevisionRunner:
                     }
                 )
                 approval = CountingApproval(root)
-                tokens = ApprovalTokenService(b"javis-revision-pilot-key-material-01")
+                tokens = ApprovalTokenService(b"skilla-revision-pilot-key-material-01")
 
                 def orchestrator_factory(
                     observer: InMemoryVerifiedResultObserver,

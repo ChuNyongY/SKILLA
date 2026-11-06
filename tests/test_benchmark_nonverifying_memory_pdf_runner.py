@@ -124,7 +124,7 @@ def test_b1_and_p1_s03_execute_once_evaluate_externally_and_cleanup(tmp_path: Pa
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-nonverifying-memory-pdf",
+        evaluator_id="skilla-nonverifying-memory-pdf",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.B1, ScenarioEnvironment.HOST_FIXTURE_SANDBOX): runner,

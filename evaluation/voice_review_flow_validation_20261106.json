@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0-redacted",
+  "stt_model": "dropbox-dash/faster-whisper-large-v3-turbo",
+  "stt_revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+  "command": "시스템 정보 확인",
+  "voice_capture": {
+    "status": "TRANSCRIBED",
+    "transcript": "예.",
+    "wake_confidence": 1.0,
+    "frame_count": 14,
+    "reason": "UTTERANCE_COMPLETE"
+  },
+  "review": {
+    "kind": "REUSE",
+    "title": "컴퓨터 시스템 정보 확인",
+    "response": "SKILL_REVIEW_RESPONSE_ACCEPTED"
+  },
+  "final": {
+    "state": "IDLE",
+    "event_type": "TASK_COMPLETED",
+    "reason": "ALL_ACTIONS_VERIFIED",
+    "completed_actions": 1,
+    "feedback_delivered": true,
+    "skill_trace_recorded": true,
+    "skill_use_recorded": true,
+    "capability_id": "system.info.read"
+  },
+  "privacy_note": "원음, 사용자 경로와 컴퓨터 이름은 저장소에 포함하지 않음",
+  "passed": true
+}

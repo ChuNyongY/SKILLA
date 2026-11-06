@@ -20,7 +20,7 @@ def test_p1_safety_controls_record_safe_failure_and_negative_controls(tmp_path: 
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-p1-safety",
+        evaluator_id="skilla-p1-safety",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.P1, ScenarioEnvironment.HOST_FIXTURE_SANDBOX): runner,

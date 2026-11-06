@@ -70,7 +70,7 @@ completed 70, ready 0, snapshot VM 부재로 environment unavailable 50, runner 
 이는 일부 실제 실행 증거이지 완전한 작업 성공률이나 P2 성능 결과가 아니다.
 
 수집 중 Windows wall-clock 해상도로 매우 짧은 trial의 시작·완료가 같은 결함을 발견했다. 시계 역행은
-계속 거부하고 동률만 monotonic elapsed time으로 최소 1µs 보정한다. `javis-available-conditions`
+계속 거부하고 동률만 monotonic elapsed time으로 최소 1µs 보정한다. `skilla-available-conditions`
 evaluator `1.0.0`의 70개 ledger hash/content/assertion binding과 동일 readiness를 재검증했다.
 전체 회귀는 737 passed, 3 skipped, line coverage 83%, Ruff clean, mypy strict 121개 source file이다. 합성 passing runner는
 테스트 계약 검증에만 사용했고 실제 성능 관찰로 저장하지 않았다.

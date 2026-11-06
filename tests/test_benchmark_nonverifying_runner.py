@@ -28,7 +28,7 @@ def test_b1_and_p1_mock_runner_preserves_condition_semantics(tmp_path: Path) -> 
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-nonverifying-mock",
+        evaluator_id="skilla-nonverifying-mock",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.B1, ScenarioEnvironment.MOCK_ONLY): runner,

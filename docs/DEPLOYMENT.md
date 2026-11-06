@@ -53,7 +53,7 @@ python -m skilla_core.cli preflight-product-host-credential `
   (Resolve-Path .\config\product_host.json).Path
 ```
 
-운영 기본값은 현재 사용자 Windows Credential Manager의 고정 target `SKILLA-PC/NVIDIA-NIM`이다.
+운영 기본값은 현재 사용자 Windows Credential Manager의 고정 target `SKILLA/NVIDIA-NIM`이다.
 `nim-credential-status`는 `PRESENT`/`ABSENT`만 출력하고, `remove-nim-credential`은 이 고정 target만
 삭제한다. 기존 `NIM.txt` 경로는 마이그레이션·복구 호환용이며 저장소나 wheel에는 포함하지 않는다.
 두 preflight 모두 bounded key 형식, strict product config와 전체 doctor를 검사하며 마이크를 열지 않는다.
@@ -72,7 +72,7 @@ python tools\vision_smoke.py
 python -m pip wheel . --no-deps --wheel-dir dist
 ```
 
-wheel은 Python core와 `javis` entry point를 배포한다. PC별 `config`, 모델 bundle, native helper
+wheel은 Python core와 `skilla` entry point를 배포한다. PC별 `config`, 모델 bundle, native helper
 managed 파일은 wheel에 내장하지 않고 명시적 project root 아래에서 별도 hash 검증한다. 따라서
 wheel만 복사하면 완전한 실행 환경이 되지 않으며, doctor가 모두 PASS한 원본 배포 디렉터리가
 필요하다.

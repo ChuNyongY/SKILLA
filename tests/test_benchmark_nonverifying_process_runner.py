@@ -101,7 +101,7 @@ def test_b1_and_p1_s01_launch_once_and_cleanup_exact_window(tmp_path: Path) -> N
         scenarios,
         (tmp_path / "collection").resolve(),
         repetitions_per_condition=1,
-        evaluator_id="javis-nonverifying-process",
+        evaluator_id="skilla-nonverifying-process",
         evaluator_version="1.0.0",
         runners={
             (StudyCondition.B1, ScenarioEnvironment.HOST_SAFE): runner,

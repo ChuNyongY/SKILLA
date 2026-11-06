@@ -160,7 +160,9 @@ SK3는 SK0과 비교해 평균 실행 시간이 34.2%, 평균 토큰이 16.6% �
 - 실제 음성 UI: Realtek 발화로 저장 스킬 후보 검토 화면까지 표시, 미응답 시 자동 취소 확인
 - 실제 음성 승인: 녹음된 사용자 `예.`를 large-v3-turbo가 전사하고 기존 스킬 검토 응답으로
   수락, 1개 동작 실행과 독립 검증 완료
-- 음성 승인 근거: `output/voice_review_flow_validation_20261106.json`
+- 음성 승인 근거: `evaluation/voice_review_flow_validation_20261106.json`
+- 실제 사용자 음성 4개 확인: 명령 반복 2개, 실시간 명령 1개, 후보 승인 1개를 모두 의도대로 전사
+  (`evaluation/stt_user_audio_validation_20261107.json`)
 - 전체 회귀 테스트: 전부 통과, 환경 의존 시험 5개 건너뜀
 - 실제 결과 근거: `output/voice_skill_end_to_end_20261105.json`
 - 이름·경로 변경 근거: `output/skilla_rename_relocation_audit_20261105.json`

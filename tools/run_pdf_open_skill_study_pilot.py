@@ -172,7 +172,7 @@ class PdfOpenConditionRunner:
         self._tool_surface_sha256 = _canonical_sha256(
             [item.model_dump(mode="json") for item in self._registry.list()]
         )
-        with tempfile.TemporaryDirectory(prefix="javis-pdf-state-") as raw:
+        with tempfile.TemporaryDirectory(prefix="skilla-pdf-state-") as raw:
             fixture = Path(raw) / PDF_NAME
             _write_minimal_pdf(fixture)
             digest = _file_sha256(fixture)
@@ -189,7 +189,7 @@ class PdfOpenConditionRunner:
         metrics = None
         evidence_plan: dict[str, object] = {"accepted": False}
         with tempfile.TemporaryDirectory(
-            prefix="javis-pdf-skill-study-",
+            prefix="skilla-pdf-skill-study-",
             ignore_cleanup_errors=True,
         ) as raw_root:
             root = Path(raw_root).resolve(strict=True)
@@ -232,7 +232,7 @@ class PdfOpenConditionRunner:
                     ),
                     audit=InMemoryAuditSink(),
                     approvals=ApprovalTokenService(
-                        b"javis-pdf-study-approval-key-0001"
+                        b"skilla-pdf-study-approval-key-0001"
                     ),
                 ).run(plan, _policy_context)
                 verified = outcome.status is ActionStatus.SUCCEEDED
