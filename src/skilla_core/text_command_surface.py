@@ -117,10 +117,15 @@ def run_tk_text_command(
     from tkinter import messagebox, ttk
 
     presenter = TextCommandPresenter(runtime)
-    root = tk.Tk()
+    parent = getattr(tk, "_default_root", None)
+    owns_root = parent is None
+    root = tk.Tk() if owns_root else tk.Toplevel(parent)
     root.title("SKILLA 텍스트 명령")
     root.geometry("760x430")
     root.minsize(680, 390)
+    if parent is not None:
+        root.transient(parent)
+        root.grab_set()
     frame = ttk.Frame(root, padding=16)
     frame.pack(fill="both", expand=True)
     ttk.Label(frame, text="실행할 작업을 한국어로 입력하세요.").pack(anchor="w")
@@ -154,7 +159,13 @@ def run_tk_text_command(
     submit_button.pack(side="left")
     stop_button = ttk.Button(buttons, text="현재 작업 중지", command=stop)
     stop_button.pack(side="left", padx=(8, 0))
-    ttk.Button(buttons, text="닫기", command=root.destroy).pack(side="right")
+    def close() -> None:
+        if parent is not None:
+            root.grab_release()
+        root.destroy()
+
+    ttk.Button(buttons, text="닫기", command=close).pack(side="right")
+    root.protocol("WM_DELETE_WINDOW", close)
 
     optional_actions = (
         ("스킬 관리", review_skills, _SKILL_REVIEW_FAILED),
@@ -207,7 +218,10 @@ def run_tk_text_command(
 
     refresh()
     entry.focus_set()
-    root.mainloop()
+    if owns_root:
+        root.mainloop()
+    else:
+        parent.wait_window(root)
 
 
 def invoke_surface_action(

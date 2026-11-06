@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "recorded_at": "2026-11-05",
+  "release": "dist/SKILLA-PC-0.1.9-release-r6",
+  "follow_up_release": "dist/SKILLA-PC-0.1.9-release-r11",
+  "package": {
+    "status": "VERIFIED",
+    "file_count": 1870,
+    "manifest_sha256": "601380b5e059f2ed1f86ad1d2c482f1af4208ec6d058b303eab84638a9b37c02"
+  },
+  "microphone": {
+    "device_index": 1,
+    "device_name": "마이크(Realtek(R) Audio)",
+    "sample_seconds": 10.0,
+    "sample_rate": 16000,
+    "peak": 7703,
+    "difference_rms_max": 603.2603112483393,
+    "frames_at_or_above_vad_threshold": 52,
+    "vad_threshold": 80,
+    "queue_frames": 256,
+    "queue_seconds": 20.48,
+    "wav_sha256": "70b831ef8ae7a9808b6bb04e702264a20480761af7127a09f23541643ffd8eeb"
+  },
+  "stt": {
+    "model": "dropbox-dash/faster-whisper-large-v3-turbo",
+    "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+    "device": "cpu",
+    "compute_type": "int8",
+    "inference_seconds": 5.388,
+    "transcript": "스킬라, 내 컴퓨터 시스템 정보를 확인해 줘 스킬라, 내 컴퓨터 시스템 정보를 확인해 줘",
+    "report_sha256": "269c9317bb8f5bfacccd287815e377c06326fa88c8a10afbf88a7d954b31eb8c"
+  },
+  "live_ui": {
+    "input_detected_label_observed": true,
+    "recognized_transcript_observed": "스킬라, 컴퓨터 시스템 정보를 확인해줘.",
+    "capture_remained_running_after_transcription": true,
+    "reuse_review_observed": true,
+    "reuse_review_title": "시스템 기본 정보 조회 및 요약 표시",
+    "spoken_approval_observed": false,
+    "spoken_approval_note": "검토 화면은 실제 음성으로 열렸으나 사용자 응답 전에 안전 시간 초과로 취소됨"
+  },
+  "new_skill_run": {
+    "review_kind": "REGISTER",
+    "review_visible_seconds": 21.281,
+    "review_accepted": true,
+    "execution_started_seconds": 30.297,
+    "completed_seconds": 34.047,
+    "last_reason": "ALL_ACTIONS_VERIFIED",
+    "completed_actions": 1,
+    "feedback_delivered": true,
+    "skill_trace_recorded": true,
+    "skill_use_recorded": true
+  },
+  "reuse_run": {
+    "review_kind": "REUSE",
+    "review_visible_seconds": 0.25,
+    "review_accepted": true,
+    "execution_started_seconds": 7.0,
+    "completed_seconds": 10.766,
+    "last_reason": "ALL_ACTIONS_VERIFIED",
+    "completed_actions": 1,
+    "feedback_delivered": true,
+    "skill_trace_recorded": true,
+    "skill_use_recorded": true
+  },
+  "registered_skill": {
+    "skill_id": "829147e1-6f1c-4ed9-963d-28a3ca35564d",
+    "key": "system-information-check",
+    "version": 1,
+    "status": "VERIFIED",
+    "allowed_capabilities": [
+      "system.info.read"
+    ]
+  },
+  "automated_regression": {
+    "pytest_status": "PASSED",
+    "skipped_environment_dependent_tests": 5
+  },
+  "follow_up_voice_resilience": {
+    "self_tts_guard_implemented": true,
+    "post_tts_tail_frames": 8,
+    "capture_restart_limit": 5,
+    "temporary_realtek_capture_failure_observed": true,
+    "automatic_recovery_observed": true,
+    "user_spoken_approval_still_required": true
+  }
+}

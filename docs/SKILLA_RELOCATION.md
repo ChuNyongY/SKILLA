@@ -35,9 +35,8 @@ Windows 가상환경 안의 `skilla.exe` 같은 설치 명령에는 설치 당�
 
 검증: `tests/test_source_relocation.py`에서 다른 이름의 한글·공백 포함 폴더로 소스를
 복사하고, 무관한 작업 폴더에서 설정 파일과 격리 보조 프로세스 로딩을 확인했다
-또한 2026-11-05에 완성된 `dist/SKILLA-PC-0.1.9-release-r9` 배포본을
-프로젝트 바깥의 `C:\Users\YongE\Desktop\SKILLA-RELOCATION-TEST-20261105`로
-복사하여 실제 실행했다. 실행 프로세스의 경로와 창 제목에는 이전 명칭이 없었고,
+또한 2026-11-05에 배포본을 프로젝트 바깥의 임시 폴더로 복사하여 실제 실행했다.
+실행 프로세스의 경로와 창 제목에는 이전 명칭이 없었고,
 `SKILLA.exe verify-package <새 위치>`에서 1,868개 파일의 무결성 검사가 통과했다.
 같은 새 위치에서 Doctor 검사는 Windows, Python, SQLite, 앱 목록, 승인 도우미,
 Whisper large-v3-turbo, Supertonic 3, 마이크·오디오 관련 의존성을 모두 통과했다.
@@ -54,17 +53,15 @@ Whisper large-v3-turbo, Supertonic 3, 마이크·오디오 관련 의존성을 �
 
 GitHub에서 실제 이름을 바꾼 다음에는 로컬 Git의 원격 주소를 새 주소로 갱신하고
 `git remote -v`로 확인한다. 저장소 이름 변경과 PC 폴더 이름 변경은 별개다
-현재 원격 저장소는 `https://github.com/ChuNyongY/JARVIS.git`이며 이 작업에서는
-변경하지 않았다. GitHub에서 저장소 이름을 먼저 `SKILLA`로 변경한 다음 아래 명령으로
-로컬 원격 주소를 갱신한다.
+현재 원격 저장소는 `https://github.com/ChuNyongY/SKILLA.git`이며, 로컬 원격 주소도
+같은 주소를 사용한다. 다른 복제본에 과거 주소가 남아 있다면 아래 명령으로 갱신한다.
 
 ```powershell
 git remote set-url origin https://github.com/ChuNyongY/SKILLA.git
 git remote -v
 ```
 
-원격 저장소가 실제로 바뀌기 전에 위 주소를 먼저 적용하면 `git fetch`와 `git push`가
-실패할 수 있다.
+`git remote -v`의 fetch와 push 주소가 모두 SKILLA 저장소인지 확인한다.
 
 ## 보존한 과거 명칭
 

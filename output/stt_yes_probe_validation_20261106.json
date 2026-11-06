@@ -1,0 +1,11 @@
+{
+  "model": "dropbox-dash/faster-whisper-large-v3-turbo",
+  "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+  "device": "cpu",
+  "compute_type": "int8",
+  "wav_sha256": "1842c2da4901489cfb8505428ede9fa548eac1ee4819302cbdf36c28a16534fa",
+  "sample_seconds": 1.35275,
+  "load_seconds": 7.622,
+  "inference_seconds": 5.12,
+  "transcript": "예."
+}

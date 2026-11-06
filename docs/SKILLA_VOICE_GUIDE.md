@@ -100,6 +100,19 @@ SKILLA가 스피커로 안내하는 동안에는 그 소리가 다시 마이크 
 - 오인식 방지: 낮은 Whisper 신뢰도·높은 무음 확률 차단과 유사 호출어 오탐 시험 통과
 - 실제 UI: 말하는 동안 `마이크 입력 감지됨 · 호출어 확인 중`, 이후 인식 문장을 화면에 표시
 - 실제 복구: 스피커 재생 중 Realtek 입력 스트림 상태 오류 뒤 입력 프레임이 0부터 다시 증가하고 음성 감지 상태로 복귀
-- 미완료: 실제 사용자 목소리의 후보 검토 `예` 승인, 여러 거리·소음 조건의 반복 정확도와 여러 사용자의 음성 출력 청취 평가
+- 실제 음성 승인: 사용자가 녹음한 `예.`를 같은 large-v3-turbo·VAD 파이프라인에 넣어
+  `SKILL_REVIEW_RESPONSE_ACCEPTED` → 기존 스킬 실행 → `ALL_ACTIONS_VERIFIED`까지 확인
+- 미완료: 여러 거리·소음 조건의 반복 정확도와 여러 사용자의 음성 출력 청취 평가
+
+실제 제품 구성으로 음성 승인 흐름을 다시 확인하는 명령
+
+```powershell
+.\.venv\Scripts\python.exe tools\validate_voice_review_flow.py . `
+  config\product_host.json output\skilla_live_voice_yes_probe_20261105.wav `
+  --command "시스템 정보 확인" --report output\voice_review_flow_validation.json
+```
+
+보고서의 `passed=true`만으로 모든 환경의 인식률을 보장하지 않는다. 이 검증은 녹음된 실제 사용자
+발화가 검토 응답으로 처리되고, 실행 결과가 독립 검증까지 도달했음을 재현한다.
 
 현재 결과로 모든 발음을 오류 없이 인식한다고 보장하거나 이전 모델 대비 정확도 향상률을 주장할 수 없다
