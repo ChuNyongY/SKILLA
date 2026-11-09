@@ -1,0 +1,95 @@
+{
+  "complete_blocks": 15,
+  "conditions": [
+    {
+      "condition": "SK0_NO_SKILL",
+      "mean_elapsed_ms": 18782.733333333334,
+      "mean_llm_calls": 2.2,
+      "mean_run_cost_microunits": 0.0,
+      "mean_tokens": 3759.5333333333333,
+      "mean_user_interventions": 0.3333333333333333,
+      "observations": 15,
+      "success_ci95_high": 0.8482367556028526,
+      "success_ci95_low": 0.41713547738519774,
+      "success_rate": 0.6666666666666666,
+      "successes": 10
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "mean_elapsed_ms": 18614.2,
+      "mean_llm_calls": 2.466666666666667,
+      "mean_run_cost_microunits": 0.0,
+      "mean_tokens": 4268.866666666667,
+      "mean_user_interventions": 0.6,
+      "observations": 15,
+      "success_ci95_high": 0.9295245065301844,
+      "success_ci95_low": 0.5481455128483065,
+      "success_rate": 0.8,
+      "successes": 12
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "mean_elapsed_ms": 25741.733333333334,
+      "mean_llm_calls": 3.0,
+      "mean_run_cost_microunits": 0.0,
+      "mean_tokens": 5680.866666666667,
+      "mean_user_interventions": 0.5333333333333333,
+      "observations": 15,
+      "success_ci95_high": 0.9295245065301844,
+      "success_ci95_low": 0.5481455128483065,
+      "success_rate": 0.8,
+      "successes": 12
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "mean_elapsed_ms": 12367.0,
+      "mean_llm_calls": 1.8666666666666667,
+      "mean_run_cost_microunits": 0.0,
+      "mean_tokens": 3135.6666666666665,
+      "mean_user_interventions": 1.0,
+      "observations": 15,
+      "success_ci95_high": 0.9881331045067315,
+      "success_ci95_low": 0.7018347012621998,
+      "success_rate": 0.9333333333333333,
+      "successes": 14
+    }
+  ],
+  "success_comparisons": [
+    {
+      "baseline": "SK0_NO_SKILL",
+      "baseline_fail_comparator_success": 4,
+      "baseline_success_comparator_fail": 0,
+      "baseline_successes": 10,
+      "comparator": "SK3_REVISED_SKILL",
+      "comparator_successes": 14,
+      "holm_adjusted_p_value": 0.375,
+      "paired_blocks": 15,
+      "raw_p_value": 0.125,
+      "success_rate_delta": 0.26666666666666666
+    },
+    {
+      "baseline": "SK1_STORED_INSTRUCTION",
+      "baseline_fail_comparator_success": 3,
+      "baseline_success_comparator_fail": 1,
+      "baseline_successes": 12,
+      "comparator": "SK3_REVISED_SKILL",
+      "comparator_successes": 14,
+      "holm_adjusted_p_value": 1.0,
+      "paired_blocks": 15,
+      "raw_p_value": 0.625,
+      "success_rate_delta": 0.13333333333333333
+    },
+    {
+      "baseline": "SK2_INITIAL_SKILL",
+      "baseline_fail_comparator_success": 3,
+      "baseline_success_comparator_fail": 1,
+      "baseline_successes": 12,
+      "comparator": "SK3_REVISED_SKILL",
+      "comparator_successes": 14,
+      "holm_adjusted_p_value": 1.0,
+      "paired_blocks": 15,
+      "raw_p_value": 0.625,
+      "success_rate_delta": 0.13333333333333333
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "absolute_path_emitted": false,
+  "condition": "SK1_STORED_INSTRUCTION",
+  "fixture_marker_hash_unchanged": true,
+  "folder_process_window_verified": true,
+  "nim_metrics": {
+    "input_tokens": 1155,
+    "output_tokens": 186,
+    "requests": 1,
+    "responses_without_usage": 0,
+    "successful_requests": 1
+  },
+  "participant_id": "developer10",
+  "plan": {
+    "accepted": true,
+    "capability_id": "explorer.folder.open",
+    "step_count": 1,
+    "target_binding_matches": true
+  },
+  "reason": "ALL_ACTIONS_VERIFIED",
+  "repetition": 2,
+  "schema_version": "1.0",
+  "succeeded": true,
+  "task_id": "explorer-folder-open",
+  "verified_window_closed": true,
+  "window_content_emitted": false,
+  "window_handle_emitted": false
+}

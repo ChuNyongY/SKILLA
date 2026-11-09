@@ -280,7 +280,7 @@ class TkSkillReviewView:
             owns_mainloop = not has_parent
         except tk.TclError as error:
             raise RuntimeError("tkinter skill review could not start") from error
-        configure_window(root, title=title, geometry="1120x760", minsize=(980, 680))
+        configure_window(root, title=title, geometry="1120x700", minsize=(980, 640))
         outer = tk.Frame(root, bg=COLORS["bg"], padx=20, pady=16)
         outer.pack(fill="both", expand=True)
         header(outer, system_code="SYSTEM // SKILL MEMORY", heading="스킬 관리")
@@ -321,29 +321,50 @@ class TkSkillReviewView:
         self._listbox.pack(side="left", fill="both", expand=True)
         list_scroll.pack(side="right", fill="y")
 
-        label(right, "선택한 스킬", color=COLORS["muted"], size=10, bold=True).pack(
+        label(right, "선택한 스킬 요약", color=COLORS["muted"], size=10, bold=True).pack(
             fill="x", pady=(0, 8)
         )
-        self._detail = tk.Text(
-            right,
-            wrap="word",
-            state="disabled",
-            bg=COLORS["panel_alt"],
-            fg=COLORS["text"],
-            insertbackground=COLORS["cyan"],
-            selectbackground="#0b4b5e",
-            highlightbackground=COLORS["line"],
-            highlightthickness=1,
-            relief="flat",
-            font=("맑은 고딕", 11),
-            padx=14,
-            pady=12,
-            height=15,
+        summary = tk.Frame(right, bg=COLORS["panel_alt"])
+        summary.pack(fill="both", expand=True)
+        self._skill_title = tk.StringVar(value="스킬을 선택하세요")
+        self._skill_meta = tk.StringVar(value="상태와 버전")
+        label(summary, textvariable=self._skill_title, color=COLORS["cyan"], size=22, bold=True).pack(
+            fill="x", padx=14, pady=(10, 2)
         )
-        detail_scroll = tk.Scrollbar(right, command=self._detail.yview)
-        self._detail.configure(yscrollcommand=detail_scroll.set)
-        self._detail.pack(side="left", fill="both", expand=True)
-        detail_scroll.pack(side="right", fill="y")
+        label(summary, textvariable=self._skill_meta, color=COLORS["warning"], size=11, bold=True).pack(
+            fill="x", padx=14, pady=(0, 8)
+        )
+        cards = tk.Frame(summary, bg=COLORS["panel_alt"])
+        cards.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        for column in range(2):
+            cards.grid_columnconfigure(column, weight=1, uniform="skill-summary")
+        for row in range(3):
+            cards.grid_rowconfigure(row, weight=1, uniform="skill-summary")
+        self._summary_vars: dict[str, tk.StringVar] = {}
+        specs = (
+            ("호출 표현", "triggers"),
+            ("작업 절차", "procedure"),
+            ("매번 바뀌는 입력", "inputs"),
+            ("판단 기준", "decisions"),
+            ("완료 확인", "verification"),
+            ("허용 기능", "capabilities"),
+        )
+        for index, (card_title, key) in enumerate(specs):
+            card = tk.Frame(
+                cards,
+                bg=COLORS["panel"],
+                highlightbackground=COLORS["line"],
+                highlightthickness=1,
+                padx=10,
+                pady=8,
+            )
+            card.grid(row=index // 2, column=index % 2, sticky="nsew", padx=5, pady=5)
+            label(card, card_title, color=COLORS["cyan"], size=10, bold=True).pack(fill="x")
+            variable = tk.StringVar(value="-")
+            value_label = label(card, textvariable=variable, size=10)
+            value_label.configure(wraplength=320, justify="left")
+            value_label.pack(fill="both", expand=True, pady=(5, 0))
+            self._summary_vars[key] = variable
 
         self._notice = tk.StringVar(value="스킬 초안을 불러오고 있습니다.")
         label(
@@ -400,13 +421,22 @@ class TkSkillReviewView:
                 selected_index = index
         if selected_index is not None:
             self._listbox.selection_set(selected_index)
-        self._detail.configure(state="normal")
-        self._detail.delete("1.0", "end")
         if display.selected is None:
-            self._detail.insert("end", "왼쪽 목록에서 검토할 스킬을 선택하세요.")
+            self._skill_title.set("왼쪽에서 스킬을 선택하세요")
+            self._skill_meta.set("작업 방법과 완료 기준을 한눈에 확인합니다")
+            for variable in self._summary_vars.values():
+                variable.set("-")
         else:
-            self._detail.insert("end", _format_detail(display.selected))
-        self._detail.configure(state="disabled")
+            selected = display.selected
+            status = "사용 가능" if selected.status is SkillStatus.VERIFIED else "승인 전 초안"
+            self._skill_title.set(selected.title)
+            self._skill_meta.set(f"{status}  ·  버전 {selected.version}  ·  {selected.key}")
+            self._summary_vars["triggers"].set(" / ".join(selected.triggers) or "없음")
+            self._summary_vars["procedure"].set("  →  ".join(selected.procedure) or "없음")
+            self._summary_vars["inputs"].set(" / ".join(selected.dynamic_inputs) or "없음")
+            self._summary_vars["decisions"].set("\n".join(selected.decision_rules) or "없음")
+            self._summary_vars["verification"].set("\n".join(selected.verification_rules) or "없음")
+            self._summary_vars["capabilities"].set(" / ".join(selected.allowed_capabilities) or "없음")
         self._notice.set(display.notice)
         if display.mutation_enabled:
             self._approve_button.configure(state="normal")

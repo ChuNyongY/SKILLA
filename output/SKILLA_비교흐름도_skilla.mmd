@@ -1,0 +1,10 @@
+flowchart TB
+ A([사용자 요청]) --> B{관련 스킬?}
+ B -- 있음 --> C[스킬 재사용]
+ B -- 없음 --> D[새 계획 생성]
+ C --> E[현재 값 확인]
+ D --> E
+ E --> F[공통 하네스<br/>승인·실행·검증]
+ F --> G([결과·버전 기록])
+ G -. 승인 후 재사용 .-> B
+ classDef default fill:#ffffff,stroke:#007F83,color:#193346,stroke-width:2px;

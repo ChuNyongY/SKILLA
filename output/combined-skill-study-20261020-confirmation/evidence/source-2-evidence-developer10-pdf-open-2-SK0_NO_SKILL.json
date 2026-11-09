@@ -1,0 +1,24 @@
+{
+  "condition": "SK0_NO_SKILL",
+  "new_window_closed": false,
+  "nim_metrics": {
+    "input_tokens": 2687,
+    "output_tokens": 775,
+    "requests": 2,
+    "responses_without_usage": 0,
+    "successful_requests": 2
+  },
+  "participant_id": "developer10",
+  "path_emitted": false,
+  "pdf_hash_unchanged": false,
+  "plan": {
+    "accepted": false
+  },
+  "reason": "PLANNERERROR",
+  "repetition": 2,
+  "schema_version": "1.0",
+  "succeeded": false,
+  "task_id": "pdf-open",
+  "viewer_verified": false,
+  "window_content_emitted": false
+}

@@ -10,9 +10,11 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import tempfile
 import time
 import wave
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 from scipy.signal import resample_poly
@@ -20,6 +22,7 @@ from scipy.signal import resample_poly
 from skilla_core.always_on_runtime import AlwaysOnState
 from skilla_core.credential_store import load_nim_credential
 from skilla_core.product_service import build_windows_product_service_with_secret_loader
+from skilla_core.skill_runtime import SkillStatus
 from skilla_core.stt_bundle import load_stt_bundle
 from skilla_core.voice import AudioFrame
 
@@ -67,6 +70,9 @@ def main() -> int:
     parser.add_argument("config", type=Path)
     parser.add_argument("approval_wav", type=Path)
     parser.add_argument("--command", default="시스템 정보 확인")
+    parser.add_argument("--request-wav", type=Path)
+    parser.add_argument("--isolated-state", action="store_true")
+    parser.add_argument("--expected-review-kind", choices=("REGISTER", "REUSE"))
     parser.add_argument("--timeout-seconds", type=float, default=60.0)
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
@@ -74,11 +80,33 @@ def main() -> int:
     root = args.project_root.resolve(strict=True)
     config = args.config.resolve(strict=True)
     approval_wav = args.approval_wav.resolve(strict=True)
-    service = build_windows_product_service_with_secret_loader(
-        root,
-        config,
-        load_nim_credential,
+    request_wav = args.request_wav.resolve(strict=True) if args.request_wav else None
+    isolated = (
+        tempfile.TemporaryDirectory(prefix="skilla-voice-flow-state-")
+        if args.isolated_state else None
     )
+    state_patch = (
+        patch(
+            "skilla_core.product_service.prepare_product_state_directory",
+            return_value=Path(isolated.name).resolve(strict=True),
+        )
+        if isolated is not None else None
+    )
+    try:
+        if state_patch is not None:
+            state_patch.start()
+        service = build_windows_product_service_with_secret_loader(
+            root,
+            config,
+            load_nim_credential,
+        )
+    except Exception:
+        if isolated is not None:
+            isolated.cleanup()
+        raise
+    finally:
+        if state_patch is not None:
+            state_patch.stop()
     runtime = service.runtime.runtime
     pipeline = service.voice.pipeline
     stt_bundle = load_stt_bundle(service.configuration.stt_manifest)
@@ -88,9 +116,23 @@ def main() -> int:
         "stt_revision": stt_bundle.source_revision,
         "command": args.command,
         "approval_wav": approval_wav.name,
+        "request_wav": request_wav.name if request_wav is not None else None,
+        "isolated_state": isolated is not None,
     }
     try:
-        started = runtime.submit_text(args.command)
+        if request_wav is None:
+            started = runtime.submit_text(args.command)
+        else:
+            request_capture = None
+            for frame in _load_frames(
+                request_wav,
+                frame_ms=service.configuration.settings.microphone_frame_ms,
+            ):
+                request_capture = pipeline.feed(frame) or request_capture
+            if request_capture is None:
+                raise RuntimeError("request audio did not produce a voice capture")
+            report["request_voice_capture"] = request_capture.model_dump(mode="json")
+            started = runtime.submit_capture(request_capture)
         report["start_event"] = started.model_dump(mode="json")
         review_snapshot = _wait_for_review(runtime, args.timeout_seconds)
         review = review_snapshot.skill_review
@@ -118,14 +160,33 @@ def main() -> int:
         runtime.wait_for_idle(timeout_seconds=30.0)
         final = runtime.status_snapshot()
         report["final"] = final.model_dump(mode="json")
+        verified_skills = service.skills.list(status=SkillStatus.VERIFIED, limit=20)
+        report["verified_skills"] = [
+            {
+                "key": skill.key,
+                "title": skill.title,
+                "version": skill.version,
+                "status": skill.status.value,
+                "allowed_capabilities": list(skill.allowed_capabilities),
+            }
+            for skill in verified_skills
+        ]
+        expected_kind_matches = (
+            args.expected_review_kind is None
+            or review.kind.value == args.expected_review_kind
+        )
         report["passed"] = bool(
-            response.reason == "SKILL_REVIEW_RESPONSE_ACCEPTED"
+            expected_kind_matches
+            and response.reason == "SKILL_REVIEW_RESPONSE_ACCEPTED"
             and final.state is AlwaysOnState.IDLE
             and final.last_reason == "ALL_ACTIONS_VERIFIED"
             and final.completed_actions >= 1
+            and (args.expected_review_kind != "REGISTER" or len(verified_skills) == 1)
         )
     finally:
         runtime.close()
+        if isolated is not None:
+            isolated.cleanup()
 
     serialized = json.dumps(report, ensure_ascii=False, indent=2)
     if args.report is not None:

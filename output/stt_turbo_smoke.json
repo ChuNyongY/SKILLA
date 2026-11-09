@@ -1,0 +1,11 @@
+{
+  "model": "Whisper large-v3-turbo",
+  "device": "cpu",
+  "compute_type": "int8",
+  "sample_kind": "synthetic TTS, not microphone",
+  "reference": "스킬라입니다. 요청한 작업을 마쳤어요.",
+  "transcript": "스킬라입니다. 요청한 작업을 마쳤어요.",
+  "load_seconds": 11.039,
+  "inference_seconds": 5.729,
+  "sample_seconds": 3.370875
+}

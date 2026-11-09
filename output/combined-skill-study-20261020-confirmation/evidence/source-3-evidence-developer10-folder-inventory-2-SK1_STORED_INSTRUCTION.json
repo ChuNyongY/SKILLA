@@ -1,0 +1,26 @@
+{
+  "condition": "SK1_STORED_INSTRUCTION",
+  "expected_name_count": 3,
+  "file_contents_emitted": false,
+  "fixture_hashes_unchanged": true,
+  "nim_metrics": {
+    "input_tokens": 2496,
+    "output_tokens": 539,
+    "requests": 2,
+    "responses_without_usage": 0,
+    "successful_requests": 2
+  },
+  "participant_id": "developer10",
+  "path_emitted": false,
+  "plan": {
+    "accepted": true,
+    "capability_id": "file.list",
+    "step_count": 1,
+    "target_binding_matches": true
+  },
+  "reason": "EXACT_INVENTORY_VERIFIED",
+  "repetition": 2,
+  "schema_version": "1.0",
+  "succeeded": true,
+  "task_id": "folder-inventory"
+}

@@ -29,3 +29,9 @@ output/~$*
 state/
 .env
 NIM.txt
+.build/
+node_modules/
+native/**/publish-*/
+release/
+tmp/
+*.wav

@@ -7,7 +7,7 @@
   "executable": "SKILLA.exe",
   "ui_subtitle": "SKILL LOCAL AI AGENT",
   "source_root": ".",
-  "latest_package": "dist/SKILLA-PC-0.1.9-release-r15",
+  "latest_package": "dist/SKILLA-PC-0.1.9-release-r16",
   "latest_package_verification": {
     "status": "VERIFIED",
     "version": "0.1.9",
@@ -15,10 +15,14 @@
     "old_brand_relative_path_count": 0,
     "stt_manifest": "models/faster-whisper-large-v3-turbo/manifest.json",
     "stt_file_count": 14,
-    "doctor_passed": true
+    "doctor_passed": true,
+    "system_info_smoke": "ALL_ACTIONS_VERIFIED",
+    "skilla_exe_sha256": "289ec2b2e41f805aadbd6e94ad9da017137cd0aabbbae09a608f4332ee469f21",
+    "skilla_tray_exe_sha256": "fe406fe91424b54245a5611aa5b9a6bb003d6c2b8f5ee02e131701cbebd2f5ae",
+    "package_manifest_sha256": "5f8e33426ab78a57acbd89112bec01148cb703ddfc0288c8b7251d0575f6fb53"
   },
   "full_test_suite": {
-    "passed": 1151,
+    "passed": 1152,
     "failed": 0,
     "environment_dependent_skips": 5
   },
@@ -39,7 +43,9 @@
     "automatic_capture_recovery_observed": true,
     "user_spoken_review_approval_observed": true,
     "review_flow_evidence": "evaluation/voice_review_flow_validation_20261106.json",
-    "recorded_stt_evidence": "evaluation/stt_user_audio_validation_20261107.json"
+    "recorded_stt_evidence": "evaluation/stt_user_audio_validation_20261107.json",
+    "new_skill_voice_registration_observed": true,
+    "new_skill_voice_evidence": "evaluation/voice_new_skill_registration_validation_20261107.json"
   },
   "intentional_legacy_read_only_inputs": [
     "JAVIS-PC/NVIDIA-NIM",

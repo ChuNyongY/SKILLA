@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
+import sys
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID
 
 from skilla_core.always_on_runtime import AlwaysOnState
+from skilla_core.cyber_theme import COLORS, button, configure_window, footer, header, label, panel
 from skilla_core.skill_review_surface import (
     SkillDraftDetail,
     SkillDraftSummary,
@@ -27,6 +31,87 @@ from skilla_core.verified_result_surface import run_tk_verified_result
 SKILL_ID = UUID("00000000-0000-4000-8000-000000000101")
 TRACE_ID = UUID("00000000-0000-4000-8000-000000000201")
 NOW = datetime(2026, 11, 5, 9, 0, tzinfo=UTC)
+THIS_SCRIPT = Path(__file__).resolve()
+
+
+def preview_showcase() -> None:
+    """Open a screenshot-friendly launcher for every implemented SKILLA UI."""
+    import tkinter as tk
+
+    root = tk.Tk()
+    configure_window(
+        root,
+        title="SKILLA 실제 구현 UI 촬영 모드",
+        geometry="1180x800",
+        minsize=(1080, 720),
+    )
+    outer = tk.Frame(root, bg=COLORS["bg"], padx=24, pady=18)
+    outer.pack(fill="both", expand=True)
+    header(
+        outer,
+        system_code="SYSTEM // UI SHOWCASE",
+        heading="실제 구현 UI 촬영 모드",
+    )
+    footer(outer)
+    label(
+        outer,
+        "각 버튼은 포스터 시안 이미지가 아니라 SKILLA가 실제로 사용하는 UI 코드를 실행합니다.",
+        color=COLORS["muted"],
+        size=11,
+    ).pack(fill="x", pady=(0, 14))
+
+    grid = tk.Frame(outer, bg=COLORS["bg"])
+    grid.pack(fill="both", expand=True)
+    for column in range(3):
+        grid.grid_columnconfigure(column, weight=1, uniform="ui-card")
+    for row in range(2):
+        grid.grid_rowconfigure(row, weight=1, uniform="ui-card")
+
+    screens = (
+        ("idle", "1  요청 대기", "음성·텍스트 명령을 기다리는 기본 화면", COLORS["cyan"]),
+        ("planning", "2  요청 분석과 계획", "명령을 분석하고 관련 스킬과 실행 순서를 표시", COLORS["warning"]),
+        ("executing", "3  승인된 작업 실행", "현재 실행 단계와 즉시 중지 기능을 함께 표시", COLORS["success"]),
+        ("result", "4  실제 결과 검증", "파일·프로그램의 실제 상태를 다시 확인한 결과", COLORS["success"]),
+        ("skills", "5  스킬 관리와 승인", "작업 절차·판단 기준·완료 조건과 버전을 검토", COLORS["cyan"]),
+        ("trace", "6  스킬 개정 후보", "실패·예외 기록을 근거로 다음 버전 초안을 검토", COLORS["warning"]),
+    )
+
+    children: list[subprocess.Popen[bytes]] = []
+
+    def launch(screen: str) -> None:
+        children.append(
+            subprocess.Popen(
+                [sys.executable, str(THIS_SCRIPT), screen],
+                cwd=str(THIS_SCRIPT.parents[1]),
+            )
+        )
+
+    for index, (screen, title, description, accent) in enumerate(screens):
+        card = panel(grid, alternate=(index % 2 == 1), padx=18, pady=16)
+        card.grid(
+            row=index // 3,
+            column=index % 3,
+            sticky="nsew",
+            padx=8,
+            pady=8,
+        )
+        label(card, title, color=accent, size=15, bold=True).pack(fill="x", pady=(0, 12))
+        label(card, description, color=COLORS["text"], size=10).pack(
+            fill="both", expand=True, anchor="nw"
+        )
+        open_button = button(card, "실제 화면 열기", color=accent, width=18)
+        open_button.configure(command=lambda value=screen: launch(value))
+        open_button.pack(fill="x", pady=(14, 0))
+
+    label(
+        outer,
+        "촬영 순서  요청 대기 → 계획 → 실행 → 결과 검증 → 스킬 관리 → 개정 후보",
+        color=COLORS["cyan"],
+        size=10,
+        bold=True,
+        anchor="center",
+    ).pack(fill="x", pady=(14, 0))
+    root.mainloop()
 
 
 def preview_status(state: AlwaysOnState) -> None:
@@ -181,10 +266,24 @@ def preview_result() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="SKILLA UI를 안전한 예시 데이터로 미리 봅니다.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "실제 SKILLA UI 코드에 안전한 시연 데이터를 넣어 실행합니다. "
+            "포스터 캡처에도 같은 화면을 사용합니다."
+        )
+    )
     parser.add_argument(
         "screen",
-        choices=("idle", "planning", "executing", "closed", "skills", "trace", "result"),
+        choices=(
+            "showcase",
+            "idle",
+            "planning",
+            "executing",
+            "closed",
+            "skills",
+            "trace",
+            "result",
+        ),
     )
     args = parser.parse_args()
     states = {
@@ -193,7 +292,9 @@ def main() -> None:
         "executing": AlwaysOnState.EXECUTING,
         "closed": AlwaysOnState.CLOSED,
     }
-    if args.screen in states:
+    if args.screen == "showcase":
+        preview_showcase()
+    elif args.screen in states:
         preview_status(states[args.screen])
     elif args.screen == "skills":
         preview_skills()

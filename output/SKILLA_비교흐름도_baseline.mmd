@@ -1,0 +1,7 @@
+flowchart TB
+ A([사용자 요청]) --> B[매번 계획 생성]
+ B --> C[현재 대상 확인]
+ C --> D[공통 하네스<br/>승인·실행·검증]
+ D --> E([결과 기록])
+ E -. 다음 요청 .-> B
+ classDef default fill:#ffffff,stroke:#1768AE,color:#193346,stroke-width:2px;

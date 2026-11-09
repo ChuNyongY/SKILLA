@@ -1,0 +1,541 @@
+{
+  "complete_blocks": 15,
+  "evidence": [
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-1-evidence-developer10-file-sort-1-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "e7d02df1d283a7e6d4cb10fbdfb60691b9ee84dc9fcd04e69614197ed541f5cd",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-1-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "5682481fe65382a5d89ec86a7cc8692752556f194ee7f249394ac18a9bfc581a",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-1-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "6f8a22d53c370ce3f7032c8528c8fae1a1e05c84387688564d659eecbd3b04a5",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-1-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "77125ce84a7daaf34611979d5185c42e5c039c3621985a6cd3124c03c60a5256",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-2-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "a6feafad88192d0d83e0ca2c6b964d2bbe8e765fed26036c5b3666f8805b2e13",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-2-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "1b987bb5edad871ba89865bb11c7c82d61e164d422d781b22acadc7d33e069be",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-2-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "f9b8a3b95c3f0491b99b8ea6b981374f4d675c00eb808094765374e0b2a6bfe2",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-1-evidence-developer10-file-sort-2-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "59fa29b97b9b894aa942dfd5531387a569fdea62069a4867f359dca9662ee27c",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-3-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "d0703c2a2c22050c73ad830839a16666270ea35c8ad5701a573933a41485d594",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-3-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "01f63898f8f00e12af862200f03d2c287372dcf28c95e81bb40ad2438ad3806d",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-1-evidence-developer10-file-sort-3-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "5d5118f941755cc6f6c21c98f228196e08136318f08ac66cab2e1c9d8fe89029",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-1-evidence-developer10-file-sort-3-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "5a2abdf3657c3237ac07e1bc3ccd622696e7b194018e3fca24473a0bcf36da4d",
+      "task_id": "file-sort"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-1-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "18eb3655b2147a0e3fde75f576e84214aad2ba3c815ed099f4397231aeb1fbc7",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-1-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "4dfea2dee097510ec73bbda10191c3474f6470fefc5853718d38eef5b3c02eba",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-1-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "4e496777d01135abc9fc12d25a25aa8c8c9838e970cd72ba87d2200a2c6af947",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-1-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "20e47ef43be70e7678fc8ff6a804d33d22a3820b4ce167d9f17825aa68284746",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-2-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "9b80cc3bf5793145c8c665fb22df4771896699c2668ce29bdae91000ca1828de",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-2-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "e05458af16c2c8fa2fe1aeb038194261743b0c14e990f791c9998c71862bb13e",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-2-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "2e1f92bc7a0c060bbfa57170aab17d6aaae9a908579229ba3dc390a4e5cc4424",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-2-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "359e631bcbb5c55ab1fd0822938c964f7d76a85f0fd9f78765cb3367ee7208d8",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-3-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "90636c43588389a198f284fd999743e4ec7686582e44ee525948a7d78d68a60c",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-3-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "b8c043f29f4f1e76f885803b3c6457b8254e48d6484d0b2d3bad7e619db35552",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-3-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "fc2276e4898fa803320130416fabe224c83cf270a16677cb151b280384a47b30",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-2-evidence-developer10-pdf-open-3-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "caf67d2b7d7f2ee70a57d140616adb2db4c741c7e648cfc68c67e535dab7f760",
+      "task_id": "pdf-open"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-1-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "6ad0794f783f1ae1a10a01825f260d5b3a1f13844f2e050ecb9fb71f00c43249",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-1-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "6205aed2355f2aa27583d0f7e1075637f7687c682ba0ff52d0350b16957bf94b",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-1-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "36524e9c81cfb8e96ef749ee6b4671cbe0531f9b0713c173b57598be2312c812",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-1-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "13746cb97217d6fca2a6d863935f4dec7b31add26d7d02d41ff8e9a316967617",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-2-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "6f36e09a19c9658112d0bcf00604a8e38c9e53dc2c4d1cf4ebfe69e30f88ec86",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-2-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "d21f8bd222aac783a117ea6a764cec385c90bbc46a6d4e0d501ebe2f959a39d7",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-2-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "84240becdb10e5b2c9539b07d810cdeb3e55b7630d896c7bf89f6cd8fbb9b218",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-2-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "8a6c61449edba1f54ee48e8770fa8aa7189d7e6e16df05e400eb335179213484",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-3-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "b10d39d03cd0679cda9203b4e3057b4a753c3623f063926935915f5744b11b47",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-3-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "232f34d0ecef4530843b6a95f3f9f434755cd93daa1bef8dd31e99a37ac72c98",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-3-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "8d36c43f8aedb8570bfa8ed8622135da1d71576ebd8d0d4447e57fb1c342755a",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-3-evidence-developer10-folder-inventory-3-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "62a5215901a1042ec8f6e796dee35dc54fe74be72e430ad0948065c485ecdeec",
+      "task_id": "folder-inventory"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-1-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "fc3e75d41c84a692a959596ac3046da468cf8b77e435843d56de9d480a972812",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-1-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "5cf4901ca9b124455fbd2b395a8156b63ec13d2f7cf6204fd5c5efb615c8c5b7",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-1-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "dcee2e88562b4b3034adec2d216a8a161445c8f51aee1df9588adb98731c47e4",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-1-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "1f743c67197d445accc0a991d0be768db2d3263ee5b7a1e74824fad27a120b8f",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-2-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "89be14fa550bd8765e551f6faba269b489b6a6621e88a13803ebddfff22e6f31",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-2-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "5dc1d50b55c83f8bd141a1a4ba4fbf6147fdf9255e41f5fe855e54bfb14ffe9c",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-2-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "7ff6d601310a54c60b3a7ace657760dff42a1efcef2a5a72c72017429ea2089e",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-2-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "f520305f960ae2c355e84b5c58f14b22031e4f78004cc14b4f0d8b4bcbc9c6ae",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-3-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "fc546f21353ce297ab37b6ffbc5c7bc5f61b7f01964506e0f27724d7d82a8940",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-3-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "6a6a33eb03b6c9e492bebf4d337e13601a97f6431f3068584340286ef85a6927",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-3-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "4d612a27a59cf768e7948754a2fae41467a87f51c7ae3d891cc2b9d453b5bbfe",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-4-evidence-developer10-extension-sort-3-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "118e195fa16bfeb26be8e9d4b08a1084e6bc198ebf96d8a2aee529f4efbbd631",
+      "task_id": "extension-sort"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-1-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "492bc854fc702bd6fecfa0871849cf615db11b4134e17bb6a96e516d02543313",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-1-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "740b3fd659e1bd6c37c96374548d4e86f9e6896cd40c635e0f7eed18abb9807e",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-1-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "41547de1334b02ac72761d5d290233e676b70b8382375c108904ee71d2aca593",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-1-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 1,
+      "sha256": "7e279b1da7f9cf4d615540de329fc21fb9bff70f7863d58d98a7c08edc8f6ca9",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-2-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "424ee112668a1d87442e1244eb2d0a9cfd727d7e38c068168dd18680cfdca78c",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-2-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "60dec075504fd4e74710664f31cfa034a4ac13e3872cc132943238747d20855e",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-2-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "4adab334cc1bcd31f79a4a52ba0924801dd3071fc54eb79058926a88356c43dc",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-2-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 2,
+      "sha256": "a8c85bda43ef2f1a6497deb24156be6c2e6ac2808c89e33a4f1db5318278ed76",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK3_REVISED_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-3-SK3_REVISED_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "7440355d353837e01b066b735beaec99caba170edae0c3b96fed46ca43714bdb",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK0_NO_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-3-SK0_NO_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "8df6ab24ae11aaebbddec3bf5ddae37aa773015e919a381ab0bf30b12c6b3ee6",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK1_STORED_INSTRUCTION",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-3-SK1_STORED_INSTRUCTION.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "d029e5cf269f7b5edb3104ce768eb9967addcf71cd42086b226699f264e870aa",
+      "task_id": "explorer-folder-open"
+    },
+    {
+      "condition": "SK2_INITIAL_SKILL",
+      "file": "evidence/source-5-evidence-developer10-explorer-folder-open-3-SK2_INITIAL_SKILL.json",
+      "participant_id": "developer10",
+      "repetition": 3,
+      "sha256": "76dc2e7790d1fa1e910a3a57b91315fabaa0ae6eea6d977bfdec5e22bf47e826",
+      "task_id": "explorer-folder-open"
+    }
+  ],
+  "observations": 60,
+  "schema_version": 1,
+  "scope": "5-task developer pilot; heterogeneous descriptive statistics, not a general performance claim",
+  "sha256": {
+    "observations": "9fbc4c4a9fd05b173d11801b1db3f48725df60cbab8424df2c1dc3f5e73ac209",
+    "report": "84b5480bdbe0e33bf1827323cf69f481c094acddc216a5b7d5787239a97c9d1e"
+  },
+  "sources": [
+    {
+      "observations": 12,
+      "observations_sha256": "b8b66d513977fe463c5defdbf0a86c4768dbbca384c4624ab9dc3a7e5077bed8",
+      "source_index": 1,
+      "tasks": [
+        "file-sort"
+      ]
+    },
+    {
+      "observations": 12,
+      "observations_sha256": "1b2f31c884632ba2ca84a53a2668610306cfae93a69583ab10579861447fc7e3",
+      "source_index": 2,
+      "tasks": [
+        "pdf-open"
+      ]
+    },
+    {
+      "observations": 12,
+      "observations_sha256": "fb67ab2ef29394edbdd86360595aa71cb99ac47ea9817f4208b803be6d59a345",
+      "source_index": 3,
+      "tasks": [
+        "folder-inventory"
+      ]
+    },
+    {
+      "observations": 12,
+      "observations_sha256": "8884c6035fe383aafe36539d1078348005c838d01fdca452bbd9ff16d7b09eb9",
+      "source_index": 4,
+      "tasks": [
+        "extension-sort"
+      ]
+    },
+    {
+      "observations": 12,
+      "observations_sha256": "cd9793fdf4f9463271b81040963f557fc7c44530755f094f286299acdf7c4dd0",
+      "source_index": 5,
+      "tasks": [
+        "explorer-folder-open"
+      ]
+    }
+  ],
+  "tasks": [
+    "explorer-folder-open",
+    "extension-sort",
+    "file-sort",
+    "folder-inventory",
+    "pdf-open"
+  ]
+}

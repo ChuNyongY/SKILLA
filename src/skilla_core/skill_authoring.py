@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 from pydantic import Field, ValidationError, model_validator
 
 from .models import FrozenModel, Plan
+from .planner import PlannerError
 from .skill_runtime import (
     LocalSkillCatalog,
     SkillOutcome,
@@ -106,20 +107,26 @@ class SkillDraftAuthor:
                 "supported fields, hardware data, actions, or arguments outside these contracts."
             ),
         }
-        response = self._transport.complete(
-            self._system_prompt(), json.dumps(evidence, ensure_ascii=False),
-        )
+        prompt = json.dumps(evidence, ensure_ascii=False)
+        response: str | None = None
         try:
+            response = self._transport.complete(self._system_prompt(), prompt)
             proposal = self._parse(response)
-        except SkillAuthoringError:
+        except (PlannerError, SkillAuthoringError):
             if self._max_repair_attempts == 0:
                 raise
-            repair = json.loads(self._repair_prompt(response))
-            repair["original_plan_constraints"] = evidence
-            repaired = self._transport.complete(
-                self._system_prompt(), json.dumps(repair, ensure_ascii=False),
-            )
-            proposal = self._parse(repaired)
+            try:
+                if response is None:
+                    repaired = self._transport.complete(self._system_prompt(), prompt)
+                else:
+                    repair = json.loads(self._repair_prompt(response))
+                    repair["original_plan_constraints"] = evidence
+                    repaired = self._transport.complete(
+                        self._system_prompt(), json.dumps(repair, ensure_ascii=False),
+                    )
+                proposal = self._parse(repaired)
+            except (PlannerError, SkillAuthoringError):
+                proposal = self._fallback_plan_proposal(plan, capabilities)
         if set(proposal.allowed_capabilities) != set(capabilities):
             raise SkillAuthoringError("proposal changed the planned capability surface")
         if capabilities == ("system.info.read",):
@@ -128,6 +135,47 @@ class SkillDraftAuthor:
                 update={"key": "system-information-check", "dynamic_inputs": ()}
             )
         return proposal
+
+    @staticmethod
+    def _fallback_plan_proposal(
+        plan: Plan,
+        capabilities: tuple[str, ...],
+    ) -> SkillProposal:
+        """Create a reviewable, non-authoritative description from the exact plan."""
+        goal = _bounded_text(plan.goal, "요청한 작업", 400)
+        key_material = json.dumps(
+            {"goal": goal, "capabilities": capabilities},
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        dynamic_inputs = tuple(dict.fromkeys(
+            f"실행 시점의 {argument_key} 입력 값"
+            for step in plan.steps
+            for argument_key in step.arguments
+        ))[:20]
+        return SkillProposal(
+            key=f"plan-{hashlib.sha256(key_material).hexdigest()[:16]}",
+            title=_bounded_text(f"{goal} 절차", "요청한 작업 절차", 120),
+            description=(
+                "검증된 현재 계획의 작업 순서와 완료 조건을 저장해 다음 요청에서 "
+                "다시 검토하는 절차입니다."
+            ),
+            triggers=(goal,),
+            procedure=tuple(
+                _bounded_text(step.purpose, f"{step.capability_id} 단계 수행", 400)
+                for step in plan.steps
+            ),
+            dynamic_inputs=dynamic_inputs,
+            decision_rules=(
+                "실행할 때 현재 대상과 입력 값을 다시 확인한다.",
+                "계획에 없는 기능이나 작업은 추가하지 않는다.",
+            ),
+            verification_rules=(
+                "각 단계가 선언한 완료 조건을 실행 뒤 독립적으로 다시 확인한다.",
+            ),
+            allowed_capabilities=capabilities,
+        )
 
     def draft_initial(self, trace: SkillExecutionTrace) -> SkillDraftArtifact:
         if trace.outcome is not SkillOutcome.SUCCEEDED:
@@ -278,3 +326,8 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
 
 def _reject_json_constant(value: str) -> None:
     raise ValueError(f"invalid JSON constant: {value}")
+
+
+def _bounded_text(value: str, fallback: str, limit: int) -> str:
+    normalized = " ".join(value.replace("\0", " ").split()).strip()
+    return (normalized or fallback)[:limit]

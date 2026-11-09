@@ -291,10 +291,10 @@ class TkStatusView:
         ).pack(side="left")
         tk.Label(
             header,
-            text="SKILL LOCAL AI AGENT",
+            text="반복작업 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
             bg=colors["bg"],
             fg=colors["muted"],
-            font=("Consolas", 8),
+            font=("맑은 고딕", 8),
         ).pack(side="left", padx=(16, 0), pady=(10, 0))
         self._system_code = tk.Label(
             header,
@@ -436,6 +436,17 @@ class TkStatusView:
             bg=colors["panel_alt"],
             fg=colors["cyan"],
             font=("맑은 고딕", 10, "bold"),
+            anchor="w",
+            justify="left",
+            wraplength=440,
+        ).pack(fill="x", pady=(5, 0))
+
+        tk.Label(
+            data_panel,
+            text="호출어 감지: 기본 openWakeWord · Hermes는 비교 실험용이며 현재 제품 음성 경로에는 미연결",
+            bg=colors["panel_alt"],
+            fg=colors["muted"],
+            font=("맑은 고딕", 8),
             anchor="w",
             justify="left",
             wraplength=440,

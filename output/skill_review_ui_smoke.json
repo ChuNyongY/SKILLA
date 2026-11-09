@@ -1,0 +1,15 @@
+{
+  "state": "CLOSED",
+  "last_reason": "RUNTIME_CLOSED",
+  "completed_actions": 0,
+  "stored_skills": 1,
+  "microphone_used": false,
+  "speaker_used": false,
+  "terminal_outcomes": [
+    {
+      "event": "TASK_COMPLETED",
+      "reason": "ALL_ACTIONS_VERIFIED",
+      "completed_actions": 1
+    }
+  ]
+}

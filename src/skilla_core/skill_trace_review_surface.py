@@ -553,7 +553,7 @@ class TkSkillTraceReviewView:
             root = tk.Tk()
         except tk.TclError as error:
             raise RuntimeError("tkinter trace review could not start") from error
-        configure_window(root, title=title, geometry="1160x800", minsize=(1020, 700))
+        configure_window(root, title=title, geometry="1160x720", minsize=(1020, 660))
         outer = tk.Frame(root, bg=COLORS["bg"], padx=20, pady=16)
         outer.pack(fill="both", expand=True)
         header(outer, system_code="SYSTEM // REVIEW REQUIRED", heading="스킬 개정 후보 검토")
@@ -597,29 +597,48 @@ class TkSkillTraceReviewView:
         self._listbox.configure(yscrollcommand=list_scroll.set)
         self._listbox.pack(side="left", fill="both", expand=True)
         list_scroll.pack(side="right", fill="y")
-        label(right, "실행 기록과 개정 근거", color=COLORS["muted"], size=10, bold=True).pack(
+        label(right, "실행 기록과 개정 근거 요약", color=COLORS["muted"], size=10, bold=True).pack(
             fill="x", pady=(0, 8)
         )
-        self._detail = tk.Text(
-            right,
-            wrap="word",
-            state="disabled",
-            bg=COLORS["panel_alt"],
-            fg=COLORS["text"],
-            insertbackground=COLORS["cyan"],
-            selectbackground="#0b4b5e",
-            highlightbackground=COLORS["line"],
-            highlightthickness=1,
-            relief="flat",
-            font=("맑은 고딕", 11),
-            padx=14,
-            pady=12,
-            height=13,
+        summary = tk.Frame(right, bg=COLORS["panel_alt"])
+        summary.pack(fill="both", expand=True)
+        self._trace_title = tk.StringVar(value="실행 기록을 선택하세요")
+        self._trace_meta = tk.StringVar(value="성공 여부와 개정 근거")
+        label(summary, textvariable=self._trace_title, color=COLORS["cyan"], size=21, bold=True).pack(
+            fill="x", padx=14, pady=(10, 2)
         )
-        detail_scroll = tk.Scrollbar(right, command=self._detail.yview)
-        self._detail.configure(yscrollcommand=detail_scroll.set)
-        self._detail.pack(side="left", fill="both", expand=True)
-        detail_scroll.pack(side="right", fill="y")
+        label(summary, textvariable=self._trace_meta, color=COLORS["warning"], size=11, bold=True).pack(
+            fill="x", padx=14, pady=(0, 8)
+        )
+        cards = tk.Frame(summary, bg=COLORS["panel_alt"])
+        cards.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+        for column in range(2):
+            cards.grid_columnconfigure(column, weight=1, uniform="trace-summary")
+        for row in range(2):
+            cards.grid_rowconfigure(row, weight=1, uniform="trace-summary")
+        self._trace_vars: dict[str, tk.StringVar] = {}
+        specs = (
+            ("실행 단계", "steps"),
+            ("매번 바뀌는 입력", "inputs"),
+            ("판단·예외 근거", "decisions"),
+            ("완료 검증", "verification"),
+        )
+        for index, (card_title, key) in enumerate(specs):
+            card = tk.Frame(
+                cards,
+                bg=COLORS["panel"],
+                highlightbackground=COLORS["line"],
+                highlightthickness=1,
+                padx=10,
+                pady=8,
+            )
+            card.grid(row=index // 2, column=index % 2, sticky="nsew", padx=5, pady=5)
+            label(card, card_title, color=COLORS["cyan"], size=10, bold=True).pack(fill="x")
+            variable = tk.StringVar(value="-")
+            value_label = label(card, textvariable=variable, size=10)
+            value_label.configure(wraplength=350, justify="left")
+            value_label.pack(fill="both", expand=True, pady=(5, 0))
+            self._trace_vars[key] = variable
         self._notice = tk.StringVar(value="실행 기록을 불러오고 있습니다.")
         label(outer, textvariable=self._notice, color=COLORS["warning"], size=10).pack(
             fill="x", pady=(8, 0)
@@ -681,15 +700,26 @@ class TkSkillTraceReviewView:
                 selected_index = index
         if selected_index is not None:
             self._listbox.selection_set(selected_index)
-        self._detail.configure(state="normal")
-        self._detail.delete("1.0", "end")
-        self._detail.insert(
-            "end",
-            _format_detail(display.selected)
-            if display.selected is not None
-            else "왼쪽 목록에서 검토할 실행 기록을 선택하세요.",
-        )
-        self._detail.configure(state="disabled")
+        if display.selected is None:
+            self._trace_title.set("왼쪽에서 실행 기록을 선택하세요")
+            self._trace_meta.set("성공 여부와 개정 근거를 한눈에 확인합니다")
+            for variable in self._trace_vars.values():
+                variable.set("-")
+        else:
+            selected = display.selected
+            outcome = "성공" if selected.outcome is SkillOutcome.SUCCEEDED else "확인 필요"
+            self._trace_title.set(selected.goal_summary)
+            self._trace_meta.set(f"{outcome}  ·  {selected.step_count}단계  ·  개정 후보")
+            self._trace_vars["steps"].set(
+                "\n".join(
+                    f"{step.sequence}. {step.capability_id} · {'검증' if step.independently_verified else '미검증'}"
+                    for step in selected.steps
+                )
+                or "없음"
+            )
+            self._trace_vars["inputs"].set(" / ".join(selected.dynamic_input_labels) or "없음")
+            self._trace_vars["decisions"].set("\n".join(selected.decision_notes) or "없음")
+            self._trace_vars["verification"].set("\n".join(selected.verification_notes) or "없음")
         self._notice.set(display.notice)
         revision_values = ["새 스킬의 최초 검토 대기 초안 생성"]
         revision_values.extend(

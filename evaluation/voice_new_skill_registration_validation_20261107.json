@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0-redacted",
+  "stt_model": "dropbox-dash/faster-whisper-large-v3-turbo",
+  "stt_revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+  "isolated_state": true,
+  "request_voice_capture": {
+    "status": "TRANSCRIBED",
+    "transcript": "내 컴퓨터 시스템 정보를 확인해줘.",
+    "wake_confidence": 1.0,
+    "frame_count": 45,
+    "reason": "UTTERANCE_COMPLETE"
+  },
+  "review": {
+    "kind": "REGISTER",
+    "title": "시스템 기본 정보 조회 및 표시"
+  },
+  "approval_voice_capture": {
+    "status": "TRANSCRIBED",
+    "transcript": "예.",
+    "frame_count": 14,
+    "reason": "UTTERANCE_COMPLETE"
+  },
+  "review_response": "SKILL_REVIEW_RESPONSE_ACCEPTED",
+  "registered_skill": {
+    "key": "system-information-check",
+    "version": 1,
+    "status": "VERIFIED",
+    "allowed_capabilities": [
+      "system.info.read"
+    ]
+  },
+  "final": {
+    "state": "IDLE",
+    "event_type": "TASK_COMPLETED",
+    "reason": "ALL_ACTIONS_VERIFIED",
+    "completed_actions": 1,
+    "feedback_delivered": true,
+    "skill_trace_recorded": true,
+    "skill_use_recorded": true
+  },
+  "privacy_note": "원음, 사용자 경로, 컴퓨터 이름과 임시 검토 식별자는 저장소에 포함하지 않음",
+  "passed": true
+}

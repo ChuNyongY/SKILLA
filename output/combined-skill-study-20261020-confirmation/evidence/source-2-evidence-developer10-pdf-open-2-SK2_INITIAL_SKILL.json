@@ -1,0 +1,27 @@
+{
+  "condition": "SK2_INITIAL_SKILL",
+  "new_window_closed": true,
+  "nim_metrics": {
+    "input_tokens": 1268,
+    "output_tokens": 296,
+    "requests": 1,
+    "responses_without_usage": 0,
+    "successful_requests": 1
+  },
+  "participant_id": "developer10",
+  "path_emitted": false,
+  "pdf_hash_unchanged": true,
+  "plan": {
+    "accepted": true,
+    "capability_id": "file.open",
+    "step_count": 1,
+    "target_binding_matches": true
+  },
+  "reason": "ALL_ACTIONS_VERIFIED",
+  "repetition": 2,
+  "schema_version": "1.0",
+  "succeeded": true,
+  "task_id": "pdf-open",
+  "viewer_verified": true,
+  "window_content_emitted": false
+}

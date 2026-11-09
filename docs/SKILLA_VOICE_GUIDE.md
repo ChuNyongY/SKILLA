@@ -58,6 +58,11 @@ SKILLA가 스피커로 안내하는 동안에는 그 소리가 다시 마이크 
 작업 완료 여부는 실행 후 검사하며 실패 기록도 보존한다
 실행 도중 관찰 결과에 따라 후속 계획을 만드는 작업의 스킬 등록·개선 흐름은 추가 검증 중이다
 
+새 스킬 설명을 만드는 NIM 호출이 두 번 모두 실패하면 전체 작업을 곧바로 실행하지 않는다
+하네스가 이미 검증된 계획의 기능·순서·완료 조건만으로 제한된 후보 설명을 만들고 같은 사용자
+검토 화면을 표시한다. 이 복구 후보도 `예` 전에는 저장하거나 실행하지 않으며 계획에 없는 기능을
+추가할 수 없다
+
 ## 저장된 스킬을 다시 사용할 때
 
 - 승인된 스킬 검색 → 선택한 스킬과 이번 계획 표시
@@ -102,6 +107,8 @@ SKILLA가 스피커로 안내하는 동안에는 그 소리가 다시 마이크 
 - 실제 복구: 스피커 재생 중 Realtek 입력 스트림 상태 오류 뒤 입력 프레임이 0부터 다시 증가하고 음성 감지 상태로 복귀
 - 실제 음성 승인: 사용자가 녹음한 `예.`를 같은 large-v3-turbo·VAD 파이프라인에 넣어
   `SKILL_REVIEW_RESPONSE_ACCEPTED` → 기존 스킬 실행 → `ALL_ACTIONS_VERIFIED`까지 확인
+- 실제 신규 등록: 격리된 빈 스킬 저장소에서 사용자 명령 음성 → `REGISTER` 후보 → 사용자 `예.`
+  음성 → 버전 1 등록 → 읽기 전용 실행 → `ALL_ACTIONS_VERIFIED`까지 확인
 - 미완료: 여러 거리·소음 조건의 반복 정확도와 여러 사용자의 음성 출력 청취 평가
 
 실제 제품 구성으로 음성 승인 흐름을 다시 확인하는 명령
@@ -117,6 +124,21 @@ SKILLA가 스피커로 안내하는 동안에는 그 소리가 다시 마이크 
 
 공개 저장소에는 원음·사용자 경로·컴퓨터 이름을 제외한 검증 결과만
 `evaluation/voice_review_flow_validation_20261106.json`과
-`evaluation/stt_user_audio_validation_20261107.json`에 보관한다.
+`evaluation/stt_user_audio_validation_20261107.json`,
+`evaluation/voice_new_skill_registration_validation_20261107.json`에 보관한다.
 
 현재 결과로 모든 발음을 오류 없이 인식한다고 보장하거나 이전 모델 대비 정확도 향상률을 주장할 수 없다
+
+기존 스킬을 건드리지 않고 신규 음성 등록 경로를 재현하는 명령
+
+```powershell
+.\.venv\Scripts\python.exe tools\validate_voice_review_flow.py . `
+  config\product_host.json <승인-음성.wav> `
+  --request-wav <새로운-요청-음성.wav> `
+  --isolated-state --expected-review-kind REGISTER `
+  --report output\voice_new_skill_registration_validation.json
+```
+
+`--isolated-state`는 임시 빈 스킬 저장소를 사용하고 종료 시 삭제하므로 사용자의 실제 스킬 DB를
+변경하지 않는다. 보고서에서 `review.kind=REGISTER`, 승인 응답, 등록 스킬의 허용 기능,
+`final.reason=ALL_ACTIONS_VERIFIED`, `passed=true`를 함께 확인한다.

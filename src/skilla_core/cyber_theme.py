@@ -103,10 +103,10 @@ def header(parent: Any, *, system_code: str, heading: str) -> Any:
     ).pack(side="left")
     label(
         frame,
-        "SKILL LOCAL AI AGENT",
+        "반복작업 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
         color=COLORS["muted"],
         size=8,
-        font="Consolas",
+        font="맑은 고딕",
     ).pack(side="left", padx=(16, 0), pady=(9, 0))
     label(
         frame,

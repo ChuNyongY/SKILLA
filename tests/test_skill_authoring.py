@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from skilla_core.planner import PlannerError
 from skilla_core.registry import default_registry
 from skilla_core.skill_authoring import (
     SkillAuthoringError,
@@ -33,6 +34,15 @@ class SequenceTransport:
     def complete(self, system_prompt: str, user_prompt: str) -> str:
         self.calls.append((system_prompt, user_prompt))
         return self.responses.pop(0)
+
+
+class FailingTransport:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def complete(self, _system_prompt: str, _user_prompt: str) -> str:
+        self.calls += 1
+        raise PlannerError("temporary authoring failure")
 
 
 def proposal(**updates: object) -> dict[str, object]:
@@ -73,6 +83,49 @@ def test_plan_proposal_does_not_fabricate_success_evidence_or_store_before_revie
     transport.response = json.dumps(proposal(allowed_capabilities=["file.move"]))
     with pytest.raises(SkillAuthoringError, match="capability surface"):
         author.propose_from_plan(plan)
+
+
+def test_plan_proposal_falls_back_to_exact_plan_after_two_transport_failures(
+    tmp_path: Path,
+) -> None:
+    from skilla_core.models import Action, Plan
+
+    store = LocalSkillCatalog(tmp_path / "skills.sqlite3", default_registry())
+    transport = FailingTransport()
+    author = SkillDraftAuthor(transport, store)
+    generated = author.propose_from_plan(Plan(
+        goal="시스템 정보 확인",
+        steps=(Action(capability_id="system.info.read", purpose="운영체제 정보 확인"),),
+    ))
+
+    assert transport.calls == 2
+    assert generated.key == "system-information-check"
+    assert generated.allowed_capabilities == ("system.info.read",)
+    assert generated.dynamic_inputs == ()
+    assert generated.procedure == ("운영체제 정보 확인",)
+    assert not store.list()
+
+
+def test_plan_proposal_falls_back_after_invalid_output_and_invalid_repair(
+    tmp_path: Path,
+) -> None:
+    from skilla_core.models import Action, Plan
+
+    store = LocalSkillCatalog(tmp_path / "skills.sqlite3", default_registry())
+    transport = SequenceTransport(["not-json", "still-not-json"])
+    generated = SkillDraftAuthor(transport, store).propose_from_plan(Plan(
+        goal="현재 음량 확인",
+        steps=(Action(
+            capability_id="audio.volume.read",
+            purpose="현재 기본 출력 장치의 음량 확인",
+        ),),
+    ))
+
+    assert len(transport.calls) == 2
+    assert generated.key.startswith("plan-")
+    assert generated.allowed_capabilities == ("audio.volume.read",)
+    assert generated.procedure == ("현재 기본 출력 장치의 음량 확인",)
+    assert not store.list()
 
 
 def trace(
