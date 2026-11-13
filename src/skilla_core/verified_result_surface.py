@@ -37,7 +37,7 @@ def run_tk_verified_result(
     tk.Frame(left, height=1, bg=COLORS["line"]).pack(fill="x", pady=(0, 10))
     evidence = tk.Frame(left, bg=COLORS["panel"])
     evidence.pack(fill="both", expand=True)
-    for index, value in enumerate(line_vars):
+    for value in line_vars:
         row = tk.Frame(
             evidence,
             bg=COLORS["panel_alt"],
@@ -48,7 +48,9 @@ def run_tk_verified_result(
         )
         row.pack(fill="x", pady=(0, 7))
         label(row, "✓", color=COLORS["success"], size=15, bold=True).pack(side="left")
-        label(row, textvariable=value, size=11).pack(side="left", fill="x", expand=True, padx=(10, 0))
+        label(row, textvariable=value, size=11).pack(
+            side="left", fill="x", expand=True, padx=(10, 0)
+        )
 
     label(right, "FINAL STATUS", color=COLORS["muted"], size=9, bold=True, font="Consolas").pack(
         fill="x"
@@ -68,7 +70,12 @@ def run_tk_verified_result(
         snapshot = result_provider()
         if snapshot is None:
             title_var.set("검증된 결과 없음")
-            values = ("작업 결과 대기", "독립 검증 대기", "원본 누락 검사 대기", "완료 조건 대기")
+            values: tuple[str, ...] = (
+                "작업 결과 대기",
+                "독립 검증 대기",
+                "원본 누락 검사 대기",
+                "완료 조건 대기",
+            )
         else:
             title_var.set(snapshot.title)
             values = snapshot.lines

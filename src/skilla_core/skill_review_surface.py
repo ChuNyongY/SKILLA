@@ -328,12 +328,20 @@ class TkSkillReviewView:
         summary.pack(fill="both", expand=True)
         self._skill_title = tk.StringVar(value="스킬을 선택하세요")
         self._skill_meta = tk.StringVar(value="상태와 버전")
-        label(summary, textvariable=self._skill_title, color=COLORS["cyan"], size=22, bold=True).pack(
-            fill="x", padx=14, pady=(10, 2)
-        )
-        label(summary, textvariable=self._skill_meta, color=COLORS["warning"], size=11, bold=True).pack(
-            fill="x", padx=14, pady=(0, 8)
-        )
+        label(
+            summary,
+            textvariable=self._skill_title,
+            color=COLORS["cyan"],
+            size=22,
+            bold=True,
+        ).pack(fill="x", padx=14, pady=(10, 2))
+        label(
+            summary,
+            textvariable=self._skill_meta,
+            color=COLORS["warning"],
+            size=11,
+            bold=True,
+        ).pack(fill="x", padx=14, pady=(0, 8))
         cards = tk.Frame(summary, bg=COLORS["panel_alt"])
         cards.pack(fill="both", expand=True, padx=8, pady=(0, 8))
         for column in range(2):
@@ -436,7 +444,9 @@ class TkSkillReviewView:
             self._summary_vars["inputs"].set(" / ".join(selected.dynamic_inputs) or "없음")
             self._summary_vars["decisions"].set("\n".join(selected.decision_rules) or "없음")
             self._summary_vars["verification"].set("\n".join(selected.verification_rules) or "없음")
-            self._summary_vars["capabilities"].set(" / ".join(selected.allowed_capabilities) or "없음")
+            self._summary_vars["capabilities"].set(
+                " / ".join(selected.allowed_capabilities) or "없음"
+            )
         self._notice.set(display.notice)
         if display.mutation_enabled:
             self._approve_button.configure(state="normal")

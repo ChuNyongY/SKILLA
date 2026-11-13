@@ -5,6 +5,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 import zipfile
 from pathlib import Path
 from uuid import uuid4
@@ -14,6 +15,7 @@ from skilla_core.release_signing import ReleaseSigner, WindowsAuthenticodeSigner
 from skilla_core.version import VERSION
 
 PAYLOAD_NAME = "SKILLA-PC-payload.zip"
+INSTALLER_BUILD_TIMEOUT_SECONDS = 3_600
 
 
 class InstallerBuildError(RuntimeError):
@@ -105,13 +107,24 @@ def build_installer(
         )
         if not iexpress.is_file():
             raise InstallerBuildError("IEXPRESS_UNAVAILABLE")
-        result = subprocess.run(
+        process = subprocess.Popen(
             [str(iexpress), "/N", str(sed)],
             cwd=temporary,
-            check=False,
-            timeout=900,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
         )
-        if result.returncode != 0 or not setup.is_file():
+        try:
+            returncode = process.wait(timeout=INSTALLER_BUILD_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired as error:
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                check=False,
+                capture_output=True,
+                timeout=30,
+            )
+            process.wait(timeout=30)
+            setup.unlink(missing_ok=True)
+            raise InstallerBuildError("IEXPRESS_BUILD_TIMEOUT") from error
+        if returncode != 0 or not setup.is_file():
             setup.unlink(missing_ok=True)
             raise InstallerBuildError("IEXPRESS_BUILD_FAILED")
         if signer is not None:
@@ -221,7 +234,14 @@ def _remove_owned_temporary(path: Path, parent: Path) -> None:
     resolved_path = path.resolve(strict=True)
     if resolved_path.parent != resolved_parent or not resolved_path.name.startswith("build-"):
         raise InstallerBuildError("TEMPORARY_DIRECTORY_INVALID")
-    shutil.rmtree(resolved_path)
+    for attempt in range(5):
+        try:
+            shutil.rmtree(resolved_path)
+            return
+        except PermissionError:
+            if attempt == 4:
+                raise
+            time.sleep(0.5 * (attempt + 1))
 
 
 def main() -> int:

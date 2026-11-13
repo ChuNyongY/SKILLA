@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 COLORS = {
     "bg": "#030711",
@@ -45,22 +45,24 @@ def label(
     color: str | None = None,
     size: int = 10,
     bold: bool = False,
-    anchor: str = "w",
+    anchor: Literal["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"] = "w",
     font: str = "맑은 고딕",
 ) -> Any:
     import tkinter as tk
 
     background = str(parent.cget("bg"))
-    return tk.Label(
-        parent,
-        text=text,
-        textvariable=textvariable,
-        bg=background,
-        fg=color or COLORS["text"],
-        font=(font, size, "bold" if bold else "normal"),
-        anchor=anchor,
-        justify="left",
-    )
+    options: dict[str, Any] = {
+        "bg": background,
+        "fg": color or COLORS["text"],
+        "font": (font, size, "bold" if bold else "normal"),
+        "anchor": anchor,
+        "justify": "left",
+    }
+    if text is not None:
+        options["text"] = text
+    if textvariable is not None:
+        options["textvariable"] = textvariable
+    return tk.Label(parent, **options)
 
 
 def button(parent: Any, text: str, *, color: str | None = None, width: int = 12) -> Any:

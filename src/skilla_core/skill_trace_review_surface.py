@@ -604,12 +604,20 @@ class TkSkillTraceReviewView:
         summary.pack(fill="both", expand=True)
         self._trace_title = tk.StringVar(value="실행 기록을 선택하세요")
         self._trace_meta = tk.StringVar(value="성공 여부와 개정 근거")
-        label(summary, textvariable=self._trace_title, color=COLORS["cyan"], size=21, bold=True).pack(
-            fill="x", padx=14, pady=(10, 2)
-        )
-        label(summary, textvariable=self._trace_meta, color=COLORS["warning"], size=11, bold=True).pack(
-            fill="x", padx=14, pady=(0, 8)
-        )
+        label(
+            summary,
+            textvariable=self._trace_title,
+            color=COLORS["cyan"],
+            size=21,
+            bold=True,
+        ).pack(fill="x", padx=14, pady=(10, 2))
+        label(
+            summary,
+            textvariable=self._trace_meta,
+            color=COLORS["warning"],
+            size=11,
+            bold=True,
+        ).pack(fill="x", padx=14, pady=(0, 8))
         cards = tk.Frame(summary, bg=COLORS["panel_alt"])
         cards.pack(fill="both", expand=True, padx=8, pady=(0, 8))
         for column in range(2):
@@ -712,7 +720,8 @@ class TkSkillTraceReviewView:
             self._trace_meta.set(f"{outcome}  ·  {selected.step_count}단계  ·  개정 후보")
             self._trace_vars["steps"].set(
                 "\n".join(
-                    f"{step.sequence}. {step.capability_id} · {'검증' if step.independently_verified else '미검증'}"
+                    f"{step.sequence}. {step.capability_id} · "
+                    f"{'검증' if step.independently_verified else '미검증'}"
                     for step in selected.steps
                 )
                 or "없음"

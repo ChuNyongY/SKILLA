@@ -10,7 +10,7 @@ from pathlib import Path
 
 def main() -> None:
     import numpy as np
-    import sherpa_onnx
+    import sherpa_onnx  # type: ignore[import-untyped]
 
     request = json.loads(sys.stdin.buffer.read(8193))
     text = request["text"]

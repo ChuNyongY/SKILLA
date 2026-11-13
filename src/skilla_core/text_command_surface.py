@@ -221,6 +221,7 @@ def run_tk_text_command(
     if owns_root:
         root.mainloop()
     else:
+        assert parent is not None
         parent.wait_window(root)
 
 

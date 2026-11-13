@@ -466,7 +466,7 @@ class AlwaysOnAgentRuntime:
                 )
                 return
         with self._lock:
-            if token.is_cancelled or self._state is AlwaysOnState.CLOSED:
+            if token.is_cancelled or self._is_closed_locked():
                 self._finish_worker_locked(token, self._failed("PLANNING_CANCELLED"))
                 return
             self._state = AlwaysOnState.EXECUTING
@@ -636,6 +636,9 @@ class AlwaysOnAgentRuntime:
     def _finish_worker(self, token: CancellationToken, event: RuntimeEvent) -> None:
         with self._lock:
             self._finish_worker_locked(token, event)
+
+    def _is_closed_locked(self) -> bool:
+        return self._state is AlwaysOnState.CLOSED
 
     def _finish_worker_locked(
         self,

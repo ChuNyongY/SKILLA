@@ -443,7 +443,10 @@ class TkStatusView:
 
         tk.Label(
             data_panel,
-            text="호출어 감지: 기본 openWakeWord · Hermes는 비교 실험용이며 현재 제품 음성 경로에는 미연결",
+            text=(
+                "호출어 감지: 기본 openWakeWord · Hermes는 비교 실험용이며 "
+                "현재 제품 음성 경로에는 미연결"
+            ),
             bg=colors["panel_alt"],
             fg=colors["muted"],
             font=("맑은 고딕", 8),
