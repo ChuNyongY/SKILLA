@@ -31,6 +31,7 @@ from .observation_loop import (
 from .orchestrator import Orchestrator
 from .planner import NimChatTransport, TypedPlanner
 from .policy import PolicyEngine
+from .process_launch import RegisteredApp
 from .product_host import LoadedProductHostConfig
 from .registry import CapabilityRegistry, default_registry
 from .skill_runtime import LocalSkillCatalog, SkillAwarePlanner
@@ -119,6 +120,8 @@ class ProductCapabilityStack:
     registry: CapabilityRegistry
     executor: CapabilityExecutorRouter
     verifier: CapabilityVerifierRouter
+    registered_app_ids: tuple[str, ...] = ()
+    registered_apps: tuple[RegisteredApp, ...] = ()
 
 
 WakeBundleLoader = Callable[[Path], LoadedWakeWordBundle]

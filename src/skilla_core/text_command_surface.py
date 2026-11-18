@@ -51,6 +51,8 @@ _EVENT_LABELS = {
 
 _SKILL_REVIEW_FAILED = "스킬 관리 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요."
 _TRACE_REVIEW_FAILED = "스킬 후보 검토 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요."
+_TRIGGER_REVIEW_FAILED = "상황 스킬 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요."
+_SCHEDULE_REVIEW_FAILED = "예약 스킬 화면을 열지 못했습니다. 잠시 후 다시 시도해 주세요."
 _DISPLAY_SELECTOR_FAILED = "작업 화면 선택 창을 열지 못했습니다. 잠시 후 다시 시도해 주세요."
 
 ErrorReporter = Callable[[str, str], None]
@@ -109,6 +111,8 @@ def run_tk_text_command(
     open_display_selector: Callable[[], None] | None = None,
     review_skills: Callable[[], None] | None = None,
     review_skill_traces: Callable[[], None] | None = None,
+    manage_skill_triggers: Callable[[], None] | None = None,
+    manage_skill_schedules: Callable[[], None] | None = None,
 ) -> None:
     """Open a local text-command window without opening the microphone."""
     if not 100 <= poll_interval_ms <= 5_000:
@@ -170,6 +174,8 @@ def run_tk_text_command(
     optional_actions = (
         ("스킬 관리", review_skills, _SKILL_REVIEW_FAILED),
         ("스킬 후보 검토", review_skill_traces, _TRACE_REVIEW_FAILED),
+        ("상황 스킬", manage_skill_triggers, _TRIGGER_REVIEW_FAILED),
+        ("예약 스킬", manage_skill_schedules, _SCHEDULE_REVIEW_FAILED),
         ("작업 화면 선택", open_display_selector, _DISPLAY_SELECTOR_FAILED),
     )
     tools = None

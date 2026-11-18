@@ -126,7 +126,11 @@ def test_service_wires_privacy_context_and_personal_memory_policy(
         ),
         hello_manifest=(tmp_path / "hello.json").resolve(),
     )
-    capabilities = SimpleNamespace(registry=object())
+    capabilities = SimpleNamespace(
+        registry=object(),
+        registered_app_ids=("notepad", "chrome"),
+        registered_apps=(),
+    )
     voice = object()
     language = object()
     audit = object()

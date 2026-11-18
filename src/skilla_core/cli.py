@@ -11,6 +11,7 @@ from uuid import UUID
 
 from pydantic import SecretStr
 
+from .always_on_runtime import AlwaysOnState, RuntimeEventType
 from .app_registry import AppRegistryLoader
 from .approval import ApprovalTokenService
 from .audit import InMemoryAuditSink, JsonlAuditSink
@@ -70,11 +71,15 @@ from .product_host import (
     run_product_preflight_with_secret_loader,
 )
 from .product_service import (
+    WindowsProductService,
     build_windows_product_service,
     build_windows_product_service_with_secret_loader,
 )
 from .product_startup import run_tk_nim_credential_setup, run_windowed_product_startup
-from .product_state import prepare_product_state_directory
+from .product_state import (
+    prepare_product_state_directory,
+    resolve_product_state_directory,
+)
 from .registry import default_registry
 from .release_audit import audit_windows_release
 from .safe_evaluation import SafeIntegratedEvaluationRunner
@@ -86,8 +91,17 @@ from .skill_candidate_evaluation import (
     evaluate_revision_candidate,
     load_skill_candidate_trials,
 )
+from .skill_invocation import (
+    SkillInputCollector,
+    SkillInvocationError,
+    bind_skill_invocation,
+    collect_tk_skill_inputs,
+    skill_invocation_trusted_context,
+)
 from .skill_review_surface import run_tk_skill_review
 from .skill_runtime import LocalSkillCatalog, SkillOutcome, SkillProposal, SkillStatus
+from .skill_schedule_surface import run_tk_skill_schedule_review
+from .skill_schedules import SkillScheduleError
 from .skill_search_evaluation import evaluate_skill_search, load_skill_search_cases
 from .skill_study import (
     build_skill_study_schedule,
@@ -96,6 +110,8 @@ from .skill_study import (
 )
 from .skill_trace_review_surface import run_tk_skill_trace_review
 from .skill_trace_store import LocalSkillTraceStore
+from .skill_trigger_surface import run_tk_skill_trigger_review
+from .skill_triggers import SkillTriggerError
 from .snapshot_batch import (
     SNAPSHOT_SCENARIO_IDS,
     HmacSha256SnapshotVerifier,
@@ -104,6 +120,12 @@ from .snapshot_batch import (
 )
 from .snapshot_vm import SnapshotEvidenceError, SnapshotEvidenceGate, load_snapshot_manifests
 from .start_menu import StartMenuShortcutRegistrar, StartMenuStatus
+from .state_backup import (
+    RESTORE_CONFIRMATION,
+    create_state_backup,
+    restore_state_backup,
+    verify_state_backup,
+)
 from .status_surface import run_tk_status_hud
 from .study_analysis import StudyCondition, analyze_paired_study, load_study_observations
 from .supertonic_tts import SupertonicTtsRunner
@@ -139,6 +161,7 @@ from .wakeword_evaluation import (
     evaluate_wakeword_corpus,
     load_wakeword_corpus_manifest,
 )
+from .windows_acl import WindowsUserOnlyAcl
 from .windows_tray import WindowsTrayController, show_runtime_status_message
 from .windows_user_validation import ConsoleHumanAssessment, WindowsUserValidationRunners
 from .worker_process import (
@@ -631,6 +654,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Verify the exact files and SHA-256 package manifest",
     )
     verify_package.add_argument("package_root", type=Path)
+    backup_state = subparsers.add_parser(
+        "backup-product-state",
+        help="Create and verify a consistent snapshot of the four SKILLA state databases",
+    )
+    backup_state.add_argument("project_root", type=Path)
+    backup_state.add_argument("destination", type=Path)
+    verify_state = subparsers.add_parser(
+        "verify-product-state-backup",
+        help="Verify a SKILLA state backup without changing product state",
+    )
+    verify_state.add_argument("backup_directory", type=Path)
+    restore_state = subparsers.add_parser(
+        "restore-product-state-backup",
+        help="Restore a verified backup while retaining a rollback snapshot",
+    )
+    restore_state.add_argument("project_root", type=Path)
+    restore_state.add_argument("backup_directory", type=Path)
+    restore_state.add_argument(
+        "--confirm",
+        required=True,
+        help=f"Required exact value: {RESTORE_CONFIRMATION}",
+    )
     release_audit = subparsers.add_parser(
         "audit-windows-release",
         help="Require exact package integrity, Setup hash, and trusted publisher signatures",
@@ -645,6 +690,56 @@ def build_parser() -> argparse.ArgumentParser:
     user_validation.add_argument("project_root", type=Path)
     user_validation.add_argument("config", type=Path)
     return parser
+
+
+def _accept_skill_trigger_suggestion(
+    service: WindowsProductService,
+    suggestion_id: UUID,
+    input_collector: SkillInputCollector = collect_tk_skill_inputs,
+) -> bool:
+    if service.runtime.runtime.status_snapshot().state is not AlwaysOnState.IDLE:
+        return False
+    try:
+        preview = service.skill_trigger_suggestions.resolve(suggestion_id)
+        values = input_collector(preview)
+        if values is None:
+            return False
+        command = bind_skill_invocation(preview, values)
+        current = service.skill_trigger_suggestions.claim(suggestion_id)
+        if current.skill_id != command.skill_id or current.version != command.skill_version:
+            return False
+    except (SkillTriggerError, SkillInvocationError, ValueError):
+        return False
+    event = service.runtime.runtime.submit_text(
+        command.text,
+        trusted_context=skill_invocation_trusted_context(command),
+    )
+    return event.event_type is RuntimeEventType.TASK_STARTED
+
+
+def _accept_skill_schedule_suggestion(
+    service: WindowsProductService,
+    suggestion_id: UUID,
+    input_collector: SkillInputCollector = collect_tk_skill_inputs,
+) -> bool:
+    if service.runtime.runtime.status_snapshot().state is not AlwaysOnState.IDLE:
+        return False
+    try:
+        preview = service.skill_schedule_suggestions.resolve(suggestion_id)
+        values = input_collector(preview)
+        if values is None:
+            return False
+        command = bind_skill_invocation(preview, values)
+        current = service.skill_schedule_suggestions.claim(suggestion_id)
+        if current.skill_id != command.skill_id or current.version != command.skill_version:
+            return False
+    except (SkillScheduleError, SkillInvocationError, ValueError):
+        return False
+    event = service.runtime.runtime.submit_text(
+        command.text,
+        trusted_context=skill_invocation_trusted_context(command),
+    )
+    return event.event_type is RuntimeEventType.TASK_STARTED
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
@@ -1400,9 +1495,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 request_capture_stop=service.runtime.capture_pump.request_stop,
                 request_runtime_stop=service.lifecycle.stop,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                wakeword_mode=service.configuration.settings.wakeword_mode,
                 open_text_command=lambda: run_tk_text_command(
                     service.runtime.runtime,
                     poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                    manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                        service.skill_triggers, service.skills
+                    ),
+                    manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                        service.skill_schedules, service.skills
+                    ),
                 ),
                 open_verified_result=lambda: run_tk_verified_result(
                     lambda: service.runtime.runtime.status_snapshot().result
@@ -1413,6 +1515,22 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     service.skill_draft_workflow,
                     service.skills,
                 ),
+                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                    service.skill_triggers, service.skills
+                ),
+                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                    service.skill_schedules, service.skills
+                ),
+                trigger_suggestion_provider=service.skill_trigger_suggestions.snapshot,
+                accept_trigger_suggestion=lambda suggestion_id: (
+                    _accept_skill_trigger_suggestion(service, suggestion_id)
+                ),
+                dismiss_trigger_suggestion=service.skill_trigger_suggestions.dismiss,
+                schedule_suggestion_provider=service.skill_schedule_suggestions.snapshot,
+                accept_schedule_suggestion=lambda suggestion_id: (
+                    _accept_skill_schedule_suggestion(service, suggestion_id)
+                ),
+                dismiss_schedule_suggestion=service.skill_schedule_suggestions.dismiss,
             )
         finally:
             stopped = service.lifecycle.stop()
@@ -1434,6 +1552,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     service.skill_traces,
                     service.skill_draft_workflow,
                     service.skills,
+                ),
+                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                    service.skill_triggers, service.skills
+                ),
+                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                    service.skill_schedules, service.skills
                 ),
             )
         finally:
@@ -1459,9 +1583,16 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 request_capture_stop=service.runtime.capture_pump.request_stop,
                 request_runtime_stop=service.lifecycle.stop,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                wakeword_mode=service.configuration.settings.wakeword_mode,
                 open_text_command=lambda: run_tk_text_command(
                     service.runtime.runtime,
                     poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
+                    manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                        service.skill_triggers, service.skills
+                    ),
+                    manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                        service.skill_schedules, service.skills
+                    ),
                 ),
                 open_verified_result=lambda: run_tk_verified_result(
                     lambda: service.runtime.runtime.status_snapshot().result
@@ -1472,6 +1603,22 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     service.skill_draft_workflow,
                     service.skills,
                 ),
+                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                    service.skill_triggers, service.skills
+                ),
+                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                    service.skill_schedules, service.skills
+                ),
+                trigger_suggestion_provider=service.skill_trigger_suggestions.snapshot,
+                accept_trigger_suggestion=lambda suggestion_id: (
+                    _accept_skill_trigger_suggestion(service, suggestion_id)
+                ),
+                dismiss_trigger_suggestion=service.skill_trigger_suggestions.dismiss,
+                schedule_suggestion_provider=service.skill_schedule_suggestions.snapshot,
+                accept_schedule_suggestion=lambda suggestion_id: (
+                    _accept_skill_schedule_suggestion(service, suggestion_id)
+                ),
+                dismiss_schedule_suggestion=service.skill_schedule_suggestions.dismiss,
             )
         finally:
             stopped = service.lifecycle.stop()
@@ -1509,6 +1656,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     service.skill_traces,
                     service.skill_draft_workflow,
                     service.skills,
+                ),
+                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                    service.skill_triggers, service.skills
+                ),
+                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                    service.skill_schedules, service.skills
                 ),
             ),
         )
@@ -1550,6 +1703,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     service.skill_traces,
                     service.skill_draft_workflow,
                     service.skills,
+                ),
+                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
+                    service.skill_triggers, service.skills
+                ),
+                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
+                    service.skill_schedules, service.skills
                 ),
             ),
         )
@@ -1636,6 +1795,43 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 indent=2,
             )
         )
+        return 0
+    if args.command == "backup-product-state":
+        root = _resolve_cli_path(args.project_root, directory=True)
+        destination = _resolve_new_cli_directory(args.destination)
+        state = prepare_product_state_directory(root)
+        state_backup_report = create_state_backup(
+            state,
+            destination,
+            hardener=WindowsUserOnlyAcl().harden,
+        )
+        print(state_backup_report.model_dump_json(indent=2))
+        return 0
+    if args.command == "verify-product-state-backup":
+        backup = _resolve_cli_path(args.backup_directory, directory=True)
+        backup_manifest = verify_state_backup(backup)
+        print(
+            json.dumps(
+                {
+                    "status": "VERIFIED",
+                    "created_at": backup_manifest.created_at.isoformat(),
+                    "database_count": len(backup_manifest.entries),
+                },
+                indent=2,
+            )
+        )
+        return 0
+    if args.command == "restore-product-state-backup":
+        root = _resolve_cli_path(args.project_root, directory=True)
+        backup = _resolve_cli_path(args.backup_directory, directory=True)
+        state = resolve_product_state_directory(root)
+        state_restore_report = restore_state_backup(
+            backup,
+            state,
+            confirmation=args.confirm,
+            hardener=WindowsUserOnlyAcl().harden,
+        )
+        print(state_restore_report.model_dump_json(indent=2))
         return 0
     if args.command == "audit-windows-release":
         release_report = audit_windows_release(
@@ -1747,6 +1943,15 @@ def _resolve_cli_path(path: Path, *, directory: bool) -> Path:
     if not directory and not resolved.is_file():
         raise ValueError("product input must be a file")
     return resolved
+
+
+def _resolve_new_cli_directory(path: Path) -> Path:
+    if not path.is_absolute() or path.exists() or path.is_symlink():
+        raise ValueError("backup destination must be a new absolute directory")
+    parent = path.parent.resolve(strict=True)
+    if not parent.is_dir() or parent.is_symlink():
+        raise ValueError("backup destination parent must be a regular directory")
+    return parent / path.name
 
 
 def _skill_catalog(path: Path) -> LocalSkillCatalog:

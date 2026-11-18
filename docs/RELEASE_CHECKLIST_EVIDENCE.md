@@ -1,6 +1,6 @@
 # 릴리스 전 안전 체크리스트 증거
 
-최종 갱신: 2026-10-05
+최종 갱신: 2026-11-19 (SKILLA-PC 0.2.14)
 
 원 계획서의 릴리스 전 자동화 체크리스트 13개를 현재 코드와 직접 대응한다. `PASS`는 명시된
 계약 범위의 자동 테스트를 뜻하며 실제 마이크·사용자·snapshot VM 증거를 대신하지 않는다.
@@ -30,11 +30,40 @@
 ## 현재 릴리스 게이트
 
 - 자동 계약 체크리스트: 13/13에 직접 테스트 증거 존재.
-- 전체 Python 회귀: 766 passed, 3 skipped, coverage 83%.
-- doctor: 15/15 PASS.
-- safe evaluation: 8 PASS, 7 NOT_RUN. 따라서 실제 시나리오 전체 완료는 아님.
-- package manifest와 Setup sidecar: PASS. 실제 깨끗한 사용자 경로 최초 설치와 설치본 manifest 일치도 PASS.
+- 전체 Python 회귀: 1,278개 수집, 1,273 passed, 5 skipped.
+- 제품 코드 검사: Ruff `src tests` PASS, mypy 171개 source file PASS.
+- 0.2.14 패키지 doctor: 16개 필수 항목 PASS(Windows, Python, SQLite FTS5, 앱 registry,
+  Hello, wakeword, STT, Chrome 기록, 마이크, Supertonic/SAPI TTS와 필수 의존성).
+  선택 개발 도구인 .NET SDK는 미설치 WARN이며 패키지 실행 필수 항목이 아니다.
+- safe evaluation 재실행: 8 PASS, 7 NOT_RUN. 미실행 항목은 실제 앱 조작 3개와 snapshot VM
+  공급자가 필요한 4개이며, 따라서 실제 시나리오 전체 완료는 아님.
+- 0.2.14 package manifest와 Setup sidecar: PASS. manifest 1,870개 파일 검증 완료.
+  Setup 크기 449,888,256 bytes, SHA-256
+  `7926ab465da319aee50bd55f1c536f06c05bfad5c8b99a01a9500b00ceb87fb2`이며 독립 재계산값과
+  sidecar가 일치한다. 휴대용 패키지의 doctor와 제품 서비스 구성 검사(`ready=true`, 등록 기능
+  15개)는 PASS다. 0.2.14 Setup 자체 설치와 깨끗한 사용자 계정 최초 설치는 이번 점검에서
+  실행하지 않았다.
+- 0.2.14 배포 폴더에는 `NIM.txt`가 없고, 현재 운영 credential 원문의 exact-match 검색 결과는
+  0건이다. 텍스트 배포 자산의 `JAVIS`/`JARVIS` 잔존 명칭 검색도 0건이다.
+- 0.2.14 내장 `verify-package`는 version 0.2.14와 1,870개 파일을 `VERIFIED`로 반환했다.
+  검증 전후 manifest SHA-256은 같고 배포 폴더 안 `state` 디렉터리는 전후 모두 0개다. 내장
+  release audit은 package manifest와 Setup hash만 PASS, console·tray·Setup 서명 세 항목은
+  `SIGNATURE_INVALID`로 거부해 `ready=false`를 반환했다.
+- 2026-11-18에 원격 NIM으로 전송될 수 있는 문자열과 시험 API의 개인정보 금지 범위를 source
+  README에 명시했다. 같은 날 여러 단계 재계획에 capability별 관측 허용표와 작업용 파일 handle을
+  적용해 파일명·경로·컴퓨터 이름·PID·hash를 후속 planner context에서 제거했다. 최초 요청문에 사용자가
+  직접 입력한 문자열은 여전히 원격 의도 판정·계획에 포함될 수 있다. 이 변경은 0.2.12 휴대용
+  패키지와 Setup에 반영됐으며 패키지 안내문과 manifest 포함을 확인했다.
 - console/tray/Setup Authenticode: FAIL(신뢰된 코드 서명 인증서 없음).
+- 호출어·헤더 UI 표기: 0.2.14 FIXED. 제품 설정의 `wakeword_mode`를 HUD에 전달해 현재 기본값
+  `whisper_korean`은 `로컬 Whisper 한국어 인식`으로 표시한다. `openwakeword` 설정은
+  `openWakeWord`로 표시하고, Hermes는 비교 실험용이며 제품 음성 경로에 미연결임을 유지한다.
+  실제 800×570 렌더링에서 한글 제품 설명을 두 줄로 배치하고 우측 `SYSTEM // STANDBY`가
+  잘리지 않음을 확인했다.
+- Supertonic 3 모델 라이선스 번들: 0.2.14 PACKAGE PASS. 공식 OpenRAIL-M 전체 사본과 MIT
+  파일의 역할을 구분한 제3자 고지가 source와 패키지에 있으며 두 파일 모두 package manifest에
+  포함됐다. 0.2.11 package·Setup에는 두 파일이 없으므로 해당 과거 버전은 공개 배포 대상으로
+  사용하지 않는다.
 - benchmark: 70/120 실제 수집, snapshot VM 50셀 미수집.
 
 자동 계약 13/13은 릴리스 안전 구조가 존재한다는 증거이지 논문 가설이나 실제 장치 성능의 증거가

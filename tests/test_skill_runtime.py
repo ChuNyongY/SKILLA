@@ -114,6 +114,87 @@ def test_skill_is_retrieved_then_binds_the_planner_to_its_allowlist(tmp_path: Pa
         SkillAwarePlanner(Planner("file.delete.trash"), store).plan("볼륨 알려 줘")
 
 
+def test_internal_invocation_binding_uses_exact_verified_skill(tmp_path: Path) -> None:
+    store = catalog(tmp_path)
+    bound = store.approve(store.propose(proposal()).skill_id)
+    other = store.approve(
+        store.propose(
+            proposal(
+                key="other-audio-skill",
+                title="다른 소리 작업",
+                triggers=("아침 작업 준비",),
+                allowed_capabilities=("system.info.read",),
+            )
+        ).skill_id
+    )
+    planner = Planner("audio.volume.read")
+    context = {
+        "verified_skill_invocation": {
+            "skill_id": str(bound.skill_id),
+            "skill_version": bound.version,
+        }
+    }
+
+    plan = SkillAwarePlanner(planner, store).plan(
+        "아침 작업 준비 | 사용자 요청 볼륨: 50",
+        trusted_context=context,
+    )
+
+    assert plan.steps[0].capability_id == "audio.volume.read"
+    assert planner.context is not None
+    selected = planner.context["verified_skill"]
+    assert isinstance(selected, dict)
+    assert selected["skill_id"] == str(bound.skill_id)
+    assert selected["skill_id"] != str(other.skill_id)
+
+
+@pytest.mark.parametrize(
+    "binding",
+    (
+        {},
+        {"skill_id": "not-a-uuid", "skill_version": 1},
+        {"skill_id": "00000000-0000-0000-0000-000000000001", "skill_version": True},
+        {
+            "skill_id": "00000000-0000-0000-0000-000000000001",
+            "skill_version": 1,
+            "extra": "x",
+        },
+    ),
+)
+def test_invalid_internal_invocation_binding_fails_closed(
+    tmp_path: Path,
+    binding: dict[str, object],
+) -> None:
+    planner = Planner("system.info.read")
+
+    with pytest.raises(SkillRuntimeError):
+        SkillAwarePlanner(planner, catalog(tmp_path)).plan(
+            "아침 작업 준비",
+            trusted_context={"verified_skill_invocation": binding},
+        )
+
+    assert planner.calls == 0
+
+
+def test_stale_internal_invocation_binding_fails_closed(tmp_path: Path) -> None:
+    store = catalog(tmp_path)
+    bound = store.approve(store.propose(proposal()).skill_id)
+    planner = Planner("audio.volume.read")
+
+    with pytest.raises(SkillRuntimeError, match="no longer verified"):
+        SkillAwarePlanner(planner, store).plan(
+            "볼륨",
+            trusted_context={
+                "verified_skill_invocation": {
+                    "skill_id": str(bound.skill_id),
+                    "skill_version": bound.version + 1,
+                }
+            },
+        )
+
+    assert planner.calls == 0
+
+
 def test_planner_falls_back_to_base_plan_when_no_skill_matches(tmp_path: Path) -> None:
     store = catalog(tmp_path)
     planner = Planner("system.info.read")

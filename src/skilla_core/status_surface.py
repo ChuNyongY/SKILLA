@@ -8,7 +8,9 @@ from pydantic import Field
 
 from .always_on_runtime import AlwaysOnState, RuntimeEventType, RuntimeStatusSnapshot
 from .models import FrozenModel
+from .skill_schedules import ScheduledSkillSuggestion
 from .skill_session import PendingSkillReview, SkillReviewKind
+from .skill_triggers import SkillTriggerSuggestion
 from .voice import VoicePipelineDiagnostics
 
 
@@ -23,6 +25,8 @@ class RuntimeStatusDisplay(FrozenModel):
     input_level: float = Field(default=0.0, ge=0.0, le=1.0)
     audio_frame_count: int = Field(default=0, ge=0)
     skill_review: PendingSkillReview | None = None
+    trigger_suggestion: SkillTriggerSuggestion | None = None
+    schedule_suggestion: ScheduledSkillSuggestion | None = None
 
 
 class StatusView(Protocol):
@@ -82,6 +86,21 @@ def reactor_level_label(input_level: float) -> str:
     return f"MIC {round(level * 100):02d}%"
 
 
+def wakeword_mode_label(mode: str) -> str:
+    labels = {
+        "whisper_korean": "로컬 Whisper 한국어 인식",
+        "openwakeword": "openWakeWord",
+    }
+    try:
+        selected = labels[mode]
+    except KeyError as error:
+        raise ValueError("unsupported wakeword mode") from error
+    return (
+        f"호출어 감지: {selected} · Hermes는 비교 실험용이며 "
+        "현재 제품 음성 경로에는 미연결"
+    )
+
+
 class RuntimeStatusPresenter:
     """Poll a privacy-minimized runtime snapshot on the owning UI thread."""
 
@@ -95,6 +114,9 @@ class RuntimeStatusPresenter:
         view: StatusView,
         poll_interval_ms: int = 250,
         voice_diagnostics_provider: Callable[[], VoicePipelineDiagnostics] | None = None,
+        trigger_suggestion_provider: Callable[[], SkillTriggerSuggestion | None] | None = None,
+        schedule_suggestion_provider: Callable[[], ScheduledSkillSuggestion | None]
+        | None = None,
     ) -> None:
         if type(poll_interval_ms) is not int or not 100 <= poll_interval_ms <= 5_000:
             raise ValueError("poll_interval_ms must be an integer within 100..5000")
@@ -105,6 +127,8 @@ class RuntimeStatusPresenter:
         self._view = view
         self._poll_interval_ms = poll_interval_ms
         self._voice_diagnostics_provider = voice_diagnostics_provider
+        self._trigger_suggestion_provider = trigger_suggestion_provider
+        self._schedule_suggestion_provider = schedule_suggestion_provider
         self._active = False
 
     def run(self) -> None:
@@ -129,7 +153,19 @@ class RuntimeStatusPresenter:
                 if self._voice_diagnostics_provider is None
                 else self._voice_diagnostics_provider()
             )
-            display = self._display(snapshot, diagnostics)
+            trigger_suggestion = (
+                None
+                if self._trigger_suggestion_provider is None
+                else self._trigger_suggestion_provider()
+            )
+            schedule_suggestion = (
+                None
+                if self._schedule_suggestion_provider is None
+                else self._schedule_suggestion_provider()
+            )
+            display = self._display(
+                snapshot, diagnostics, trigger_suggestion, schedule_suggestion
+            )
         except Exception:
             display = RuntimeStatusDisplay(
                 state=AlwaysOnState.CLOSED,
@@ -182,6 +218,8 @@ class RuntimeStatusPresenter:
     def _display(
         snapshot: RuntimeStatusSnapshot,
         diagnostics: VoicePipelineDiagnostics | None = None,
+        trigger_suggestion: SkillTriggerSuggestion | None = None,
+        schedule_suggestion: ScheduledSkillSuggestion | None = None,
     ) -> RuntimeStatusDisplay:
         if diagnostics is None:
             voice_label = "마이크 상태 확인 중"
@@ -226,6 +264,8 @@ class RuntimeStatusPresenter:
             input_level=0.0 if diagnostics is None else diagnostics.input_level,
             audio_frame_count=0 if diagnostics is None else diagnostics.frame_count,
             skill_review=snapshot.skill_review,
+            trigger_suggestion=trigger_suggestion,
+            schedule_suggestion=schedule_suggestion,
         )
 
 
@@ -240,7 +280,14 @@ class TkStatusView:
         open_verified_result: Callable[[], None] | None = None,
         review_skills: Callable[[], None] | None = None,
         review_skill_traces: Callable[[], None] | None = None,
+        manage_skill_triggers: Callable[[], None] | None = None,
+        manage_skill_schedules: Callable[[], None] | None = None,
         respond_skill_review: Callable[[UUID, bool], bool] | None = None,
+        accept_trigger_suggestion: Callable[[UUID], bool] | None = None,
+        dismiss_trigger_suggestion: Callable[[UUID], bool] | None = None,
+        accept_schedule_suggestion: Callable[[UUID], bool] | None = None,
+        dismiss_schedule_suggestion: Callable[[UUID], bool] | None = None,
+        wakeword_mode: str = "whisper_korean",
     ) -> None:
         try:
             import tkinter as tk
@@ -289,13 +336,6 @@ class TkStatusView:
             fg=colors["cyan"],
             font=("Consolas", 22, "bold"),
         ).pack(side="left")
-        tk.Label(
-            header,
-            text="반복작업 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
-            bg=colors["bg"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 8),
-        ).pack(side="left", padx=(16, 0), pady=(10, 0))
         self._system_code = tk.Label(
             header,
             text="SYSTEM // BOOT",
@@ -304,6 +344,16 @@ class TkStatusView:
             font=("Consolas", 9, "bold"),
         )
         self._system_code.pack(side="right", pady=(8, 0))
+        tk.Label(
+            header,
+            text="반복작업을 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
+            bg=colors["bg"],
+            fg=colors["muted"],
+            font=("맑은 고딕", 8),
+            wraplength=240,
+            anchor="w",
+            justify="left",
+        ).pack(side="left", padx=(16, 0), pady=(2, 0))
 
         tk.Frame(shell, height=1, bg=colors["cyan_dim"]).pack(fill="x", pady=(12, 16))
 
@@ -443,10 +493,7 @@ class TkStatusView:
 
         tk.Label(
             data_panel,
-            text=(
-                "호출어 감지: 기본 openWakeWord · Hermes는 비교 실험용이며 "
-                "현재 제품 음성 경로에는 미연결"
-            ),
+            text=wakeword_mode_label(wakeword_mode),
             bg=colors["panel_alt"],
             fg=colors["muted"],
             font=("맑은 고딕", 8),
@@ -489,6 +536,8 @@ class TkStatusView:
             ("⌨  명령", open_text_command),
             ("✓  결과", open_verified_result),
             ("◇  후보 검토", review_skill_traces),
+            ("⌁  상황", manage_skill_triggers),
+            ("◷  예약", manage_skill_schedules),
             ("⚙  스킬", review_skills),
         ):
             if callback is not None:
@@ -519,6 +568,52 @@ class TkStatusView:
         self._review_no = self._button(actions, "아니요 · 취소", colors["danger"], width=16)
         self._review_no.configure(command=lambda: self._answer_review(False))
         self._review_no.pack(side="left", padx=12)
+
+        self._trigger_accept = accept_trigger_suggestion
+        self._trigger_dismiss = dismiss_trigger_suggestion
+        self._trigger_id: UUID | None = None
+        self._trigger_panel = tk.Frame(shell, bg=colors["panel_alt"], padx=12, pady=10)
+        self._trigger_heading = tk.StringVar()
+        tk.Label(
+            self._trigger_panel,
+            textvariable=self._trigger_heading,
+            bg=colors["panel_alt"],
+            fg=colors["warning"],
+            font=("맑은 고딕", 12, "bold"),
+        ).pack(side="left")
+        self._trigger_yes = self._button(
+            self._trigger_panel, "이 스킬 실행", colors["success"], width=13
+        )
+        self._trigger_yes.configure(command=self._accept_trigger)
+        self._trigger_yes.pack(side="right")
+        self._trigger_no = self._button(
+            self._trigger_panel, "닫기", colors["danger"], width=8
+        )
+        self._trigger_no.configure(command=self._dismiss_trigger)
+        self._trigger_no.pack(side="right", padx=8)
+
+        self._schedule_accept = accept_schedule_suggestion
+        self._schedule_dismiss = dismiss_schedule_suggestion
+        self._schedule_id: UUID | None = None
+        self._schedule_panel = tk.Frame(shell, bg=colors["panel_alt"], padx=12, pady=10)
+        self._schedule_heading = tk.StringVar()
+        tk.Label(
+            self._schedule_panel,
+            textvariable=self._schedule_heading,
+            bg=colors["panel_alt"],
+            fg=colors["warning"],
+            font=("맑은 고딕", 12, "bold"),
+        ).pack(side="left")
+        self._schedule_yes = self._button(
+            self._schedule_panel, "예약 스킬 실행", colors["success"], width=15
+        )
+        self._schedule_yes.configure(command=self._accept_schedule)
+        self._schedule_yes.pack(side="right")
+        self._schedule_no = self._button(
+            self._schedule_panel, "닫기", colors["danger"], width=8
+        )
+        self._schedule_no.configure(command=self._dismiss_schedule)
+        self._schedule_no.pack(side="right", padx=8)
 
         footer = tk.Frame(shell, bg=colors["bg"])
         footer.pack(fill="x", side="bottom", pady=(16, 0))
@@ -651,6 +746,8 @@ class TkStatusView:
 
     def render(self, display: RuntimeStatusDisplay) -> None:
         self._render_review(display.skill_review)
+        self._render_trigger_suggestion(display.trigger_suggestion)
+        self._render_schedule_suggestion(display.schedule_suggestion)
         if display.audio_frame_count != getattr(self, "_audio_frame_count", -1):
             self._audio_level = display.input_level
             self._audio_frame_count = display.audio_frame_count
@@ -702,6 +799,84 @@ class TkStatusView:
         for ring_id in self._core_ring_ids[1:]:
             self._core.itemconfigure(ring_id, outline=color)
         self._stop_button.configure(state="normal" if display.stop_enabled else "disabled")
+
+    def _accept_trigger(self) -> None:
+        if (
+            self._trigger_id is not None
+            and self._trigger_accept is not None
+            and self._trigger_accept(self._trigger_id)
+        ):
+            self._trigger_yes.configure(state="disabled")
+            self._trigger_no.configure(state="disabled")
+
+    def _dismiss_trigger(self) -> None:
+        if (
+            self._trigger_id is not None
+            and self._trigger_dismiss is not None
+            and self._trigger_dismiss(self._trigger_id)
+        ):
+            self._trigger_yes.configure(state="disabled")
+            self._trigger_no.configure(state="disabled")
+
+    def _render_trigger_suggestion(
+        self, suggestion: SkillTriggerSuggestion | None
+    ) -> None:
+        suggestion_id = None if suggestion is None else suggestion.suggestion_id
+        if suggestion_id == self._trigger_id:
+            return
+        self._trigger_id = suggestion_id
+        if suggestion is None:
+            self._trigger_panel.pack_forget()
+            return
+        self._trigger_heading.set(
+            f"{suggestion.title} · {suggestion.app_id} 실행을 감지했습니다"
+        )
+        enabled = (
+            "normal"
+            if self._trigger_accept is not None and self._trigger_dismiss is not None
+            else "disabled"
+        )
+        self._trigger_yes.configure(state=enabled)
+        self._trigger_no.configure(state=enabled)
+        self._trigger_panel.pack(fill="x", pady=(12, 0))
+
+    def _accept_schedule(self) -> None:
+        if (
+            self._schedule_id is not None
+            and self._schedule_accept is not None
+            and self._schedule_accept(self._schedule_id)
+        ):
+            self._schedule_yes.configure(state="disabled")
+            self._schedule_no.configure(state="disabled")
+
+    def _dismiss_schedule(self) -> None:
+        if (
+            self._schedule_id is not None
+            and self._schedule_dismiss is not None
+            and self._schedule_dismiss(self._schedule_id)
+        ):
+            self._schedule_yes.configure(state="disabled")
+            self._schedule_no.configure(state="disabled")
+
+    def _render_schedule_suggestion(
+        self, suggestion: ScheduledSkillSuggestion | None
+    ) -> None:
+        suggestion_id = None if suggestion is None else suggestion.suggestion_id
+        if suggestion_id == self._schedule_id:
+            return
+        self._schedule_id = suggestion_id
+        if suggestion is None:
+            self._schedule_panel.pack_forget()
+            return
+        self._schedule_heading.set(f"{suggestion.title} · 예약 시각이 되었습니다")
+        enabled = (
+            "normal"
+            if self._schedule_accept is not None and self._schedule_dismiss is not None
+            else "disabled"
+        )
+        self._schedule_yes.configure(state=enabled)
+        self._schedule_no.configure(state=enabled)
+        self._schedule_panel.pack(fill="x", pady=(12, 0))
 
     def _answer_review(self, accepted: bool) -> None:
         if (
@@ -773,7 +948,17 @@ def run_tk_status_hud(
     open_verified_result: Callable[[], None] | None = None,
     review_skills: Callable[[], None] | None = None,
     review_skill_traces: Callable[[], None] | None = None,
+    manage_skill_triggers: Callable[[], None] | None = None,
+    manage_skill_schedules: Callable[[], None] | None = None,
     respond_skill_review: Callable[[UUID, bool], bool] | None = None,
+    trigger_suggestion_provider: Callable[[], SkillTriggerSuggestion | None] | None = None,
+    accept_trigger_suggestion: Callable[[UUID], bool] | None = None,
+    dismiss_trigger_suggestion: Callable[[UUID], bool] | None = None,
+    schedule_suggestion_provider: Callable[[], ScheduledSkillSuggestion | None]
+    | None = None,
+    accept_schedule_suggestion: Callable[[UUID], bool] | None = None,
+    dismiss_schedule_suggestion: Callable[[UUID], bool] | None = None,
+    wakeword_mode: str = "whisper_korean",
 ) -> None:
     RuntimeStatusPresenter(
         status_provider=status_provider,
@@ -785,8 +970,17 @@ def run_tk_status_hud(
             open_verified_result=open_verified_result,
             review_skills=review_skills,
             review_skill_traces=review_skill_traces,
+            manage_skill_triggers=manage_skill_triggers,
+            manage_skill_schedules=manage_skill_schedules,
             respond_skill_review=respond_skill_review,
+            accept_trigger_suggestion=accept_trigger_suggestion,
+            dismiss_trigger_suggestion=dismiss_trigger_suggestion,
+            accept_schedule_suggestion=accept_schedule_suggestion,
+            dismiss_schedule_suggestion=dismiss_schedule_suggestion,
+            wakeword_mode=wakeword_mode,
         ),
         poll_interval_ms=poll_interval_ms,
         voice_diagnostics_provider=voice_diagnostics_provider,
+        trigger_suggestion_provider=trigger_suggestion_provider,
+        schedule_suggestion_provider=schedule_suggestion_provider,
     ).run()

@@ -11,6 +11,12 @@ from .models import FrozenModel, Plan
 from .runtime_models import TaskOutcome
 from .skill_authoring import SkillExecutionTrace
 from .skill_trace import build_skill_execution_trace
+from .sqlite_state import (
+    SqliteStateError,
+    connect_sqlite_state,
+    enable_sqlite_wal,
+    validate_existing_sqlite,
+)
 
 
 class SkillTraceStoreError(RuntimeError):
@@ -31,18 +37,23 @@ class LocalSkillTraceStore:
         if not path.is_absolute() or path.is_symlink() or not path.parent.is_dir():
             raise ValueError("skill trace path must be absolute in an existing directory")
         self._path = path
-        with closing(self._connect()) as db, db:
-            db.execute(
-                """
-                CREATE TABLE IF NOT EXISTS skill_traces(
-                  trace_id TEXT PRIMARY KEY, trace_json TEXT NOT NULL,
-                  recorded_at TEXT NOT NULL, consumed INTEGER NOT NULL DEFAULT 0,
-                  discarded INTEGER NOT NULL DEFAULT 0)
-                """
-            )
-            _ensure_column(
-                db, "skill_traces", "discarded", "INTEGER NOT NULL DEFAULT 0"
-            )
+        try:
+            validate_existing_sqlite(path)
+            with closing(self._connect()) as db, db:
+                enable_sqlite_wal(db)
+                db.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS skill_traces(
+                      trace_id TEXT PRIMARY KEY, trace_json TEXT NOT NULL,
+                      recorded_at TEXT NOT NULL, consumed INTEGER NOT NULL DEFAULT 0,
+                      discarded INTEGER NOT NULL DEFAULT 0)
+                    """
+                )
+                _ensure_column(
+                    db, "skill_traces", "discarded", "INTEGER NOT NULL DEFAULT 0"
+                )
+        except (OSError, sqlite3.Error, SqliteStateError) as error:
+            raise SkillTraceStoreError("skill trace database is unavailable") from error
 
     def observe(self, plan: Plan, outcome: TaskOutcome) -> None:
         trace = build_skill_execution_trace(
@@ -127,7 +138,7 @@ class LocalSkillTraceStore:
                 raise SkillTraceStoreError("eligible skill trace not found")
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._path)
+        connection = connect_sqlite_state(self._path)
         connection.row_factory = sqlite3.Row
         return connection
 

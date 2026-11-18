@@ -125,12 +125,24 @@ class VoiceCommandCoordinator:
         trusted_context: Mapping[str, object] | None,
     ) -> VoiceCommandDecision:
         try:
-            evidence = self._classifier.classify(
-                transcript,
-                wake_confidence=wake_confidence,
-                explicit_wake_word=explicit_wake_word,
-                source=source,
+            classify_cancellable = getattr(
+                self._classifier, "classify_cancellable", None
             )
+            if callable(classify_cancellable):
+                evidence = classify_cancellable(
+                    transcript,
+                    wake_confidence=wake_confidence,
+                    explicit_wake_word=explicit_wake_word,
+                    source=source,
+                    cancellation=self._cancellation,
+                )
+            else:
+                evidence = self._classifier.classify(
+                    transcript,
+                    wake_confidence=wake_confidence,
+                    explicit_wake_word=explicit_wake_word,
+                    source=source,
+                )
             gate_result = self._gate.evaluate(evidence, task_active=task_active)
         except Exception:
             return VoiceCommandDecision(
@@ -151,10 +163,18 @@ class VoiceCommandCoordinator:
                 gate=gate_result,
             )
         try:
-            plan = self._planner.plan(
-                evidence.transcript,
-                trusted_context=trusted_context or {},
-            )
+            plan_cancellable = getattr(self._planner, "plan_cancellable", None)
+            if callable(plan_cancellable):
+                plan = plan_cancellable(
+                    evidence.transcript,
+                    trusted_context=trusted_context or {},
+                    cancellation=self._cancellation,
+                )
+            else:
+                plan = self._planner.plan(
+                    evidence.transcript,
+                    trusted_context=trusted_context or {},
+                )
         except Exception:
             return VoiceCommandDecision(
                 status=VoiceCommandStatus.FAILED,

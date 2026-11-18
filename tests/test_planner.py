@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
+import urllib.error
 import urllib.request
+from email.message import Message
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +14,7 @@ from pydantic import SecretStr
 from pytest import MonkeyPatch
 
 from skilla_core import (
+    CancellationToken,
     NimChatTransport,
     NimTransportMetrics,
     PlannerError,
@@ -203,6 +208,8 @@ def test_planner_prompt_includes_all_capability_specific_postconditions() -> Non
         assert predicate in system_prompt
     assert "file-sha256:<sha256> for file.open" in system_prompt
     assert "exactly default-audio-render-endpoint" in system_prompt
+    assert "file.list entry_handles" in system_prompt
+    assert "resolved and revalidated locally" in system_prompt
 
 
 def test_markdown_wrapped_json_is_rejected() -> None:
@@ -285,6 +292,81 @@ def test_non_json_trusted_context_is_rejected_without_transport(
     assert transport.calls == []
 
 
+def test_projected_observations_are_revalidated_at_final_prompt_boundary() -> None:
+    transport = FakeTransport(plan_json())
+    context = {
+        "verified_observations": [
+            {
+                "capability_id": "system.info.read",
+                "verification_reason": "SYSTEM_INFO_VERIFIED",
+                "observed": {
+                    "system": "Windows",
+                    "release": "11",
+                    "version": "10.0",
+                    "machine": "AMD64",
+                },
+            }
+        ]
+    }
+
+    TypedPlanner(transport, default_registry()).plan("test", trusted_context=context)
+
+    assert len(transport.calls) == 1
+    assert "SYSTEM_INFO_VERIFIED" in transport.calls[0][1]
+
+
+@pytest.mark.parametrize(
+    "observed",
+    [
+        {
+            "system": "Windows",
+            "release": "11",
+            "version": "10.0",
+            "machine": "AMD64",
+            "hostname": "private-host",
+        },
+        {
+            "system": "Windows",
+            "release": "11",
+            "version": r"C:\Users\private\version.txt",
+            "machine": "AMD64",
+        },
+        {
+            "system": "Windows",
+            "release": "11",
+            "version": "https://private.example/version",
+            "machine": "AMD64",
+        },
+    ],
+)
+def test_sensitive_or_unprojected_observation_is_rejected_without_transport(
+    observed: dict[str, object],
+) -> None:
+    transport = FakeTransport(plan_json())
+    context = {
+        "verified_observations": [
+            {
+                "capability_id": "system.info.read",
+                "verification_reason": "SYSTEM_INFO_VERIFIED",
+                "observed": observed,
+            }
+        ]
+    }
+
+    with pytest.raises(PlannerError, match="invalid planner context"):
+        TypedPlanner(transport, default_registry()).plan("test", trusted_context=context)
+
+    assert transport.calls == []
+
+
+def test_path_in_user_goal_is_not_misreported_as_projected_observation() -> None:
+    transport = FakeTransport(plan_json())
+
+    TypedPlanner(transport, default_registry()).plan(r"C:\Users\private\file.txt 확인")
+
+    assert len(transport.calls) == 1
+
+
 @pytest.mark.parametrize(
     ("goal", "untrusted"),
     [("x" * 4_001, None), ("test", "x" * 20_001), ("bad\0goal", None)],
@@ -308,6 +390,9 @@ def test_nim_key_format_is_validated_without_exposing_value() -> None:
     [
         {"reasoning_effort": "none"},
         {"clear_thinking": 1},
+        {"max_transient_retries": 4},
+        {"retry_base_seconds": 0},
+        {"max_retry_delay_seconds": 0.1},
     ],
 )
 def test_nim_reasoning_configuration_is_runtime_validated(
@@ -329,6 +414,19 @@ class FakeHttpResponse:
 
     def read(self, limit: int) -> bytes:
         return self.payload[:limit]
+
+
+def http_error(code: int, *, retry_after: str | None = None) -> urllib.error.HTTPError:
+    headers = Message()
+    if retry_after is not None:
+        headers["Retry-After"] = retry_after
+    return urllib.error.HTTPError(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        code,
+        "redacted",
+        headers,
+        None,
+    )
 
 
 def test_nim_transport_extracts_content_from_valid_envelope(
@@ -421,3 +519,157 @@ def test_nim_transport_rejects_oversized_response(monkeypatch: MonkeyPatch) -> N
     metrics = transport.metrics_snapshot()
     assert metrics.requests == 1
     assert metrics.successful_requests == 0
+
+
+def test_nim_transport_retries_explicit_transient_http_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    envelope = json.dumps(
+        {
+            "choices": [{"message": {"content": plan_json()}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 4},
+        }
+    ).encode()
+    outcomes: list[object] = [http_error(429, retry_after="1.25"), FakeHttpResponse(envelope)]
+    delays: list[float] = []
+
+    def fake_urlopen(request: object, timeout: float) -> FakeHttpResponse:
+        outcome = outcomes.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        assert isinstance(outcome, FakeHttpResponse)
+        return outcome
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    transport = NimChatTransport(
+        SecretStr("nvapi-" + "x" * 64),
+        sleeper=delays.append,
+    )
+
+    assert transport.complete("system", "user") == plan_json()
+    assert delays == [1.25]
+    metrics = transport.metrics_snapshot()
+    assert metrics.requests == 2
+    assert metrics.successful_requests == 1
+    assert metrics.input_tokens == 10
+    assert metrics.output_tokens == 4
+
+
+def test_nim_transport_bounds_exponential_retry_and_fails_closed(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    attempts = 0
+    delays: list[float] = []
+
+    def fake_urlopen(request: object, timeout: float) -> FakeHttpResponse:
+        nonlocal attempts
+        attempts += 1
+        raise http_error(503)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    transport = NimChatTransport(
+        SecretStr("nvapi-" + "x" * 64),
+        max_transient_retries=2,
+        retry_base_seconds=0.5,
+        max_retry_delay_seconds=0.75,
+        sleeper=delays.append,
+    )
+
+    with pytest.raises(PlannerError, match="NIM request failed"):
+        transport.complete("system", "user")
+
+    assert attempts == 3
+    assert delays == [0.5, 0.75]
+    metrics = transport.metrics_snapshot()
+    assert metrics.requests == 3
+    assert metrics.successful_requests == 0
+
+
+def test_nim_transport_does_not_retry_non_transient_http_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    attempts = 0
+    delays: list[float] = []
+
+    def fake_urlopen(request: object, timeout: float) -> FakeHttpResponse:
+        nonlocal attempts
+        attempts += 1
+        raise http_error(400)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    transport = NimChatTransport(
+        SecretStr("nvapi-" + "x" * 64),
+        sleeper=delays.append,
+    )
+
+    with pytest.raises(PlannerError, match="NIM request failed"):
+        transport.complete("system", "user")
+
+    assert attempts == 1
+    assert delays == []
+
+
+def test_nim_transport_caps_server_retry_after(monkeypatch: MonkeyPatch) -> None:
+    envelope = json.dumps(
+        {"choices": [{"message": {"content": plan_json()}}]}
+    ).encode()
+    outcomes: list[object] = [http_error(504, retry_after="300"), FakeHttpResponse(envelope)]
+    delays: list[float] = []
+
+    def fake_urlopen(request: object, timeout: float) -> FakeHttpResponse:
+        outcome = outcomes.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        assert isinstance(outcome, FakeHttpResponse)
+        return outcome
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    transport = NimChatTransport(
+        SecretStr("nvapi-" + "x" * 64),
+        max_retry_delay_seconds=3.0,
+        sleeper=delays.append,
+    )
+
+    transport.complete("system", "user")
+
+    assert delays == [3.0]
+
+
+def test_nim_retry_wait_is_interrupted_by_local_cancellation(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    request_seen = threading.Event()
+    cancellation = CancellationToken()
+    attempts = 0
+    errors: list[BaseException] = []
+
+    def fake_urlopen(request: object, timeout: float) -> FakeHttpResponse:
+        nonlocal attempts
+        del request, timeout
+        attempts += 1
+        request_seen.set()
+        raise http_error(503, retry_after="5")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    transport = NimChatTransport(SecretStr("nvapi-" + "x" * 64))
+
+    def complete() -> None:
+        try:
+            transport.complete_cancellable("system", "user", cancellation)
+        except BaseException as error:
+            errors.append(error)
+
+    started = time.monotonic()
+    worker = threading.Thread(target=complete)
+    worker.start()
+    assert request_seen.wait(timeout=1)
+    cancellation.cancel("LOCAL_STOP")
+    worker.join(timeout=1)
+
+    assert not worker.is_alive()
+    assert time.monotonic() - started < 1.0
+    assert attempts == 1
+    assert len(errors) == 1
+    assert isinstance(errors[0], PlannerError)
+    assert "cancelled" in str(errors[0])
+    assert transport.metrics_snapshot().requests == 1

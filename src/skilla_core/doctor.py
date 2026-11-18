@@ -16,12 +16,14 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from .app_registry import AppRegistryLoader
+from .microphone_probe import probe_microphones
 from .models import FrozenModel
 from .stt_bundle import load_stt_bundle
 from .supertonic_tts import SupertonicTtsRunner
 from .tts_ipc import TtsWorkerRunner
 from .wakeword_bundle import load_wakeword_bundle
 from .windows_hello import load_windows_hello_verifier
+from .youtube_history import chrome_history_path
 
 
 class DoctorStatus(StrEnum):
@@ -96,6 +98,8 @@ def default_doctor_checks() -> tuple[DoctorCheck, ...]:
         DoctorCheck("approval.hello", True, "HELLO_HELPER_INVALID", _hello_manifest),
         DoctorCheck("model.wakeword", True, "WAKEWORD_BUNDLE_INVALID", _wakeword),
         DoctorCheck("model.stt", True, "STT_BUNDLE_INVALID", _stt),
+        DoctorCheck("browser.history", True, "BROWSER_HISTORY_UNAVAILABLE", _browser_history),
+        DoctorCheck("audio.microphone", True, "MICROPHONE_UNAVAILABLE", _microphone),
         DoctorCheck("tts.supertonic", True, "SUPERTONIC_UNAVAILABLE", _supertonic),
         DoctorCheck("tts.sapi", True, "SAPI_UNAVAILABLE", _sapi),
     ]
@@ -190,6 +194,37 @@ def _stt(root: Path) -> bool:
     manifest = next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
     bundle = load_stt_bundle(manifest)
     return bundle.verify()
+
+
+def _microphone(root: Path) -> bool:
+    configuration = json.loads(
+        (root / "config" / "product_host.json").read_text(encoding="utf-8")
+    )
+    selected = configuration.get("microphone_device_index")
+    if selected is not None and (isinstance(selected, bool) or not isinstance(selected, int)):
+        return False
+    report = probe_microphones()
+    compatible = {item.index for item in report.devices if item.compatible}
+    default = next(
+        (item.index for item in report.devices if item.is_default and item.compatible),
+        None,
+    )
+    if selected is None:
+        return default is not None
+    return selected in compatible or default is not None
+
+
+def _browser_history(root: Path) -> bool:
+    configuration = json.loads(
+        (root / "config" / "product_host.json").read_text(encoding="utf-8")
+    )
+    if configuration.get("browser_history_enabled") is not True:
+        return True
+    profile = configuration.get("browser_history_profile", "Default")
+    if not isinstance(profile, str):
+        return False
+    history = chrome_history_path(profile)
+    return history.is_file() and not history.is_symlink()
 
 
 def _sapi(root: Path) -> bool:

@@ -200,6 +200,19 @@ def default_argument_contracts() -> Mapping[str, ArgumentContract]:
                 string_choices={"browser_id": ("chrome", "edge")},
                 allowed_postconditions=("browser.navigation.verified",),
             ),
+            "browser.search.web": ArgumentContract(
+                {"browser_id": "string", "query": "string"},
+                target_required=True,
+                string_choices={"browser_id": ("chrome", "edge")},
+                allowed_postconditions=("browser.search.opened",),
+            ),
+            "media.youtube.play.recent": ArgumentContract(
+                {"mode": "string", "lookback_days": "integer"},
+                target_required=True,
+                string_choices={"mode": ("recent", "frequent")},
+                integer_ranges={"lookback_days": (1, 90)},
+                allowed_postconditions=("media.youtube.opened",),
+            ),
             "document.write": ArgumentContract(
                 {
                     "path": "string",
@@ -370,6 +383,8 @@ def _validate_postconditions(action: Action) -> None:
             "memory.search.matches",
             "fixture.sources.bound",
             "browser.navigation.verified",
+            "browser.search.opened",
+            "media.youtube.opened",
             "explorer.folder.verified",
             "package.identity.verified",
             "reset.prepared",

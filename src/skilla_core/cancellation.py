@@ -29,3 +29,13 @@ class CancellationToken:
         with self._lock:
             return self._reason
 
+    def wait(self, timeout_seconds: float) -> bool:
+        """Wait for cancellation without exposing the mutable event."""
+        if (
+            isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or not 0 <= timeout_seconds <= 120.0
+        ):
+            raise ValueError("cancellation wait must be within 0..120 seconds")
+        return self._event.wait(float(timeout_seconds))
+

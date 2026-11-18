@@ -1,0 +1,25 @@
+SKILLA third-party notice: Supertonic 3
+
+Component
+  Supertonic 3 int8 ONNX text-to-speech model files distributed with SKILLA.
+
+Runtime model license
+  OpenRAIL-M (BigScience Open RAIL-M License, dated August 18, 2022)
+  Local full text: LICENSE.MODEL-OpenRAIL-M.txt
+  Upstream model page: https://huggingface.co/Supertone/supertonic-3
+  Upstream license source: https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE
+  Retrieved by the SKILLA project on 2026-11-18.
+  Retrieved UTF-8 text SHA-256: 0d944a9110fed9a9602d60e0423a272903e7bd21ab060490774efc77c2275e9f
+
+Sample-code license
+  The separate file named LICENSE in this directory contains the MIT License
+  notice shipped with the accompanying Supertonic materials. It is not the
+  license for the model weights.
+
+Packaged model provenance
+  Archive: sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2
+  Source: https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2
+  Archive SHA-256: 82fa96f91c4ef8abaae3a14a3f4153facf88bed821d1f7331cec2700f432c427
+
+SKILLA keeps the model license and the sample-code license as distinct files
+so that an installed package identifies which terms apply to each component.

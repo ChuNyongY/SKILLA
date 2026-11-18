@@ -105,13 +105,6 @@ def header(parent: Any, *, system_code: str, heading: str) -> Any:
     ).pack(side="left")
     label(
         frame,
-        "반복작업 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
-        color=COLORS["muted"],
-        size=8,
-        font="맑은 고딕",
-    ).pack(side="left", padx=(16, 0), pady=(9, 0))
-    label(
-        frame,
         system_code,
         color=COLORS["warning"],
         size=9,
@@ -119,6 +112,15 @@ def header(parent: Any, *, system_code: str, heading: str) -> Any:
         anchor="e",
         font="Consolas",
     ).pack(side="right", pady=(8, 0))
+    tagline = label(
+        frame,
+        "반복작업을 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
+        color=COLORS["muted"],
+        size=8,
+        font="맑은 고딕",
+    )
+    tagline.configure(wraplength=320)
+    tagline.pack(side="left", padx=(16, 0), pady=(2, 0))
     tk.Frame(parent, height=1, bg=COLORS["cyan_dim"]).pack(fill="x", pady=(12, 12))
     label(parent, heading, size=19, bold=True).pack(fill="x", pady=(0, 10))
     return frame

@@ -122,6 +122,22 @@ def default_registry() -> CapabilityRegistry:
                 changes_state=True,
             ),
             spec(
+                "browser.search.web",
+                "Open a bounded user query in Google using a registered browser",
+                RiskLevel.R2,
+                ("native",),
+                external=True,
+                changes_state=True,
+            ),
+            spec(
+                "media.youtube.play.recent",
+                "Select a recent or frequent YouTube item from local Chrome history and open it",
+                RiskLevel.R2,
+                ("native",),
+                sensitive=True,
+                changes_state=True,
+            ),
+            spec(
                 "document.write",
                 "Write a new verified DOCX fixture document",
                 RiskLevel.R2,

@@ -90,6 +90,20 @@ def _target_matches(
 
         parsed = _validate_url(raw_url, browser_hosts)
         return parsed is not None and target == f"browser:{browser_id}:{parsed.hostname}"
+    if capability == "browser.search.web":
+        browser_id = action.arguments.get("browser_id")
+        query = action.arguments.get("query")
+        from .browser_search import normalize_search_query
+
+        return (
+            browser_id in {"chrome", "edge"}
+            and isinstance(query, str)
+            and normalize_search_query(query) is not None
+            and "www.google.com" in browser_hosts
+            and target == f"browser-search:{browser_id}:www.google.com"
+        )
+    if capability == "media.youtube.play.recent":
+        return target == "browser-history:chrome:youtube"
     argument = {
         "file.list": "path",
         "file.move": "source",

@@ -81,3 +81,59 @@ def test_mismatched_or_unverified_result_is_rejected() -> None:
     else:
         raise AssertionError("mismatched result was accepted")
     assert store.snapshot() is None
+
+
+def test_youtube_history_result_is_explained_without_exposing_selection() -> None:
+    action = Action(
+        capability_id="media.youtube.play.recent",
+        purpose="평소 듣던 노래 열기",
+    )
+    store = UserVisibleResultStore()
+    store.observe(
+        action,
+        ExecutionResult(
+            action_id=action.action_id,
+            executor="native",
+            success=True,
+            observed={
+                "selection_mode": "frequent",
+                "selection_sha256": "a" * 64,
+            },
+            duration_ms=1,
+        ),
+        VerificationResult(success=True, reason="YOUTUBE_MEDIA_OPENED_VERIFIED"),
+    )
+
+    rendered = store.snapshot()
+    assert rendered is not None
+    assert rendered.title == "YouTube 음악 열기 완료"
+    assert "자주 들은 항목" in rendered.lines[0]
+    assert "a" * 64 not in rendered.model_dump_json()
+
+
+def test_web_search_result_does_not_repeat_query_or_hash() -> None:
+    action = Action(
+        capability_id="browser.search.web",
+        purpose="개인적인 검색어 원문",
+    )
+    store = UserVisibleResultStore()
+    store.observe(
+        action,
+        ExecutionResult(
+            action_id=action.action_id,
+            executor="native",
+            success=True,
+            observed={
+                "search_engine": "google",
+                "query_sha256": "b" * 64,
+            },
+            duration_ms=1,
+        ),
+        VerificationResult(success=True, reason="BROWSER_SEARCH_OPENED_VERIFIED"),
+    )
+
+    rendered = store.snapshot()
+    assert rendered is not None
+    assert rendered.title == "웹 검색 열기 완료"
+    assert "개인적인 검색어 원문" not in rendered.model_dump_json()
+    assert "b" * 64 not in rendered.model_dump_json()

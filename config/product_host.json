@@ -8,8 +8,11 @@
     "docs.python.org",
     "github.com",
     "learn.microsoft.com",
-    "www.google.com"
+    "www.google.com",
+    "www.youtube.com"
   ],
+  "browser_history_enabled": true,
+  "browser_history_profile": "Default",
   "nim_model": "z-ai/glm-5.3-flash",
   "wakeword_mode": "whisper_korean",
   "wake_threshold": 0.5,

@@ -95,6 +95,20 @@ def _summarize(
                 title="폴더 확인 결과",
                 lines=(f"파일과 폴더 {count}개를 확인했습니다. {suffix}".strip(),),
             )
+    if capability_id == "media.youtube.play.recent":
+        mode = execution.observed.get("selection_mode")
+        selection = "자주 들은 항목" if mode == "frequent" else "최근 들은 항목"
+        return UserVisibleResultSnapshot(
+            capability_id=capability_id,
+            title="YouTube 음악 열기 완료",
+            lines=(f"크롬 기록에서 {selection}을 선택해 새 창으로 열었습니다.",),
+        )
+    if capability_id == "browser.search.web":
+        return UserVisibleResultSnapshot(
+            capability_id=capability_id,
+            title="웹 검색 열기 완료",
+            lines=("승인한 검색어를 등록된 브라우저의 새 창에서 열었습니다.",),
+        )
     return UserVisibleResultSnapshot(
         capability_id=capability_id,
         title="검증된 작업 결과",

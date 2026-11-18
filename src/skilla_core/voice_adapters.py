@@ -12,6 +12,7 @@ from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
 from threading import Event, Lock, Thread
+from time import monotonic
 from typing import TYPE_CHECKING, Protocol
 
 from .cancellation import CancellationToken
@@ -618,7 +619,7 @@ class RawInputStreamFactory(Protocol):
 
 
 class SoundDeviceFrameSource:
-    """Bounded sounddevice input source with prompt cancellation and cleanup."""
+    """Bounded sounddevice input source with failover, stall detection, and cleanup."""
 
     def __init__(
         self,
@@ -627,9 +628,17 @@ class SoundDeviceFrameSource:
         sample_rate: int = 16_000,
         frame_ms: int = 80,
         queue_capacity: int = 32,
+        stall_timeout_seconds: float = 3.0,
+        fallback_to_default_device: bool = True,
         stream_factory: RawInputStreamFactory | None = None,
+        clock: Callable[[], float] = monotonic,
     ) -> None:
-        if sample_rate != 16_000 or frame_ms < 10 or queue_capacity < 1:
+        if (
+            sample_rate != 16_000
+            or frame_ms < 10
+            or queue_capacity < 1
+            or not 0.01 <= stall_timeout_seconds <= 60.0
+        ):
             raise ValueError("invalid microphone capture configuration")
         blocksize = sample_rate * frame_ms // 1000
         if blocksize * 1000 != sample_rate * frame_ms:
@@ -638,7 +647,10 @@ class SoundDeviceFrameSource:
         self._sample_rate = sample_rate
         self._blocksize = blocksize
         self._queue_capacity = queue_capacity
+        self._stall_timeout_seconds = stall_timeout_seconds
+        self._fallback_to_default_device = fallback_to_default_device
         self._stream_factory = stream_factory
+        self._clock = clock
 
     def frames(
         self,
@@ -650,6 +662,38 @@ class SoundDeviceFrameSource:
             raise ValueError("max_frames must be positive")
         if cancellation.is_cancelled:
             return
+        devices: tuple[int | str | None, ...] = (self._device,)
+        if self._device is not None and self._fallback_to_default_device:
+            devices = (self._device, None)
+        yielded = 0
+        last_error: AudioCaptureError | None = None
+        for candidate_number, device in enumerate(devices):
+            candidate_yielded = 0
+            try:
+                for frame in self._capture_device(
+                    device,
+                    cancellation,
+                    max_frames=max_frames - yielded,
+                ):
+                    candidate_yielded += 1
+                    yielded += 1
+                    yield frame
+                return
+            except AudioCaptureError as error:
+                last_error = error
+                is_last_candidate = candidate_number == len(devices) - 1
+                if candidate_yielded or is_last_candidate or cancellation.is_cancelled:
+                    raise
+        if last_error is not None:
+            raise last_error
+
+    def _capture_device(
+        self,
+        device: int | str | None,
+        cancellation: CancellationToken,
+        *,
+        max_frames: int,
+    ) -> Iterable[AudioFrame]:
         frame_queue: queue.Queue[bytes] = queue.Queue(maxsize=self._queue_capacity)
         errors: queue.Queue[str] = queue.Queue(maxsize=1)
         expected_bytes = self._blocksize * 2
@@ -668,17 +712,26 @@ class SoundDeviceFrameSource:
                 self._record_capture_error(errors, "AUDIO_QUEUE_OVERFLOW")
 
         factory = self._stream_factory or self._sounddevice_factory()
-        stream = factory(
-            samplerate=self._sample_rate,
-            blocksize=self._blocksize,
-            channels=1,
-            dtype="int16",
-            device=self._device,
-            callback=callback,
-        )
-        yielded = 0
         try:
-            stream.start()
+            stream = factory(
+                samplerate=self._sample_rate,
+                blocksize=self._blocksize,
+                channels=1,
+                dtype="int16",
+                device=device,
+                callback=callback,
+            )
+        except Exception as error:
+            raise AudioCaptureError("AUDIO_DEVICE_OPEN_FAILED") from error
+        yielded = 0
+        started = False
+        try:
+            try:
+                stream.start()
+                started = True
+            except Exception as error:
+                raise AudioCaptureError("AUDIO_DEVICE_START_FAILED") from error
+            last_frame_at = self._clock()
             while not cancellation.is_cancelled and yielded < max_frames:
                 try:
                     capture_error = errors.get_nowait()
@@ -689,12 +742,18 @@ class SoundDeviceFrameSource:
                 try:
                     payload = frame_queue.get(timeout=0.1)
                 except queue.Empty:
+                    if self._clock() - last_frame_at >= self._stall_timeout_seconds:
+                        raise AudioCaptureError("AUDIO_INPUT_STALLED") from None
                     continue
+                last_frame_at = self._clock()
                 yielded += 1
                 yield AudioFrame(pcm_s16le=payload, sample_rate=self._sample_rate, channels=1)
         finally:
-            stream.stop()
-            stream.close()
+            if started:
+                with suppress(Exception):
+                    stream.stop()
+            with suppress(Exception):
+                stream.close()
 
     @staticmethod
     def _record_capture_error(errors: queue.Queue[str], message: str) -> None:

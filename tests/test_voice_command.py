@@ -89,6 +89,50 @@ class Planner:
         )
 
 
+class CancellableClassifier(Classifier):
+    def __init__(self) -> None:
+        super().__init__(IntentClass.COMMAND)
+        self.cancellation: CancellationToken | None = None
+
+    def classify_cancellable(
+        self,
+        transcript: str,
+        *,
+        wake_confidence: float,
+        explicit_wake_word: bool,
+        source: InputSource,
+        cancellation: CancellationToken,
+    ) -> IntentEvidence:
+        self.cancellation = cancellation
+        return self.classify(
+            transcript,
+            wake_confidence=wake_confidence,
+            explicit_wake_word=explicit_wake_word,
+            source=source,
+        )
+
+
+class CancellablePlanner(Planner):
+    def __init__(self) -> None:
+        super().__init__()
+        self.cancellation: CancellationToken | None = None
+
+    def plan_cancellable(
+        self,
+        goal: str,
+        *,
+        trusted_context: Mapping[str, object] | None = None,
+        untrusted_context: str | None = None,
+        cancellation: CancellationToken,
+    ) -> Plan:
+        self.cancellation = cancellation
+        return self.plan(
+            goal,
+            trusted_context=trusted_context,
+            untrusted_context=untrusted_context,
+        )
+
+
 def capture(
     transcript: str | None = "스킬라 시스템 정보 확인",
     *,
@@ -118,6 +162,21 @@ def test_command_routes_to_typed_plan_with_minimized_context() -> None:
         ("스킬라 시스템 정보 확인", {"foreground_app_id": "notepad"})
     ]
     assert not token.is_cancelled
+
+
+def test_shared_cancellation_reaches_classifier_and_planner() -> None:
+    classifier = CancellableClassifier()
+    planner = CancellablePlanner()
+    token = CancellationToken()
+
+    decision = VoiceCommandCoordinator(classifier, planner, token).process_text(
+        "시스템 정보 확인",
+        task_active=False,
+    )
+
+    assert decision.status is VoiceCommandStatus.PLAN_READY
+    assert classifier.cancellation is token
+    assert planner.cancellation is token
 
 
 def test_trusted_text_uses_text_source_without_faking_microphone_evidence() -> None:

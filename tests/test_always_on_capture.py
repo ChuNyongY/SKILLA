@@ -127,6 +127,28 @@ def test_request_stop_ends_active_capture_loop() -> None:
     assert not pump.is_running
 
 
+def test_eight_hour_equivalent_idle_frame_window_completes_without_task() -> None:
+    eight_hours_at_80_ms = 8 * 60 * 60 * 1_000 // 80
+    runtime, _classifier, _planner = runtime_with_executor(BlockingExecutor())
+    pipeline = ScriptedPipeline([])
+    pump = AlwaysOnCapturePump(
+        frame_source=FiniteFrameSource(eight_hours_at_80_ms),
+        voice_pipeline=pipeline,
+        runtime=runtime,
+    )
+
+    result = pump.run(max_frames=eight_hours_at_80_ms)
+
+    assert result.status is CapturePumpStatus.FRAME_LIMIT_REACHED
+    assert result.frame_count == eight_hours_at_80_ms
+    assert result.capture_count == 0
+    assert result.tasks_started == 0
+    assert result.stops_accepted == 0
+    assert result.busy_ignored == 0
+    assert not pump.is_running
+    assert pipeline.cancelled
+
+
 def test_feedback_playback_and_tail_are_not_sent_to_stt_or_runtime() -> None:
     runtime, _classifier, _planner = runtime_with_executor(BlockingExecutor())
     pipeline = ScriptedPipeline([capture("스킬라 자체 안내 음성")])

@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .audit import AuditRetentionPolicy, JsonlAuditSink
+from .context_events import EventDrivenContextManager, WindowsContextEventSource
 from .display_target import DisplayTargetController, build_windows_display_controller
+from .foreground_context import ForegroundContextCollector
 from .local_approval import LocalApprovalPresenter, OsBackedStrongAuthenticator, TkApprovalDialog
 from .natural_tts import FallbackSpeechSink
 from .planner import NimChatTransport
@@ -35,8 +37,20 @@ from .product_windows import build_windows_product_capabilities
 from .skill_authoring import SkillDraftAuthor
 from .skill_draft_workflow import InitialSkillDraftWorkflow
 from .skill_runtime import LocalSkillCatalog, SkillAwarePlanner
+from .skill_schedule_monitor import (
+    SkillScheduleMonitor,
+    SkillScheduleMonitorState,
+    SkillScheduleSuggestionStore,
+)
+from .skill_schedules import LocalSkillScheduleRepository, SkillScheduleSuggestionEngine
 from .skill_session import SkillSession
 from .skill_trace_store import LocalSkillTraceStore
+from .skill_trigger_monitor import (
+    SkillTriggerMonitor,
+    SkillTriggerMonitorState,
+    SkillTriggerSuggestionStore,
+)
+from .skill_triggers import LocalSkillTriggerRepository, SkillTriggerSuggestionEngine
 from .skill_use_recording import (
     CatalogSkillUseRecorder,
     product_model_configuration_sha256,
@@ -54,6 +68,12 @@ class WindowsProductService:
     preflight: ProductPreflightReport
     capabilities: ProductCapabilityStack
     skills: LocalSkillCatalog
+    skill_triggers: LocalSkillTriggerRepository
+    skill_trigger_suggestions: SkillTriggerSuggestionStore
+    skill_trigger_monitor: SkillTriggerMonitor
+    skill_schedules: LocalSkillScheduleRepository
+    skill_schedule_suggestions: SkillScheduleSuggestionStore
+    skill_schedule_monitor: SkillScheduleMonitor
     skill_traces: LocalSkillTraceStore
     skill_draft_workflow: InitialSkillDraftWorkflow
     display: DisplayTargetController
@@ -118,6 +138,32 @@ def _build_windows_product_service(
         state_directory=state_directory,
     )
     skills = LocalSkillCatalog(state_directory / "skills.sqlite3", capabilities.registry)
+    skill_triggers = LocalSkillTriggerRepository(
+        state_directory / "skill-triggers.sqlite3",
+        registered_app_ids=capabilities.registered_app_ids,
+        skill_catalog=skills,
+    )
+    trigger_engine = SkillTriggerSuggestionEngine(skill_triggers)
+    skill_trigger_suggestions = SkillTriggerSuggestionStore(trigger_engine)
+    registered_apps = {app.app_id: app for app in capabilities.registered_apps}
+    skill_trigger_monitor = SkillTriggerMonitor(
+        lambda: EventDrivenContextManager(
+            WindowsContextEventSource(),
+            ForegroundContextCollector(registered_apps),
+        ),
+        trigger_engine,
+        skill_trigger_suggestions,
+    )
+    skill_schedules = LocalSkillScheduleRepository(
+        state_directory / "skill-schedules.sqlite3",
+        skill_catalog=skills,
+    )
+    schedule_engine = SkillScheduleSuggestionEngine(skill_schedules)
+    skill_schedule_suggestions = SkillScheduleSuggestionStore(schedule_engine)
+    skill_schedule_monitor = SkillScheduleMonitor(
+        schedule_engine,
+        skill_schedule_suggestions,
+    )
     skill_traces = LocalSkillTraceStore(state_directory / "skill-traces.sqlite3")
     skill_draft_workflow = InitialSkillDraftWorkflow(
         trace_store=skill_traces,
@@ -192,12 +238,24 @@ def _build_windows_product_service(
         run_capture=runtime.capture_pump.run,
         request_capture_stop=runtime.capture_pump.request_stop,
         request_runtime_stop=runtime.runtime.close,
+        start_auxiliary=lambda: _start_skill_monitors(
+            skill_trigger_monitor, skill_schedule_monitor
+        ),
+        stop_auxiliary=lambda: _stop_skill_monitors(
+            skill_trigger_monitor, skill_schedule_monitor
+        ),
     )
     return WindowsProductService(
         configuration=configuration,
         preflight=preflight,
         capabilities=capabilities,
         skills=skills,
+        skill_triggers=skill_triggers,
+        skill_trigger_suggestions=skill_trigger_suggestions,
+        skill_trigger_monitor=skill_trigger_monitor,
+        skill_schedules=skill_schedules,
+        skill_schedule_suggestions=skill_schedule_suggestions,
+        skill_schedule_monitor=skill_schedule_monitor,
         skill_traces=skill_traces,
         skill_draft_workflow=skill_draft_workflow,
         display=display,
@@ -207,3 +265,24 @@ def _build_windows_product_service(
         audit=audit,
         lifecycle=lifecycle,
     )
+
+
+def _start_skill_monitors(
+    trigger_monitor: SkillTriggerMonitor,
+    schedule_monitor: SkillScheduleMonitor,
+) -> None:
+    trigger_status = trigger_monitor.start()
+    if trigger_status.state is not SkillTriggerMonitorState.RUNNING:
+        raise ProductHostError("skill trigger monitor failed to start")
+    schedule_status = schedule_monitor.start()
+    if schedule_status.state is not SkillScheduleMonitorState.RUNNING:
+        trigger_monitor.stop()
+        raise ProductHostError("skill schedule monitor failed to start")
+
+
+def _stop_skill_monitors(
+    trigger_monitor: SkillTriggerMonitor,
+    schedule_monitor: SkillScheduleMonitor,
+) -> None:
+    schedule_monitor.stop()
+    trigger_monitor.stop()

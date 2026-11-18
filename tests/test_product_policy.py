@@ -135,6 +135,66 @@ def test_browser_policy_rejects_unlisted_host_and_target_mismatch(tmp_path: Path
     assert not mismatch.target_matches_plan
 
 
+def test_youtube_history_policy_requires_fixed_local_target(tmp_path: Path) -> None:
+    provider = build_windows_policy_context_provider(
+        (tmp_path,), {"workspace": tmp_path}, ("www.youtube.com",)
+    )
+    matched = provider(
+        Action(
+            capability_id="media.youtube.play.recent",
+            arguments={"mode": "frequent", "lookback_days": 30},
+            purpose="open frequent media",
+            target_identity="browser-history:chrome:youtube",
+        )
+    )
+    mismatched = provider(
+        Action(
+            capability_id="media.youtube.play.recent",
+            arguments={"mode": "frequent", "lookback_days": 30},
+            purpose="reject",
+            target_identity="browser-history:edge:youtube",
+        )
+    )
+
+    assert matched.target_matches_plan
+    assert not mismatched.target_matches_plan
+
+
+def test_web_search_policy_requires_google_allowlist_and_exact_browser_target(
+    tmp_path: Path,
+) -> None:
+    action = Action(
+        capability_id="browser.search.web",
+        arguments={"browser_id": "chrome", "query": "스킬라 확장 기능"},
+        purpose="search web",
+        target_identity="browser-search:chrome:www.google.com",
+    )
+    allowed = build_windows_policy_context_provider(
+        (tmp_path,), {"workspace": tmp_path}, ("www.google.com",)
+    )
+    blocked = build_windows_policy_context_provider(
+        (tmp_path,), {"workspace": tmp_path}, ("github.com",)
+    )
+
+    assert allowed(action).target_matches_plan
+    assert not blocked(action).target_matches_plan
+    assert not allowed(
+        action.model_copy(
+            update={"target_identity": "browser-search:edge:www.google.com"}
+        )
+    ).target_matches_plan
+    assert not allowed(
+        action.model_copy(
+            update={"arguments": {"browser_id": "chrome", "query": "줄바꿈\n검색"}}
+        )
+    ).target_matches_plan
+    assert not allowed(
+        action.model_copy(
+            update={"arguments": {"browser_id": "chrome", "query": "x" * 201}}
+        )
+    ).target_matches_plan
+
+
 def test_memory_search_requires_a_registered_store_target(tmp_path: Path) -> None:
     provider = build_windows_policy_context_provider(
         (tmp_path,),

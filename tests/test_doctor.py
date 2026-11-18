@@ -59,4 +59,8 @@ def test_default_doctor_requires_bounded_sapi_probe() -> None:
     assert checks["tts.sapi"].failure_code == "SAPI_UNAVAILABLE"
     assert checks["tts.supertonic"].required
     assert checks["tts.supertonic"].failure_code == "SUPERTONIC_UNAVAILABLE"
+    assert checks["audio.microphone"].required
+    assert checks["audio.microphone"].failure_code == "MICROPHONE_UNAVAILABLE"
+    assert checks["browser.history"].required
+    assert checks["browser.history"].failure_code == "BROWSER_HISTORY_UNAVAILABLE"
     assert not checks["dependency.pycaw"].required

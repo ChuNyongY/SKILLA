@@ -7,6 +7,7 @@ from typing import Any, Literal, Protocol
 
 from pydantic import Field, StrictBool, model_validator
 
+from .cancellation import CancellationToken
 from .intent import InputSource, IntentClass, IntentEvidence, LocalStopDetector
 from .models import FrozenModel
 
@@ -79,6 +80,42 @@ class TypedIntentClassifier:
         explicit_wake_word: bool,
         source: InputSource = "MIC",
     ) -> IntentEvidence:
+        return self._classify(
+            transcript,
+            wake_confidence=wake_confidence,
+            explicit_wake_word=explicit_wake_word,
+            source=source,
+            cancellation=None,
+        )
+
+    def classify_cancellable(
+        self,
+        transcript: str,
+        *,
+        wake_confidence: float,
+        explicit_wake_word: bool,
+        source: InputSource = "MIC",
+        cancellation: CancellationToken,
+    ) -> IntentEvidence:
+        return self._classify(
+            transcript,
+            wake_confidence=wake_confidence,
+            explicit_wake_word=explicit_wake_word,
+            source=source,
+            cancellation=cancellation,
+        )
+
+    def _classify(
+        self,
+        transcript: str,
+        *,
+        wake_confidence: float,
+        explicit_wake_word: bool,
+        source: InputSource,
+        cancellation: CancellationToken | None,
+    ) -> IntentEvidence:
+        if cancellation is not None and cancellation.is_cancelled:
+            raise IntentClassifierError("intent classification cancelled")
         if source == "UNTRUSTED_CONTENT":
             return IntentEvidence(
                 transcript="[UNTRUSTED_CONTENT]",
@@ -115,14 +152,25 @@ class TypedIntentClassifier:
                 source=source,
             )
         try:
-            response = self._transport.complete(
-                self._system_prompt(),
-                json.dumps(
-                    {"transcript": normalized},
-                    ensure_ascii=False,
-                    separators=(",", ":"),
-                ),
+            system_prompt = self._system_prompt()
+            user_prompt = json.dumps(
+                {"transcript": normalized},
+                ensure_ascii=False,
+                separators=(",", ":"),
             )
+            complete_cancellable = getattr(self._transport, "complete_cancellable", None)
+            if cancellation is not None and callable(complete_cancellable):
+                response = complete_cancellable(
+                    system_prompt, user_prompt, cancellation
+                )
+                if not isinstance(response, str):
+                    raise IntentClassifierError(
+                        "invalid cancellable transport response"
+                    )
+            else:
+                response = self._transport.complete(system_prompt, user_prompt)
+            if cancellation is not None and cancellation.is_cancelled:
+                raise IntentClassifierError("intent classification cancelled")
             proposal = self._parse(response)
         except IntentClassifierError:
             raise

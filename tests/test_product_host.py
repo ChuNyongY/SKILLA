@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import threading
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from pydantic import SecretStr
@@ -124,6 +125,13 @@ def test_config_loader_rejects_duplicate_secret_and_traversal(tmp_path: Path) ->
     config.write_text(json.dumps(document), encoding="utf-8")
     with pytest.raises(ProductHostError, match="invalid"):
         load_product_host_config(config.resolve(), fourth_root)
+
+    fifth_root, config = create_root(tmp_path / "fifth")
+    document = json.loads(config.read_text(encoding="utf-8"))
+    document["browser_history_enabled"] = True
+    config.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ProductHostError, match="invalid"):
+        load_product_host_config(config.resolve(), fifth_root)
 
 
 def test_secret_loader_requires_absolute_protected_bounded_file(tmp_path: Path) -> None:
@@ -268,6 +276,55 @@ def test_lifecycle_starts_capture_and_stops_in_required_order() -> None:
     assert calls == ["capture-stop", "runtime-stop"]
 
 
+def test_lifecycle_starts_and_stops_auxiliary_with_host() -> None:
+    capture_started = threading.Event()
+    capture_release = threading.Event()
+    calls: list[str] = []
+
+    def run_capture() -> None:
+        capture_started.set()
+        assert capture_release.wait(timeout=2)
+
+    def stop_capture() -> None:
+        calls.append("capture-stop")
+        capture_release.set()
+
+    host = ProductHostLifecycle(
+        preflight=lambda: preflight_report(True),
+        run_capture=run_capture,
+        request_capture_stop=stop_capture,
+        request_runtime_stop=lambda: calls.append("runtime-stop"),
+        start_auxiliary=lambda: calls.append("aux-start"),
+        stop_auxiliary=lambda: calls.append("aux-stop"),
+    )
+
+    assert host.start().state is ProductHostState.RUNNING
+    assert capture_started.wait(timeout=1)
+    assert host.stop(timeout_seconds=1).state is ProductHostState.STOPPED
+    assert calls == ["aux-start", "aux-stop", "capture-stop", "runtime-stop"]
+
+
+def test_lifecycle_fails_closed_when_auxiliary_cannot_start() -> None:
+    calls: list[str] = []
+
+    def fail_auxiliary() -> None:
+        raise RuntimeError("private foreground data")
+
+    host = ProductHostLifecycle(
+        preflight=lambda: preflight_report(True),
+        run_capture=lambda: calls.append("capture"),
+        request_capture_stop=lambda: calls.append("capture-stop"),
+        request_runtime_stop=lambda: calls.append("runtime-stop"),
+        start_auxiliary=fail_auxiliary,
+    )
+
+    status = host.start()
+    assert status.state is ProductHostState.FAILED
+    assert status.reason == "AUXILIARY_START_FAILED"
+    assert "private" not in status.model_dump_json()
+    assert calls == []
+
+
 def test_lifecycle_redacts_capture_failure_and_rejects_second_start() -> None:
     def fail_capture() -> None:
         raise RuntimeError("secret transcript C:\\private\\file.txt")
@@ -325,6 +382,72 @@ def test_lifecycle_recovers_one_transient_capture_failure() -> None:
 
     stopped = host.stop(timeout_seconds=1)
     assert stopped.state is ProductHostState.STOPPED
+
+
+def test_lifecycle_healthy_capture_windows_do_not_consume_failure_budget() -> None:
+    reached_long_run = threading.Event()
+    release = threading.Event()
+    calls = 0
+
+    def run_capture() -> object:
+        nonlocal calls
+        calls += 1
+        if calls <= 4:
+            return SimpleNamespace(
+                status=SimpleNamespace(value="FRAME_LIMIT_REACHED")
+            )
+        reached_long_run.set()
+        assert release.wait(timeout=2)
+        return SimpleNamespace(status=SimpleNamespace(value="STOPPED"))
+
+    host = ProductHostLifecycle(
+        preflight=lambda: preflight_report(True),
+        run_capture=run_capture,
+        request_capture_stop=release.set,
+        request_runtime_stop=lambda: None,
+        max_capture_restarts=1,
+        capture_restart_delay_seconds=0,
+    )
+
+    assert host.start().state is ProductHostState.RUNNING
+    assert reached_long_run.wait(timeout=1)
+    assert calls == 5
+    assert host.status_snapshot().state is ProductHostState.RUNNING
+    assert host.stop(timeout_seconds=1).state is ProductHostState.STOPPED
+
+
+def test_lifecycle_healthy_window_resets_consecutive_failure_budget() -> None:
+    recovered = threading.Event()
+    release = threading.Event()
+    calls = 0
+
+    def run_capture() -> object:
+        nonlocal calls
+        calls += 1
+        if calls in {1, 3}:
+            raise RuntimeError("temporary microphone failure")
+        if calls == 2:
+            return SimpleNamespace(
+                status=SimpleNamespace(value="FRAME_LIMIT_REACHED")
+            )
+        recovered.set()
+        assert release.wait(timeout=2)
+        return SimpleNamespace(status=SimpleNamespace(value="STOPPED"))
+
+    host = ProductHostLifecycle(
+        preflight=lambda: preflight_report(True),
+        run_capture=run_capture,
+        request_capture_stop=release.set,
+        request_runtime_stop=lambda: None,
+        max_capture_restarts=1,
+        capture_restart_delay_seconds=0,
+    )
+
+    assert host.start().state is ProductHostState.RUNNING
+    assert recovered.wait(timeout=1)
+    assert calls == 4
+    assert host.status_snapshot().state is ProductHostState.RUNNING
+    assert host.stop(timeout_seconds=1).state is ProductHostState.STOPPED
 
 
 def test_lifecycle_stop_timeout_fails_closed() -> None:

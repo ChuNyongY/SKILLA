@@ -5,7 +5,7 @@
       "app_id": "chrome",
       "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
       "publisher": "CN=Google LLC, O=Google LLC, L=Mountain View, S=California, C=US, SERIALNUMBER=3582691, OID.2.5.4.15=Private Organization, OID.1.3.6.1.4.1.311.60.2.1.2=Delaware, OID.1.3.6.1.4.1.311.60.2.1.3=US",
-      "sha256": "5b835c10836045119334d9524e62437110e00e1bd20612c9072a0ae155f94a17",
+      "sha256": "a527591d96df1f30bdabf5599d257b8b80c83d90c405ff997ddbc202ba5e9ada",
       "launch_argument": "--new-window",
       "single_instance_handoff": true,
       "window_class": "Chrome_WidgetWin_1"
@@ -15,7 +15,7 @@
       "document_launch_mode": "browser-new-window",
       "executable": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
       "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
-      "sha256": "3e2c8557b5ca4d78868d3089346146ceab94f198ce3d58526ce8f6c8d4b4167c",
+      "sha256": "2497874639116d8edc3de34b3fd83f72fa099112a5d2a426e1f08fcf39a99612",
       "launch_argument": "--new-window",
       "single_instance_handoff": true,
       "window_class": "Chrome_WidgetWin_1"
@@ -56,9 +56,9 @@
     },
     {
       "app_id": "terminal",
-      "executable": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe",
+      "executable": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.25.3131.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe",
       "publisher": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
-      "sha256": "4ad317d9dacedca1e68dcc2405d6d364a20599b646b8205feae829cf18ef4958"
+      "sha256": "337c583db0b4b53c726a851933e3d3df86c09e0d4812d14d68ad703e81293fc9"
     }
   ]
 }

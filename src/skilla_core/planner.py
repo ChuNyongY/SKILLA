@@ -3,12 +3,14 @@ from __future__ import annotations
 import json
 import urllib.error
 import urllib.request
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from threading import Lock
+from time import sleep
 from typing import Literal, Protocol
 
 from pydantic import SecretStr, ValidationError
 
+from .cancellation import CancellationToken
 from .contracts import (
     ArgumentContract,
     PlanContractError,
@@ -16,6 +18,7 @@ from .contracts import (
     validate_plan_contracts,
 )
 from .models import FrozenModel, Plan
+from .observation_projection import validate_remote_observation_context
 from .registry import CapabilityRegistry
 
 
@@ -37,6 +40,7 @@ class PlannerTransport(Protocol):
 
 class NimChatTransport:
     _ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
+    _TRANSIENT_HTTP_STATUS = frozenset({429, 502, 503, 504})
 
     def __init__(
         self,
@@ -48,6 +52,10 @@ class NimChatTransport:
         max_tokens: int = 3_000,
         reasoning_effort: Literal["low", "high", "max"] = "low",
         clear_thinking: bool = True,
+        max_transient_retries: int = 2,
+        retry_base_seconds: float = 0.5,
+        max_retry_delay_seconds: float = 5.0,
+        sleeper: Callable[[float], None] = sleep,
     ) -> None:
         if not api_key.get_secret_value().startswith("nvapi-"):
             raise ValueError("invalid NVIDIA API key format")
@@ -58,6 +66,13 @@ class NimChatTransport:
             or not 1 <= max_tokens <= 8_192
             or reasoning_effort not in {"low", "high", "max"}
             or type(clear_thinking) is not bool
+            or type(max_transient_retries) is not int
+            or not 0 <= max_transient_retries <= 3
+            or isinstance(retry_base_seconds, bool)
+            or not 0 < retry_base_seconds <= 5.0
+            or isinstance(max_retry_delay_seconds, bool)
+            or not retry_base_seconds <= max_retry_delay_seconds <= 30.0
+            or not callable(sleeper)
         ):
             raise ValueError("invalid NIM transport configuration")
         self._api_key = api_key
@@ -67,6 +82,10 @@ class NimChatTransport:
         self._max_tokens = max_tokens
         self._reasoning_effort = reasoning_effort
         self._clear_thinking = clear_thinking
+        self._max_transient_retries = max_transient_retries
+        self._retry_base_seconds = float(retry_base_seconds)
+        self._max_retry_delay_seconds = float(max_retry_delay_seconds)
+        self._sleeper = sleeper
         self._metrics_lock = Lock()
         self._requests = 0
         self._successful_requests = 0
@@ -85,8 +104,25 @@ class NimChatTransport:
             )
 
     def complete(self, system_prompt: str, user_prompt: str) -> str:
-        with self._metrics_lock:
-            self._requests += 1
+        return self._complete(system_prompt, user_prompt, cancellation=None)
+
+    def complete_cancellable(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        cancellation: CancellationToken,
+    ) -> str:
+        return self._complete(system_prompt, user_prompt, cancellation=cancellation)
+
+    def _complete(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        cancellation: CancellationToken | None,
+    ) -> str:
+        if cancellation is not None and cancellation.is_cancelled:
+            raise PlannerError("NIM request cancelled")
         request_document: dict[str, object] = {
             "model": self._model,
             "messages": [
@@ -107,20 +143,50 @@ class NimChatTransport:
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")
-        request = urllib.request.Request(
-            self._ENDPOINT,
-            data=payload,
-            method="POST",
-            headers={
-                "Authorization": f"Bearer {self._api_key.get_secret_value()}",
-                "Content-Type": "application/json",
-            },
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=self._timeout) as response:
-                raw = response.read(self._max_response_bytes + 1)
-        except (OSError, urllib.error.URLError) as exc:
-            raise PlannerError("NIM request failed") from exc
+        retry_index = 0
+        while True:
+            if cancellation is not None and cancellation.is_cancelled:
+                raise PlannerError("NIM request cancelled")
+            request = urllib.request.Request(
+                self._ENDPOINT,
+                data=payload,
+                method="POST",
+                headers={
+                    "Authorization": f"Bearer {self._api_key.get_secret_value()}",
+                    "Content-Type": "application/json",
+                },
+            )
+            with self._metrics_lock:
+                self._requests += 1
+            try:
+                with urllib.request.urlopen(request, timeout=self._timeout) as response:
+                    raw = response.read(self._max_response_bytes + 1)
+                break
+            except urllib.error.HTTPError as exc:
+                if (
+                    exc.code not in self._TRANSIENT_HTTP_STATUS
+                    or retry_index >= self._max_transient_retries
+                ):
+                    raise PlannerError("NIM request failed") from exc
+                delay = _nim_retry_delay_seconds(
+                    exc,
+                    retry_index=retry_index,
+                    base_seconds=self._retry_base_seconds,
+                    maximum_seconds=self._max_retry_delay_seconds,
+                )
+                retry_index += 1
+                if cancellation is not None:
+                    if cancellation.wait(delay):
+                        raise PlannerError("NIM request cancelled") from exc
+                else:
+                    try:
+                        self._sleeper(delay)
+                    except Exception as error:
+                        raise PlannerError("NIM retry wait failed") from error
+            except (OSError, urllib.error.URLError) as exc:
+                raise PlannerError("NIM request failed") from exc
+        if cancellation is not None and cancellation.is_cancelled:
+            raise PlannerError("NIM request cancelled")
         if len(raw) > self._max_response_bytes:
             raise PlannerError("NIM response exceeded size limit")
         try:
@@ -138,6 +204,26 @@ class NimChatTransport:
             if not usage_available:
                 self._responses_without_usage += 1
         return content
+
+
+def _nim_retry_delay_seconds(
+    error: urllib.error.HTTPError,
+    *,
+    retry_index: int,
+    base_seconds: float,
+    maximum_seconds: float,
+) -> float:
+    raw_retry_after = error.headers.get("Retry-After") if error.headers else None
+    if raw_retry_after is not None:
+        try:
+            retry_after = float(raw_retry_after.strip())
+        except (AttributeError, ValueError):
+            retry_after = -1.0
+        if 0 <= retry_after <= maximum_seconds:
+            return retry_after
+        if retry_after > maximum_seconds:
+            return maximum_seconds
+    return float(min(base_seconds * (2.0**retry_index), maximum_seconds))
 
 
 class TypedPlanner:
@@ -180,6 +266,38 @@ class TypedPlanner:
         trusted_context: Mapping[str, object] | None = None,
         untrusted_context: str | None = None,
     ) -> Plan:
+        return self._plan(
+            goal,
+            trusted_context=trusted_context,
+            untrusted_context=untrusted_context,
+            cancellation=None,
+        )
+
+    def plan_cancellable(
+        self,
+        goal: str,
+        *,
+        trusted_context: Mapping[str, object] | None = None,
+        untrusted_context: str | None = None,
+        cancellation: CancellationToken,
+    ) -> Plan:
+        return self._plan(
+            goal,
+            trusted_context=trusted_context,
+            untrusted_context=untrusted_context,
+            cancellation=cancellation,
+        )
+
+    def _plan(
+        self,
+        goal: str,
+        *,
+        trusted_context: Mapping[str, object] | None,
+        untrusted_context: str | None,
+        cancellation: CancellationToken | None,
+    ) -> Plan:
+        if cancellation is not None and cancellation.is_cancelled:
+            raise PlannerError("planning cancelled")
         normalized_goal = goal.strip()
         if (
             not normalized_goal
@@ -202,16 +320,43 @@ class TypedPlanner:
             raise PlannerError("invalid planner context") from error
         if len(user_prompt.encode("utf-8")) > self._max_user_prompt_bytes:
             raise PlannerError("planner prompt exceeded size limit")
-        response = self._transport.complete(self._system_prompt(), user_prompt)
+        response = self._complete_transport(
+            self._system_prompt(), user_prompt, cancellation=cancellation
+        )
         try:
             plan = self.parse(response)
         except PlannerError:
             if self._max_repair_attempts == 0:
                 raise
             repair_prompt = self._repair_prompt(normalized_goal, response)
-            repaired = self._transport.complete(self._system_prompt(), repair_prompt)
+            repaired = self._complete_transport(
+                self._system_prompt(), repair_prompt, cancellation=cancellation
+            )
             plan = self.parse(repaired)
         return plan.model_copy(update={"goal": normalized_goal})
+
+    def _complete_transport(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        *,
+        cancellation: CancellationToken | None,
+    ) -> str:
+        if cancellation is not None:
+            if cancellation.is_cancelled:
+                raise PlannerError("planning cancelled")
+            complete_cancellable = getattr(self._transport, "complete_cancellable", None)
+            if callable(complete_cancellable):
+                response = complete_cancellable(
+                    system_prompt, user_prompt, cancellation
+                )
+                if not isinstance(response, str):
+                    raise PlannerError("invalid cancellable transport response")
+                return response
+        response = self._transport.complete(system_prompt, user_prompt)
+        if cancellation is not None and cancellation.is_cancelled:
+            raise PlannerError("planning cancelled")
+        return response
 
     def metrics_snapshot(self) -> NimTransportMetrics | None:
         """Read optional cumulative transport metrics without requiring them."""
@@ -308,6 +453,8 @@ class TypedPlanner:
             "cleanup.suggestion.safe for cleanup.suggest; memory.search.matches for "
             "memory.search; fixture.sources.bound for browser.fixture.read; "
             "browser.navigation.verified for browser.navigate; "
+            "browser.search.opened for browser.search.web; "
+            "media.youtube.opened for media.youtube.play.recent; "
             "package.identity.verified for package.verify; reset.prepared for "
             "system.reset.prepare; and snapshot.restore.verified for snapshot-only actions. "
             "document.content.sha256 requires "
@@ -318,7 +465,14 @@ class TypedPlanner:
             "file.open using its provided lowercase digest; the app_id "
             "for process.launch; exactly default-audio-render-endpoint for "
             "audio.volume.read and audio.volume.set; or the exact "
+            "browser-history:chrome:youtube for media.youtube.play.recent; or the exact "
+            "browser-search:<browser_id>:www.google.com for browser.search.web; or the exact "
             "registered resource identity described by trusted context for other capabilities.\n"
+            "If verified_observations contains file.list entry_handles, never invent or reproduce "
+            "a local path. For file.move, put the chosen file handle in source and "
+            "target_identity, and put a directory handle in destination. For "
+            "file.delete.trash, put the file handle in path and target_identity. These task-local "
+            "handles are resolved and revalidated locally before policy evaluation and execution.\n"
             f"ALLOWED_CAPABILITIES={json.dumps(capabilities, ensure_ascii=False)}\n"
             f"PLAN_SCHEMA={json.dumps(schema, ensure_ascii=False)}"
         )
@@ -329,6 +483,8 @@ class TypedPlanner:
         trusted_context: Mapping[str, object],
         untrusted_context: str | None,
     ) -> str:
+        if "verified_observations" in trusted_context:
+            validate_remote_observation_context(trusted_context["verified_observations"])
         return json.dumps(
             {
                 "goal": goal,

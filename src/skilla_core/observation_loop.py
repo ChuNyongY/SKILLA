@@ -17,6 +17,10 @@ from .models import (
     VerificationResult,
     canonical_arguments_hash,
 )
+from .observation_projection import (
+    RemoteObservationProjectionError,
+    TaskLocalObservationProjector,
+)
 from .orchestrator import Orchestrator
 from .registry import CapabilityRegistry
 from .runtime_models import ExecutionResult, TaskOutcome
@@ -126,6 +130,7 @@ class BoundedObservationAgent:
         *,
         max_rounds: int = 4,
         max_context_bytes: int = 100_000,
+        observation_projector: TaskLocalObservationProjector | None = None,
     ) -> None:
         if not 1 <= max_rounds <= 10 or max_context_bytes < 1_024:
             raise ValueError("invalid observation loop limits")
@@ -135,6 +140,7 @@ class BoundedObservationAgent:
         self._registry = registry
         self._max_rounds = max_rounds
         self._max_context_bytes = max_context_bytes
+        self._observation_projector = observation_projector or TaskLocalObservationProjector()
 
     def run(
         self,
@@ -147,15 +153,14 @@ class BoundedObservationAgent:
         if initial_plan is not None and initial_plan.goal != goal:
             raise ObservationLoopError("initial plan goal did not match the loop goal")
         observations: tuple[VerifiedActionObservation, ...] = ()
+        remote_observations: list[dict[str, JsonValue]] = []
         external_effects: set[tuple[str, str, str | None]] = set()
         action_ids: set[UUID] = set()
         executed_plans: tuple[Plan, ...] = ()
         for round_number in range(1, self._max_rounds + 1):
             context = dict(trusted_context or {})
             context["observation_round"] = round_number
-            context["verified_observations"] = [
-                item.model_dump(mode="json") for item in observations
-            ]
+            context["verified_observations"] = list(remote_observations)
             encoded = json.dumps(
                 context,
                 ensure_ascii=False,
@@ -164,7 +169,7 @@ class BoundedObservationAgent:
             ).encode("utf-8")
             if len(encoded) > self._max_context_bytes:
                 raise ObservationLoopError("verified observation context exceeded size limit")
-            plan = (
+            proposed_plan = (
                 initial_plan
                 if round_number == 1 and initial_plan is not None
                 else self._planner.plan(
@@ -173,6 +178,10 @@ class BoundedObservationAgent:
                     untrusted_context=untrusted_context,
                 )
             )
+            try:
+                plan = self._observation_projector.resolve_plan(proposed_plan)
+            except RemoteObservationProjectionError as error:
+                raise ObservationLoopError("remote observation binding failed") from error
             self._validate_continuation_plan(plan)
             if any(action.action_id in action_ids for action in plan.steps):
                 raise ObservationLoopError("planner reused an action identifier across rounds")
@@ -190,11 +199,12 @@ class BoundedObservationAgent:
                     executed_plans=executed_plans,
                 )
             observations += result.verified_observations
-            if (
+            completed = (
                 self._probe.completed(goal, observations)
                 if self._probe is not None
                 else not plan.continue_after_verification
-            ):
+            )
+            if completed:
                 return ObservationLoopResult(
                     status=ObservationLoopStatus.COMPLETED,
                     reason="GOAL_POSTCONDITIONS_VERIFIED",
@@ -202,6 +212,21 @@ class BoundedObservationAgent:
                     observations=observations,
                     executed_plans=executed_plans,
                 )
+            action_by_id = {action.action_id: action for action in plan.steps}
+            try:
+                for observation in result.verified_observations:
+                    remote_observations.append(
+                        {
+                            "capability_id": observation.capability_id,
+                            "verification_reason": observation.verification_reason,
+                            "observed": self._observation_projector.project(
+                                action_by_id[observation.action_id],
+                                observation.observed,
+                            ),
+                        }
+                    )
+            except (KeyError, RemoteObservationProjectionError) as error:
+                raise ObservationLoopError("remote observation projection failed") from error
         return ObservationLoopResult(
             status=ObservationLoopStatus.BUDGET_EXHAUSTED,
             reason="OBSERVATION_ROUND_BUDGET_EXHAUSTED",

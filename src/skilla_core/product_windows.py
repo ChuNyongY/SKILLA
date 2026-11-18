@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
+from dataclasses import replace
 from pathlib import Path
 from threading import Lock
 
 from .app_registry import AppRegistryLoader
 from .browser_navigation import BrowserNavigateExecutor, BrowserNavigationVerifier
+from .browser_search import BrowserSearchExecutor, BrowserSearchVerifier
+from .executor import Executor
 from .explorer_folder import ExplorerFolderOpenExecutor, ExplorerFolderVerifier
 from .file_move import FileMovedPredicate, FileMoveExecutor, MoveJournal
 from .file_trash import FileAbsentPredicate, FileTrashExecutor, TrashBackend
@@ -24,12 +27,19 @@ from .product_host import LoadedProductHostConfig
 from .settings_adapter import SettingsOpenExecutor
 from .settings_verifier import SettingsPageVerifier
 from .storage_monitor import StorageMonitorExecutor, StorageMonitorVerifier
-from .verifier import PredicateVerifier
+from .verifier import PredicateVerifier, Verifier
 from .volume_adapter import (
     PycawEndpointVolumeBackend,
     VolumeBackend,
     VolumeMatchesVerifier,
     WindowsVolumeExecutor,
+)
+from .youtube_history import (
+    ChromiumYoutubeHistory,
+    YoutubeHistoryBackend,
+    YoutubeRecentMediaExecutor,
+    YoutubeRecentMediaVerifier,
+    chrome_history_path,
 )
 
 AppLoader = Callable[[Path], Mapping[str, RegisteredApp]]
@@ -66,6 +76,7 @@ def build_windows_product_capabilities(
     move_journal: MoveJournal | None = None,
     trash_backend: TrashBackend | None = None,
     memory_backend: MemorySearchBackend | None = None,
+    youtube_history_backend: YoutubeHistoryBackend | None = None,
 ) -> ProductCapabilityStack:
     """Build the host-safe Windows routes without launching apps or changing state."""
     root = _trusted_root(project_root)
@@ -108,6 +119,22 @@ def build_windows_product_capabilities(
         store_id="personal",
     )
 
+    executors: dict[str, Executor] = {
+        "system.info.read": read_only,
+        "file.list": read_only,
+        "process.launch": process,
+        "explorer.folder.open": explorer,
+        "settings.open": settings_executor,
+        "audio.volume.read": volume,
+        "audio.volume.set": volume,
+        "storage.status.read": storage,
+        "cleanup.suggest": storage,
+        "file.move": move,
+        "file.delete.trash": trash,
+        "browser.navigate": browser,
+        "memory.search": memory,
+    }
+
     process_verifier = PredicateVerifier(
         {"process.exists": ProcessExistsPredicate(apps)}
     )
@@ -117,37 +144,47 @@ def build_windows_product_capabilities(
     trash_verifier = PredicateVerifier({"file.absent": FileAbsentPredicate()})
     generic_verifier = PredicateVerifier()
 
-    return build_product_capability_stack(
-        {
-            "system.info.read": read_only,
-            "file.list": read_only,
-            "process.launch": process,
-            "explorer.folder.open": explorer,
-            "settings.open": settings_executor,
-            "audio.volume.read": volume,
-            "audio.volume.set": volume,
-            "storage.status.read": storage,
-            "cleanup.suggest": storage,
-            "file.move": move,
-            "file.delete.trash": trash,
-            "browser.navigate": browser,
-            "memory.search": memory,
-        },
-        {
-            "system.info.read": generic_verifier,
-            "file.list": generic_verifier,
-            "process.launch": process_verifier,
-            "explorer.folder.open": ExplorerFolderVerifier(explorer),
-            "settings.open": SettingsPageVerifier(settings),
-            "audio.volume.read": volume_verifier,
-            "audio.volume.set": volume_verifier,
-            "storage.status.read": storage_verifier,
-            "cleanup.suggest": storage_verifier,
-            "file.move": move_verifier,
-            "file.delete.trash": trash_verifier,
-            "browser.navigate": BrowserNavigationVerifier(browser),
-            "memory.search": MemorySearchVerifier(memory),
-        },
+    verifiers: dict[str, Verifier] = {
+        "system.info.read": generic_verifier,
+        "file.list": generic_verifier,
+        "process.launch": process_verifier,
+        "explorer.folder.open": ExplorerFolderVerifier(explorer),
+        "settings.open": SettingsPageVerifier(settings),
+        "audio.volume.read": volume_verifier,
+        "audio.volume.set": volume_verifier,
+        "storage.status.read": storage_verifier,
+        "cleanup.suggest": storage_verifier,
+        "file.move": move_verifier,
+        "file.delete.trash": trash_verifier,
+        "browser.navigate": BrowserNavigationVerifier(browser),
+        "memory.search": MemorySearchVerifier(memory),
+    }
+
+    if "www.google.com" in configuration.settings.browser_allowed_hosts:
+        executors["browser.search.web"] = BrowserSearchExecutor(browser)
+        verifiers["browser.search.web"] = BrowserSearchVerifier(
+            BrowserNavigationVerifier(browser)
+        )
+
+    if configuration.settings.browser_history_enabled:
+        history = youtube_history_backend or ChromiumYoutubeHistory(
+            chrome_history_path(configuration.settings.browser_history_profile)
+        )
+        navigation_verifier = BrowserNavigationVerifier(browser)
+        executors["media.youtube.play.recent"] = YoutubeRecentMediaExecutor(
+            history, browser
+        )
+        verifiers["media.youtube.play.recent"] = YoutubeRecentMediaVerifier(
+            history, navigation_verifier
+        )
+
+    return replace(
+        build_product_capability_stack(
+            executors,
+            verifiers,
+        ),
+        registered_app_ids=tuple(sorted(apps)),
+        registered_apps=tuple(apps[app_id] for app_id in sorted(apps)),
     )
 
 

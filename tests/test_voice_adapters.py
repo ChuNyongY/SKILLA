@@ -281,6 +281,48 @@ class StreamFactory:
         return stream
 
 
+class FailingSelectedDeviceFactory(StreamFactory):
+    def __init__(self) -> None:
+        super().__init__()
+        self.devices: list[object] = []
+
+    def __call__(self, **configuration: object) -> FakeStream:
+        device = configuration["device"]
+        self.devices.append(device)
+        if device == 1:
+            raise OSError("configured device disappeared")
+        return super().__call__(**configuration)
+
+
+class SilentStream(FakeStream):
+    def start(self) -> None:
+        pass
+
+
+class SilentStreamFactory:
+    def __init__(self) -> None:
+        self.stream: SilentStream | None = None
+
+    def __call__(self, **configuration: object) -> SilentStream:
+        self.stream = SilentStream(configuration)
+        return self.stream
+
+
+class DisconnectThenFallbackFactory(StreamFactory):
+    def __init__(self) -> None:
+        super().__init__()
+        self.devices: list[object] = []
+        self.calls = 0
+
+    def __call__(self, **configuration: object) -> FakeStream:
+        self.calls += 1
+        device = configuration["device"]
+        self.devices.append(device)
+        if self.calls == 2 and device == 1:
+            raise OSError("configured device is disconnected")
+        return super().__call__(**configuration)
+
+
 def test_microphone_source_yields_bounded_frame_and_cleans_up() -> None:
     factory = StreamFactory()
     source = SoundDeviceFrameSource(stream_factory=factory)
@@ -303,3 +345,52 @@ def test_microphone_device_error_fails_and_cleans_up() -> None:
 
     assert factory.streams[0].stopped
     assert factory.streams[0].closed
+
+
+def test_microphone_source_falls_back_to_default_before_first_frame() -> None:
+    factory = FailingSelectedDeviceFactory()
+    source = SoundDeviceFrameSource(device=1, stream_factory=factory)
+
+    frames = list(source.frames(CancellationToken(), max_frames=1))
+
+    assert len(frames) == 1
+    assert factory.devices == [1, None]
+    assert factory.streams[0].stopped
+    assert factory.streams[0].closed
+
+
+def test_microphone_source_detects_silent_input_and_cleans_up() -> None:
+    factory = SilentStreamFactory()
+    ticks = iter((0.0, 1.0))
+    source = SoundDeviceFrameSource(
+        stream_factory=factory,
+        stall_timeout_seconds=0.01,
+        clock=lambda: next(ticks),
+    )
+
+    with pytest.raises(AudioCaptureError, match="STALLED"):
+        list(source.frames(CancellationToken(), max_frames=1))
+
+    assert factory.stream is not None
+    assert factory.stream.stopped
+    assert factory.stream.closed
+
+
+def test_microphone_restart_falls_back_after_midstream_disconnect() -> None:
+    factory = DisconnectThenFallbackFactory()
+    ticks = iter((0.0, 0.0, 1.0, 1.0, 1.0))
+    source = SoundDeviceFrameSource(
+        device=1,
+        stream_factory=factory,
+        stall_timeout_seconds=0.01,
+        clock=lambda: next(ticks),
+    )
+
+    with pytest.raises(AudioCaptureError, match="STALLED"):
+        list(source.frames(CancellationToken(), max_frames=2))
+    recovered = list(source.frames(CancellationToken(), max_frames=1))
+
+    assert len(recovered) == 1
+    assert factory.devices == [1, 1, None]
+    assert len(factory.streams) == 2
+    assert all(stream.stopped and stream.closed for stream in factory.streams)

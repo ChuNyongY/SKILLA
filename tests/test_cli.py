@@ -25,6 +25,7 @@ from skilla_core import (
     RuntimeEventType,
     RuntimeStatusSnapshot,
     SkillCandidateTrial,
+    SkillStatus,
     SkillStudyCondition,
     SkillTrialObservation,
     TaskOutcome,
@@ -37,6 +38,166 @@ from skilla_core.credential_store import CredentialStatus
 from skilla_core.package_manifest import write_package_manifest
 from skilla_core.skill_trace_store import LocalSkillTraceStore
 from skilla_core.start_menu import StartMenuStatus
+
+
+def test_situation_skill_acceptance_requires_idle_and_starts_normal_runtime() -> None:
+    suggestion_id = UUID("00000000-0000-0000-0000-000000000001")
+    submitted: list[tuple[str, dict[str, object] | None]] = []
+    state = AlwaysOnState.IDLE
+
+    class Suggestions:
+        record = SimpleNamespace(
+            status=SkillStatus.VERIFIED,
+            dynamic_inputs=(),
+            triggers=("최근 음악 틀어줘",),
+            skill_id=UUID("00000000-0000-0000-0000-000000000011"),
+            version=1,
+        )
+
+        def resolve(self, received: UUID) -> object:
+            assert received == suggestion_id
+            return self.record
+
+        def claim(self, received: UUID) -> object:
+            assert received == suggestion_id
+            return self.record
+
+    class Runtime:
+        def status_snapshot(self) -> RuntimeStatusSnapshot:
+            return RuntimeStatusSnapshot(state=state)
+
+        def submit_text(
+            self, text: str, *, trusted_context: dict[str, object] | None = None
+        ) -> RuntimeEvent:
+            submitted.append((text, trusted_context))
+            return RuntimeEvent(
+                event_type=RuntimeEventType.TASK_STARTED,
+                reason="PLANNING_STARTED",
+            )
+
+    service = SimpleNamespace(
+        skill_trigger_suggestions=Suggestions(),
+        runtime=SimpleNamespace(runtime=Runtime()),
+    )
+
+    assert cli_module._accept_skill_trigger_suggestion(
+        service, suggestion_id, lambda _skill: {}
+    )
+    assert submitted == [
+        (
+            "최근 음악 틀어줘",
+            {
+                "verified_skill_invocation": {
+                    "skill_id": "00000000-0000-0000-0000-000000000011",
+                    "skill_version": 1,
+                }
+            },
+        )
+    ]
+
+    state = AlwaysOnState.EXECUTING
+    assert not cli_module._accept_skill_trigger_suggestion(
+        service, suggestion_id, lambda _skill: {}
+    )
+    assert len(submitted) == 1
+
+
+def test_scheduled_skill_acceptance_requires_idle_and_starts_normal_runtime() -> None:
+    suggestion_id = UUID("00000000-0000-0000-0000-000000000002")
+    submitted: list[tuple[str, dict[str, object] | None]] = []
+    state = AlwaysOnState.IDLE
+
+    class Suggestions:
+        record = SimpleNamespace(
+            status=SkillStatus.VERIFIED,
+            dynamic_inputs=("대상 폴더",),
+            triggers=("아침 작업 준비",),
+            skill_id=UUID("00000000-0000-0000-0000-000000000012"),
+            version=1,
+        )
+
+        def resolve(self, received: UUID) -> object:
+            assert received == suggestion_id
+            return self.record
+
+        def claim(self, received: UUID) -> object:
+            assert received == suggestion_id
+            return self.record
+
+    class Runtime:
+        def status_snapshot(self) -> RuntimeStatusSnapshot:
+            return RuntimeStatusSnapshot(state=state)
+
+        def submit_text(
+            self, text: str, *, trusted_context: dict[str, object] | None = None
+        ) -> RuntimeEvent:
+            submitted.append((text, trusted_context))
+            return RuntimeEvent(
+                event_type=RuntimeEventType.TASK_STARTED,
+                reason="PLANNING_STARTED",
+            )
+
+    service = SimpleNamespace(
+        skill_schedule_suggestions=Suggestions(),
+        runtime=SimpleNamespace(runtime=Runtime()),
+    )
+
+    assert cli_module._accept_skill_schedule_suggestion(
+        service, suggestion_id, lambda _skill: {"대상 폴더": "Downloads"}
+    )
+    assert submitted == [
+        (
+            "아침 작업 준비 | 대상 폴더: Downloads",
+            {
+                "verified_skill_invocation": {
+                    "skill_id": "00000000-0000-0000-0000-000000000012",
+                    "skill_version": 1,
+                }
+            },
+        )
+    ]
+
+    state = AlwaysOnState.PLANNING
+    assert not cli_module._accept_skill_schedule_suggestion(
+        service, suggestion_id, lambda _skill: {"대상 폴더": "Downloads"}
+    )
+    assert len(submitted) == 1
+
+
+def test_dynamic_input_cancellation_keeps_situation_suggestion_pending() -> None:
+    suggestion_id = UUID("00000000-0000-0000-0000-000000000003")
+    claimed = False
+    record = SimpleNamespace(
+        status=SkillStatus.VERIFIED,
+        dynamic_inputs=("대상 폴더",),
+        triggers=("과제 자료 정리",),
+        skill_id=UUID("00000000-0000-0000-0000-000000000013"),
+        version=1,
+    )
+
+    class Suggestions:
+        def resolve(self, _received: UUID) -> object:
+            return record
+
+        def claim(self, _received: UUID) -> object:
+            nonlocal claimed
+            claimed = True
+            return record
+
+    service = SimpleNamespace(
+        skill_trigger_suggestions=Suggestions(),
+        runtime=SimpleNamespace(
+            runtime=SimpleNamespace(
+                status_snapshot=lambda: RuntimeStatusSnapshot(state=AlwaysOnState.IDLE),
+                submit_text=lambda _text: pytest.fail("cancelled input must not run"),
+            )
+        ),
+    )
+
+    assert not cli_module._accept_skill_trigger_suggestion(
+        service, suggestion_id, lambda _skill: None
+    )
+    assert not claimed
 
 
 def test_explicit_nim_trace_command_creates_draft_and_consumes_trace(

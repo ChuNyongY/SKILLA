@@ -77,6 +77,7 @@ class Classifier:
 class Planner:
     def __init__(self) -> None:
         self.calls = 0
+        self.contexts: list[Mapping[str, object] | None] = []
 
     def plan(
         self,
@@ -86,6 +87,7 @@ class Planner:
         untrusted_context: str | None = None,
     ) -> Plan:
         self.calls += 1
+        self.contexts.append(trusted_context)
         return Plan(
             goal=goal,
             steps=(
@@ -120,6 +122,25 @@ class BlockingPlanner(Planner):
             trusted_context=trusted_context,
             untrusted_context=untrusted_context,
         )
+
+
+class CancellableBlockingPlanner(Planner):
+    def __init__(self) -> None:
+        super().__init__()
+        self.started = threading.Event()
+
+    def plan_cancellable(
+        self,
+        goal: str,
+        *,
+        trusted_context: Mapping[str, object] | None = None,
+        untrusted_context: str | None = None,
+        cancellation: CancellationToken,
+    ) -> Plan:
+        del goal, trusted_context, untrusted_context
+        self.started.set()
+        assert cancellation.wait(2.0)
+        raise RuntimeError("planning cancelled")
 
 
 class BlockingExecutor:
@@ -415,7 +436,7 @@ def test_runtime_executes_verified_observation_continuation_round() -> None:
             untrusted_context: str | None = None,
         ) -> Plan:
             self.calls += 1
-            capability = "file.list" if self.calls == 1 else "system.info.read"
+            capability = "system.info.read"
             return Plan(
                 goal=goal,
                 steps=(
@@ -434,8 +455,13 @@ def test_runtime_executes_verified_observation_continuation_round() -> None:
     classifier = Classifier()
     executor = MockExecutor(
         {
-            "file.list": lambda _action: {"entries": ["a.txt"]},
-            "system.info.read": lambda _action: {"os": "Windows"},
+            "system.info.read": lambda _action: {
+                "system": "Windows",
+                "release": "11",
+                "version": "10.0",
+                "machine": "AMD64",
+                "hostname": "private-hostname",
+            },
         }
     )
     tokens = ApprovalTokenService(b"r" * 32)
@@ -624,6 +650,25 @@ def test_ui_stop_cancels_active_task_without_closing_runtime() -> None:
     assert runtime.state is AlwaysOnState.IDLE
 
 
+def test_ui_stop_interrupts_cancellable_planner_without_manual_release() -> None:
+    planner = CancellableBlockingPlanner()
+    runtime, _classifier, _planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        planner=planner,
+    )
+    runtime.submit_capture(capture("작업"))
+    assert planner.started.wait(timeout=1)
+
+    started = time.monotonic()
+    stopped = runtime.cancel_current_task()
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+
+    assert time.monotonic() - started < 1.0
+    assert stopped.event_type is RuntimeEventType.STOP_ACCEPTED
+    assert completed is not None and completed.reason == "PLANNING_CANCELLED"
+    assert runtime.state is AlwaysOnState.IDLE
+
+
 def test_ui_stop_while_idle_keeps_runtime_available() -> None:
     runtime, _classifier, _planner = runtime_with_executor(
         MockExecutor({"system.info.read": lambda _action: {}})
@@ -653,6 +698,54 @@ def test_context_failure_is_redacted_and_prevents_model_calls() -> None:
     assert completed.event_type is RuntimeEventType.FAILED
     assert completed.reason == "CONTEXT_COLLECTION_FAILED"
     assert "secret" not in completed.model_dump_json()
+    assert classifier.calls == 0
+    assert planner.calls == 0
+
+
+def test_explicit_trusted_context_is_merged_with_collected_context() -> None:
+    runtime, _classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        planner_context_provider=lambda: {"foreground_app_id": "notepad"},
+    )
+
+    runtime.submit_text(
+        "시스템 정보 확인",
+        trusted_context={
+            "verified_skill_invocation": {
+                "skill_id": "00000000-0000-0000-0000-000000000001",
+                "skill_version": 1,
+            }
+        },
+    )
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+
+    assert completed is not None
+    assert planner.contexts == [
+        {
+            "foreground_app_id": "notepad",
+            "verified_skill_invocation": {
+                "skill_id": "00000000-0000-0000-0000-000000000001",
+                "skill_version": 1,
+            },
+        }
+    ]
+
+
+def test_conflicting_explicit_trusted_context_fails_before_planning() -> None:
+    runtime, classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        planner_context_provider=lambda: {"foreground_app_id": "notepad"},
+    )
+
+    runtime.submit_text(
+        "시스템 정보 확인",
+        trusted_context={"foreground_app_id": "calculator"},
+    )
+    completed = runtime.wait_for_idle(timeout_seconds=1)
+
+    assert completed is not None
+    assert completed.event_type is RuntimeEventType.FAILED
+    assert completed.reason == "CONTEXT_COLLECTION_FAILED"
     assert classifier.calls == 0
     assert planner.calls == 0
 

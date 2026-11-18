@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from uuid import uuid4
 
 import pytest
 
@@ -9,11 +10,14 @@ from skilla_core.always_on_runtime import (
     RuntimeEventType,
     RuntimeStatusSnapshot,
 )
+from skilla_core.skill_schedules import ScheduledSkillSuggestion
+from skilla_core.skill_triggers import SkillTriggerSuggestion
 from skilla_core.status_surface import (
     RuntimeStatusDisplay,
     RuntimeStatusPresenter,
     reactor_level_label,
     reactor_pulse_geometry,
+    wakeword_mode_label,
 )
 from skilla_core.voice import VoicePipelineDiagnostics
 
@@ -95,6 +99,54 @@ def test_presenter_polls_coarse_status_and_hide_does_not_stop_agent() -> None:
     assert view.minimized
     assert not view.closed
     assert calls == []
+
+
+def test_presenter_includes_one_pending_situation_skill_suggestion() -> None:
+    view = FakeView()
+    item = SkillTriggerSuggestion(
+        suggestion_id=uuid4(),
+        rule_id=uuid4(),
+        app_id="chrome",
+        skill_id=uuid4(),
+        skill_version=1,
+        title="최근 음악 재생",
+    )
+    presenter = RuntimeStatusPresenter(
+        status_provider=snapshot,
+        request_task_stop=lambda: None,
+        request_capture_stop=lambda: False,
+        request_runtime_stop=lambda: None,
+        view=view,
+        trigger_suggestion_provider=lambda: item,
+    )
+
+    presenter.run()
+
+    assert view.rendered[-1].trigger_suggestion == item
+
+
+def test_presenter_includes_one_pending_scheduled_skill_suggestion() -> None:
+    view = FakeView()
+    item = ScheduledSkillSuggestion(
+        suggestion_id=uuid4(),
+        rule_id=uuid4(),
+        skill_id=uuid4(),
+        skill_version=1,
+        title="아침 작업 준비",
+        due_key="2026-11-16T08:30+0900",
+    )
+    presenter = RuntimeStatusPresenter(
+        status_provider=snapshot,
+        request_task_stop=lambda: None,
+        request_capture_stop=lambda: False,
+        request_runtime_stop=lambda: None,
+        view=view,
+        schedule_suggestion_provider=lambda: item,
+    )
+
+    presenter.run()
+
+    assert view.rendered[-1].schedule_suggestion == item
 
 
 def test_stop_cancels_only_current_task_and_explicit_exit_stops_runtime() -> None:
@@ -247,3 +299,14 @@ def test_reactor_level_label_is_readable_and_clamped() -> None:
     assert reactor_level_label(1.0) == "MIC 100%"
     assert reactor_level_label(-1) == "MIC 00%"
     assert reactor_level_label(2) == "MIC 100%"
+
+
+def test_wakeword_mode_label_describes_the_configured_product_path() -> None:
+    assert "로컬 Whisper 한국어 인식" in wakeword_mode_label("whisper_korean")
+    assert "openWakeWord" in wakeword_mode_label("openwakeword")
+    assert "Hermes는 비교 실험용" in wakeword_mode_label("whisper_korean")
+
+
+def test_wakeword_mode_label_rejects_unknown_modes() -> None:
+    with pytest.raises(ValueError, match="unsupported wakeword mode"):
+        wakeword_mode_label("hermes")

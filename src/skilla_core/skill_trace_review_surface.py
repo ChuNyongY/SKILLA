@@ -940,6 +940,8 @@ _CAPABILITY_LABELS = {
     "file.delete": "파일 삭제",
     "browser.open": "웹 페이지 열기",
     "browser.search": "웹 검색",
+    "browser.search.web": "등록 브라우저에서 웹 검색",
+    "media.youtube.play.recent": "최근 또는 자주 들은 YouTube 음악 열기",
     "app.launch": "프로그램 실행",
     "document.open": "문서 열기",
     "folder.open": "폴더 열기",

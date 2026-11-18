@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 from skilla_core import (
     Action,
     ActionStatus,
@@ -37,7 +40,7 @@ class Planner:
         context = dict(trusted_context or {})
         self.contexts.append(context)
         if len(self.contexts) == 1 and not self.repeat_move:
-            action = Action(capability_id="file.list", purpose="observe")
+            action = Action(capability_id="system.info.read", purpose="observe")
             continue_after_verification = True
         else:
             action = Action(
@@ -62,9 +65,20 @@ class Runner:
         self.rounds += 1
         action = plan.steps[0]
         observed = (
-            {"entries": ["a.txt"]}
-            if action.capability_id == "file.list"
-            else {"destination": "b"}
+            {
+                "system": "Windows",
+                "release": "11",
+                "version": "10.0",
+                "machine": "AMD64",
+                "hostname": "private-hostname",
+            }
+            if action.capability_id == "system.info.read"
+            else {
+                "transaction_id": "00000000-0000-0000-0000-000000000001",
+                "source": "a",
+                "destination": "b",
+                "source_hash": "a" * 64,
+            }
         )
         return ObservationRoundResult(
             outcome=TaskOutcome(
@@ -98,7 +112,119 @@ def test_verified_observation_drives_a_bounded_second_plan() -> None:
     assert result.rounds == 2
     assert planner.contexts[1]["observation_round"] == 2
     prior = planner.contexts[1]["verified_observations"]
-    assert isinstance(prior, list) and prior[0]["capability_id"] == "file.list"
+    assert isinstance(prior, list) and prior[0]["capability_id"] == "system.info.read"
+    assert "hostname" not in prior[0]["observed"]
+    assert "private-hostname" not in str(prior)
+
+
+def test_file_list_handles_are_resolved_locally_without_remote_paths(tmp_path: Path) -> None:
+    source = tmp_path / "private-coursework.pdf"
+    source.write_bytes(b"content")
+    destination = tmp_path / "private-subject"
+    destination.mkdir()
+
+    class HandlePlanner:
+        def __init__(self) -> None:
+            self.contexts: list[dict[str, object]] = []
+
+        def plan(
+            self,
+            goal: str,
+            *,
+            trusted_context: dict[str, object] | None = None,
+            untrusted_context: str | None = None,
+        ) -> Plan:
+            del untrusted_context
+            context = dict(trusted_context or {})
+            self.contexts.append(context)
+            if len(self.contexts) == 1:
+                return Plan(
+                    goal=goal,
+                    steps=(
+                        Action(
+                            capability_id="file.list",
+                            purpose="list locally",
+                            arguments={"path": str(tmp_path)},
+                            target_identity=str(tmp_path),
+                        ),
+                    ),
+                    continue_after_verification=True,
+                )
+            projected = context["verified_observations"]
+            assert isinstance(projected, list)
+            entry_handles = projected[0]["observed"]["entry_handles"]
+            file_handle = next(
+                item["handle"] for item in entry_handles if item["kind"] == "file"
+            )
+            directory_handle = next(
+                item["handle"]
+                for item in entry_handles
+                if item["kind"] == "directory"
+            )
+            return Plan(
+                goal=goal,
+                steps=(
+                    Action(
+                        capability_id="file.move",
+                        purpose="move by opaque handles",
+                        arguments={
+                            "source": file_handle,
+                            "destination": directory_handle,
+                        },
+                        target_identity=file_handle,
+                    ),
+                ),
+            )
+
+    class HandleRunner:
+        def run(self, plan: Plan) -> ObservationRoundResult:
+            action = plan.steps[0]
+            if action.capability_id == "file.list":
+                observed = {
+                    "entries": [source.name, destination.name],
+                    "count": 2,
+                    "truncated": False,
+                    "root_index": 0,
+                    "relative_path": ".",
+                }
+            else:
+                assert action.arguments["source"] == str(source)
+                assert action.arguments["destination"] == str(destination / source.name)
+                assert action.target_identity == str(source)
+                observed = {
+                    "transaction_id": "00000000-0000-0000-0000-000000000001",
+                    "source": str(source),
+                    "destination": str(destination / source.name),
+                    "source_hash": "a" * 64,
+                }
+            return ObservationRoundResult(
+                outcome=TaskOutcome(
+                    task_id=plan.task_id,
+                    status=ActionStatus.SUCCEEDED,
+                    completed_actions=1,
+                    reason="ALL_ACTIONS_VERIFIED",
+                ),
+                verified_observations=(
+                    VerifiedActionObservation(
+                        action_id=action.action_id,
+                        capability_id=action.capability_id,
+                        verification_reason="VERIFIED",
+                        observed=observed,
+                    ),
+                ),
+            )
+
+    planner = HandlePlanner()
+    result = BoundedObservationAgent(
+        planner, HandleRunner(), Probe(), default_registry(), max_rounds=2
+    ).run("자료 정리")
+
+    assert result.status is ObservationLoopStatus.COMPLETED
+    serialized = json.dumps(planner.contexts[1], ensure_ascii=False)
+    assert str(tmp_path) not in serialized
+    assert source.name not in serialized
+    assert destination.name not in serialized
+    assert result.executed_plans[1].steps[0].arguments["source"] == str(source)
 
 
 def test_repeated_external_effect_is_rejected() -> None:

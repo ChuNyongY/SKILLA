@@ -3,12 +3,21 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable
+from contextlib import suppress
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 from threading import Event, Lock, Thread
 from typing import Literal, Protocol
 
-from pydantic import Field, SecretStr, StrictFloat, StrictInt, field_validator, model_validator
+from pydantic import (
+    Field,
+    SecretStr,
+    StrictBool,
+    StrictFloat,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
 
 from .doctor import DoctorReport, run_doctor
 from .models import FrozenModel
@@ -30,6 +39,11 @@ class ProductHostConfig(FrozenModel):
     wakeword_manifest: str | None = None
     stt_manifest: str
     browser_allowed_hosts: tuple[str, ...] = Field(min_length=1, max_length=32)
+    browser_history_enabled: StrictBool = False
+    browser_history_profile: str = Field(
+        default="Default",
+        pattern=r"^(?:Default|Profile [1-9][0-9]{0,2})$",
+    )
     nim_model: str = Field(
         min_length=3,
         max_length=128,
@@ -70,6 +84,11 @@ class ProductHostConfig(FrozenModel):
     def openwakeword_requires_a_manifest(self) -> ProductHostConfig:
         if self.wakeword_mode == "openwakeword" and self.wakeword_manifest is None:
             raise ValueError("openwakeword mode requires a wakeword manifest")
+        if (
+            self.browser_history_enabled
+            and "www.youtube.com" not in self.browser_allowed_hosts
+        ):
+            raise ValueError("browser history media requires www.youtube.com")
         return self
 
     @field_validator("browser_allowed_hosts")
@@ -151,6 +170,8 @@ class ProductHostLifecycle:
         run_capture: ProductCaptureRunner,
         request_capture_stop: ProductStopRequest,
         request_runtime_stop: ProductStopRequest,
+        start_auxiliary: ProductCaptureRunner | None = None,
+        stop_auxiliary: ProductStopRequest | None = None,
         thread_factory: Callable[..., Thread] = Thread,
         max_capture_restarts: int = 5,
         capture_restart_delay_seconds: float = 0.5,
@@ -163,6 +184,8 @@ class ProductHostLifecycle:
         self._run_capture = run_capture
         self._request_capture_stop = request_capture_stop
         self._request_runtime_stop = request_runtime_stop
+        self._start_auxiliary = start_auxiliary or (lambda: None)
+        self._stop_auxiliary = stop_auxiliary or (lambda: None)
         self._thread_factory = thread_factory
         self._max_capture_restarts = max_capture_restarts
         self._capture_restart_delay = capture_restart_delay_seconds
@@ -187,6 +210,10 @@ class ProductHostLifecycle:
             return self._transition(ProductHostState.FAILED, "PREFLIGHT_EXCEPTION")
         if not preflight.ready:
             return self._transition(ProductHostState.FAILED, "PREFLIGHT_FAILED")
+        try:
+            self._start_auxiliary()
+        except Exception:
+            return self._transition(ProductHostState.FAILED, "AUXILIARY_START_FAILED")
         with self._lock:
             if self._status.state is not ProductHostState.PREFLIGHTING:
                 return self._status.model_copy()
@@ -200,6 +227,8 @@ class ProductHostLifecycle:
                 worker.start()
             except Exception:
                 self._worker = None
+                with suppress(Exception):
+                    self._stop_auxiliary()
                 return self._transition_locked(
                     ProductHostState.FAILED,
                     "CAPTURE_THREAD_START_FAILED",
@@ -226,7 +255,11 @@ class ProductHostLifecycle:
             self._transition_locked(ProductHostState.STOPPING, "STOP_REQUESTED")
             self._stop_requested.set()
         stop_failed = False
-        for request in (self._request_capture_stop, self._request_runtime_stop):
+        for request in (
+            self._stop_auxiliary,
+            self._request_capture_stop,
+            self._request_runtime_stop,
+        ):
             try:
                 request()
             except Exception:
@@ -252,22 +285,28 @@ class ProductHostLifecycle:
         return self.status_snapshot()
 
     def _capture_worker(self) -> None:
-        restarts = 0
+        consecutive_failures = 0
         while True:
-            failed = False
             try:
                 result = self._run_capture()
                 status = getattr(result, "status", None)
-                failed = getattr(status, "value", status) == "FAILED"
+                status_value = getattr(status, "value", status)
             except Exception:
-                failed = True
+                status_value = "FAILED"
             with self._lock:
                 if self._status.state is not ProductHostState.RUNNING:
                     return
-                if restarts >= self._max_capture_restarts:
+                if status_value == "RUNTIME_CLOSED":
+                    self._transition_locked(ProductHostState.FAILED, "RUNTIME_CLOSED")
+                    return
+                healthy_cycle = status_value == "FRAME_LIMIT_REACHED"
+                if healthy_cycle:
+                    consecutive_failures = 0
+                elif consecutive_failures >= self._max_capture_restarts:
                     self._transition_locked(ProductHostState.FAILED, "CAPTURE_FAILED")
                     return
-                restarts += 1
+                else:
+                    consecutive_failures += 1
                 self._transition_locked(ProductHostState.RUNNING, "CAPTURE_RESTARTING")
             if self._stop_requested.wait(self._capture_restart_delay):
                 return
@@ -275,8 +314,6 @@ class ProductHostLifecycle:
                 if self._status.state is not ProductHostState.RUNNING:
                     return
                 self._transition_locked(ProductHostState.RUNNING, "CAPTURE_RESTARTED")
-            if not failed:
-                continue
 
     def _transition(
         self,

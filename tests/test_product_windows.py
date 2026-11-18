@@ -97,6 +97,8 @@ def test_windows_capabilities_are_exactly_executable_and_verified(tmp_path: Path
         "browser.navigate",
         "memory.search",
     }
+    assert stack.registered_app_ids == ("chrome", "explorer", "safe-app", "settings")
+    assert tuple(app.app_id for app in stack.registered_apps) == stack.registered_app_ids
 
 
 def test_windows_memory_search_route_executes_and_independently_verifies(
@@ -159,6 +161,61 @@ def test_windows_capability_build_has_no_app_or_volume_mutation(tmp_path: Path) 
     assert loaded == 1
     assert volume.value == 50.0
     assert not (tmp_path / "state").exists()
+
+
+def test_windows_capabilities_include_local_youtube_history_only_when_enabled(
+    tmp_path: Path,
+) -> None:
+    configured = configuration(tmp_path)
+    configured = configured.model_copy(
+        update={
+            "settings": configured.settings.model_copy(
+                update={
+                    "browser_history_enabled": True,
+                    "browser_allowed_hosts": ("github.com", "www.youtube.com"),
+                }
+            )
+        }
+    )
+
+    class History:
+        def select(self, *, mode: str, lookback_days: int):  # type: ignore[no-untyped-def]
+            del mode, lookback_days
+            return None
+
+    stack = build_windows_product_capabilities(
+        configured,
+        tmp_path,
+        app_loader=lambda _path: apps(tmp_path),
+        volume_backend=Volume(),
+        move_journal=InMemoryMoveJournal(),
+        youtube_history_backend=History(),
+    )
+
+    assert stack.registry.get("media.youtube.play.recent") is not None
+
+
+def test_windows_capabilities_include_web_search_only_for_google_allowlist(
+    tmp_path: Path,
+) -> None:
+    configured = configuration(tmp_path)
+    configured = configured.model_copy(
+        update={
+            "settings": configured.settings.model_copy(
+                update={"browser_allowed_hosts": ("github.com", "www.google.com")}
+            )
+        }
+    )
+
+    stack = build_windows_product_capabilities(
+        configured,
+        tmp_path,
+        app_loader=lambda _path: apps(tmp_path),
+        volume_backend=Volume(),
+        move_journal=InMemoryMoveJournal(),
+    )
+
+    assert stack.registry.get("browser.search.web") is not None
 
 
 def test_windows_capability_build_rejects_missing_settings(tmp_path: Path) -> None:

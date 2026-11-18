@@ -12,7 +12,12 @@ from .product_host import ProductHostError
 
 _STATE_SCHEMA_DIRECTORY = "v1"
 _MIGRATED_REGULAR_FILES = ("audit.jsonl", "display-selection.json")
-_MIGRATED_DATABASE_FILES = ("skills.sqlite3", "skill-traces.sqlite3")
+_MIGRATED_DATABASE_FILES = (
+    "skills.sqlite3",
+    "skill-traces.sqlite3",
+    "skill-triggers.sqlite3",
+    "skill-schedules.sqlite3",
+)
 
 
 def resolve_product_state_directory(project_root: Path) -> Path:

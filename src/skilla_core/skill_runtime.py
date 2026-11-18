@@ -15,9 +15,18 @@ from uuid import UUID, uuid4
 
 from pydantic import Field, model_validator
 
+from .cancellation import CancellationToken
 from .models import Action, FrozenModel, Plan, Postcondition
 from .planner import NimTransportMetrics
 from .registry import CapabilityRegistry
+from .sqlite_state import (
+    SqliteStateError,
+    connect_sqlite_state,
+    enable_sqlite_wal,
+    validate_existing_sqlite,
+)
+
+_SKILL_INVOCATION_CONTEXT_KEY = "verified_skill_invocation"
 
 
 class SkillRuntimeError(RuntimeError):
@@ -271,7 +280,11 @@ class LocalSkillCatalog:
             raise ValueError("skill catalog path must be absolute in an existing directory")
         self._path = path
         self._registry = registry
-        self._initialize()
+        try:
+            validate_existing_sqlite(path)
+            self._initialize()
+        except (OSError, sqlite3.Error, SqliteStateError) as error:
+            raise SkillRuntimeError("skill catalog database is unavailable") from error
 
     def propose(self, proposal: SkillProposal, *, now: datetime | None = None) -> SkillRecord:
         self._validate_capabilities(proposal)
@@ -687,6 +700,7 @@ class LocalSkillCatalog:
 
     def _initialize(self) -> None:
         with closing(self._connect()) as db, db:
+            enable_sqlite_wal(db)
             db.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS skills(
@@ -740,7 +754,7 @@ class LocalSkillCatalog:
             )
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self._path)
+        connection = connect_sqlite_state(self._path)
         connection.row_factory = sqlite3.Row
         return connection
 
@@ -771,15 +785,57 @@ class SkillAwarePlanner:
         trusted_context: Mapping[str, object] | None = None,
         untrusted_context: str | None = None,
     ) -> Plan:
-        retrieval = self._catalog.retrieve(goal)
-        if retrieval.decision is not SkillRetrievalDecision.MATCHED:
+        return self._plan(
+            goal,
+            trusted_context=trusted_context,
+            untrusted_context=untrusted_context,
+            cancellation=None,
+        )
+
+    def plan_cancellable(
+        self,
+        goal: str,
+        *,
+        trusted_context: Mapping[str, object] | None = None,
+        untrusted_context: str | None = None,
+        cancellation: CancellationToken,
+    ) -> Plan:
+        return self._plan(
+            goal,
+            trusted_context=trusted_context,
+            untrusted_context=untrusted_context,
+            cancellation=cancellation,
+        )
+
+    def _plan(
+        self,
+        goal: str,
+        *,
+        trusted_context: Mapping[str, object] | None,
+        untrusted_context: str | None,
+        cancellation: CancellationToken | None,
+    ) -> Plan:
+        if cancellation is not None and cancellation.is_cancelled:
+            raise SkillRuntimeError("planning cancelled")
+        bound_skill = _resolve_bound_skill(self._catalog, trusted_context)
+        retrieval = None if bound_skill is not None else self._catalog.retrieve(goal)
+        if bound_skill is None and (
+            retrieval is None or retrieval.decision is not SkillRetrievalDecision.MATCHED
+        ):
             plan, _usage = self._plan_with_usage(
                 goal,
                 trusted_context=trusted_context,
                 untrusted_context=untrusted_context,
+                cancellation=cancellation,
             )
             return plan
-        skill = retrieval.selected_skill
+        skill: SkillRecord | None
+        if bound_skill is not None:
+            skill = bound_skill
+        else:
+            if retrieval is None:
+                raise SkillRuntimeError("skill retrieval result is unavailable")
+            skill = retrieval.selected_skill
         if skill is None:  # defensive narrowing; model validation enforces this invariant
             raise SkillRuntimeError("matched skill retrieval did not contain a skill")
         deterministic_plan = _deterministic_verified_skill_plan(
@@ -809,7 +865,10 @@ class SkillAwarePlanner:
             "allowed_capabilities": skill.allowed_capabilities,
         }
         plan, usage = self._plan_with_usage(
-            goal, trusted_context=context, untrusted_context=untrusted_context
+            goal,
+            trusted_context=context,
+            untrusted_context=untrusted_context,
+            cancellation=cancellation,
         )
         allowed = set(skill.allowed_capabilities)
         if any(action.capability_id not in allowed for action in plan.steps):
@@ -851,15 +910,27 @@ class SkillAwarePlanner:
         *,
         trusted_context: Mapping[str, object] | None,
         untrusted_context: str | None,
+        cancellation: CancellationToken | None,
     ) -> tuple[Plan, SkillPlanUsage]:
         # All calls share this lock so a fallback plan cannot contaminate a skill delta.
         with self._planning_lock:
             before = _planner_metrics_snapshot(self._planner)
-            plan = self._planner.plan(
-                goal,
-                trusted_context=trusted_context,
-                untrusted_context=untrusted_context,
-            )
+            plan_cancellable = getattr(self._planner, "plan_cancellable", None)
+            if cancellation is not None and callable(plan_cancellable):
+                plan = plan_cancellable(
+                    goal,
+                    trusted_context=trusted_context,
+                    untrusted_context=untrusted_context,
+                    cancellation=cancellation,
+                )
+            else:
+                plan = self._planner.plan(
+                    goal,
+                    trusted_context=trusted_context,
+                    untrusted_context=untrusted_context,
+                )
+                if cancellation is not None and cancellation.is_cancelled:
+                    raise SkillRuntimeError("planning cancelled")
             after = _planner_metrics_snapshot(self._planner)
         return plan, _planner_usage_delta(before, after)
 
@@ -888,6 +959,29 @@ def _deterministic_verified_skill_plan(
             ),
         ),
     )
+
+
+def _resolve_bound_skill(
+    catalog: LocalSkillCatalog,
+    trusted_context: Mapping[str, object] | None,
+) -> SkillRecord | None:
+    if trusted_context is None or _SKILL_INVOCATION_CONTEXT_KEY not in trusted_context:
+        return None
+    value = trusted_context[_SKILL_INVOCATION_CONTEXT_KEY]
+    if not isinstance(value, Mapping) or set(value) != {"skill_id", "skill_version"}:
+        raise SkillRuntimeError("invalid verified skill invocation binding")
+    raw_skill_id = value["skill_id"]
+    raw_version = value["skill_version"]
+    if not isinstance(raw_skill_id, str) or type(raw_version) is not int or raw_version < 1:
+        raise SkillRuntimeError("invalid verified skill invocation binding")
+    try:
+        skill_id = UUID(raw_skill_id)
+        skill = catalog.require(skill_id)
+    except (ValueError, SkillRuntimeError) as error:
+        raise SkillRuntimeError("bound skill is unavailable") from error
+    if skill.status is not SkillStatus.VERIFIED or skill.version != raw_version:
+        raise SkillRuntimeError("bound skill version is no longer verified")
+    return skill
 
 
 def _record(row: sqlite3.Row) -> SkillRecord:

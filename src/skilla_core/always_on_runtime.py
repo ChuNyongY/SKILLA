@@ -366,16 +366,24 @@ class AlwaysOnAgentRuntime:
         token: CancellationToken,
     ) -> None:
         task_started_ns = perf_counter_ns()
-        if trusted_context is None:
-            try:
-                trusted_context = (
-                    dict(self._planner_context_provider())
-                    if self._planner_context_provider is not None
-                    else {}
-                )
-            except Exception:
-                self._finish_worker(token, self._failed("CONTEXT_COLLECTION_FAILED"))
-                return
+        try:
+            collected_context = (
+                dict(self._planner_context_provider())
+                if self._planner_context_provider is not None
+                else {}
+            )
+            if trusted_context is not None:
+                overlap = collected_context.keys() & trusted_context.keys()
+                if any(
+                    collected_context[key] != trusted_context[key]
+                    for key in overlap
+                ):
+                    raise ValueError("trusted context overlay conflicts with collected context")
+                collected_context.update(trusted_context)
+            trusted_context = collected_context
+        except Exception:
+            self._finish_worker(token, self._failed("CONTEXT_COLLECTION_FAILED"))
+            return
         if token.is_cancelled:
             self._finish_worker(
                 token,

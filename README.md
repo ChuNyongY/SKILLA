@@ -14,6 +14,15 @@ SKILLA-PC Agent는 한국어 음성·텍스트 요청을 받아 사용자의 반
 정책·승인·검증은 연구 주제를 대체하지 않고, 스킬이 실제 PC에서 잘못된 권한이나 대상을 사용하지
 못하게 하며 성공 여부를 실제 상태로 측정하는 공통 실행 기반이다.
 
+여기서 `로컬`은 스킬·실행·검증·STT·TTS와 상태 저장이 사용자 PC에 있다는 뜻이다. 현재 요청의
+의도 판정과 계획 생성에는 NVIDIA NIM의 원격 GLM 모델을 사용하며, 로컬 규칙으로 처리하지 않는
+텍스트 명령 또는 STT 문자열이 API에 전송될 수 있다. 여러 단계 작업의 후속 계획에서는 앞 단계의
+검증 관측값도 전송될 수 있지만 capability별 허용 필드만 남기며 파일명·경로·컴퓨터 이름·PID·해시는
+제거한다. 파일 목록의 대상은 작업 동안만 유효한 무작위 표식과 파일 종류·확장자로 바꾸고, 실행 직전
+로컬에서 실제 경로와 동일 대상을 다시 확인한다. 다만 사용자가 최초 요청문에 직접 입력한 파일명·경로는
+요청 원문에 포함될 수 있다. 음성 원본 파일과 파일 본문은 전송하지 않는다. 시험용 API에는 개인·기밀·
+민감정보를 입력하지 않으며, 다른 사용자에게 배포하기 전에는 별도 상용 계약과 개인정보 조건을 확인해야 한다.
+
 발표·시험용 확인 자료:
 
 - [실제 구현·모델·실험 확인표](docs/SKILLA_IMPLEMENTATION_FACTS.md)
@@ -113,6 +122,8 @@ Wake/VAD/STT
 - 검증된 단일 memory ID를 허용-root hash-pinned PDF action으로 연결하는 S03 resolver
 - 등록된 로컬 source set만 읽는 network-free `browser.fixture.read`
 - 등록 Chrome/Edge에서 exact-host HTTPS 주소만 새 창으로 여는 `browser.navigate`
+- 명시적으로 켠 Chrome 로컬 기록에서 최근 또는 자주 방문한 YouTube 항목을 선택하고, URL 목록을
+  NIM에 보내지 않은 채 등록 Chrome으로 여는 `media.youtube.play.recent`
 - 단계별 새 동의가 있어야 마이크·스피커·Windows Hello를 실행하는 `run-user-validation`
 - 기존 파일을 덮어쓰지 않는 원자적 DOCX fixture writer와 독립 ZIP/XML verifier
 - installer를 실행하지 않는 lease·hash·publisher 기반 `package.verify`
@@ -122,6 +133,8 @@ Wake/VAD/STT
 - S08/S09/S10/S12 증거의 누락·추가·중복 run을 거부하는 HMAC-SHA256 batch verifier
 - 동의 reference와 WAV/hash를 선검증하고 원문을 보고하지 않는 offline 한국어 STT 평가 하네스
 - 녹음 없이 16 kHz mono int16 지원만 확인하는 privacy-minimized microphone probe
+- 지정 마이크가 시작 전에 사라지면 기본 입력 장치로 한 번 전환하고, 입력 정지를 감지해 제한된
+  캡처 재시작으로 연결하는 마이크 복구 경계
 - 제목·텍스트·경로를 읽지 않고 등록 앱의 경로·SHA-256만 확인하는 최소 전경 컨텍스트
 - foreground/focus WinEvent에 반응하고 PID/HWND 일치·overflow fail-closed를 강제하는 이벤트 컨텍스트
 - SHA-256 고정 local ONNX bundle과 실제 offline openWakeWord inference 경로
@@ -287,6 +300,9 @@ Windows Hello 빌드·IPC 계약은 [네이티브 helper 문서](native/WindowsH
 Windows Settings allowlist와 검증 한계는 [Settings adapter 문서](docs/SETTINGS.md)에 있다.
 설치·빌드·무부작용 사전점검 순서는 [배포 문서](docs/DEPLOYMENT.md)에 있다.
 현재 완료 범위와 남은 작업은 [구현 상태](docs/STATUS.md), 위협과 잔여 위험은 [위협 모델](docs/THREAT_MODEL.md)에 정리한다.
+현재 포함된 Supertonic 3 음성 모델은 OpenRAIL-M 조건을 적용하며 전체 원문과 출처 구분 고지는
+`models/supertonic3/LICENSE.MODEL-OpenRAIL-M.txt`와
+`models/supertonic3/THIRD_PARTY_NOTICE.SKILLA.txt`에 포함한다.
 연구 목적, SK0~SK3 조건, 비용 계산과 구현 간극은 [스킬 연구 기준](docs/SKILL_RESEARCH_PLAN.md)에 정리한다.
 최신 공개 Windows JARVIS 계열과의 기능·안전성 차이는 [GitHub 비교 문서](docs/GITHUB_COMPARISON.md)에 있다.
 LLM 하네스·스킬의 역할, 성능 영향, 선행 연구와 쉬운 설명은 [하네스와 스킬 문서](docs/HARNESS_AND_SKILLS.md)에 있다.
