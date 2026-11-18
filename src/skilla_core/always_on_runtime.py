@@ -411,6 +411,40 @@ class AlwaysOnAgentRuntime:
             self._finish_worker(token, self._failed("COMMAND_COORDINATION_FAILED"))
             return
 
+        if decision.status is VoiceCommandStatus.RESPONSE_READY:
+            response = decision.local_response
+            if response is None:
+                self._finish_worker(token, self._failed("RESPONSE_READY_WITHOUT_RESPONSE"))
+                return
+            if token.is_cancelled:
+                self._finish_worker(
+                    token,
+                    RuntimeEvent(
+                        event_type=RuntimeEventType.ROUTED,
+                        reason="RESPONSE_CANCELLED",
+                    ),
+                )
+                return
+            try:
+                if self._user_visible_results is not None:
+                    self._user_visible_results.display_local_response(response)
+                feedback_delivered = None
+                if self._feedback is not None:
+                    self._feedback.present_local_response(response, cancellation=token)
+                    feedback_delivered = True
+            except Exception:
+                self._finish_worker(token, self._failed("LOCAL_RESPONSE_FAILED"))
+                return
+            self._finish_worker(
+                token,
+                RuntimeEvent(
+                    event_type=RuntimeEventType.ROUTED,
+                    reason=response.reason,
+                    feedback_delivered=feedback_delivered,
+                ),
+            )
+            return
+
         with self._lock:
             if self._state is AlwaysOnState.CLOSED:
                 return

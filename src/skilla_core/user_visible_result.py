@@ -4,6 +4,7 @@ from threading import Lock
 
 from pydantic import Field
 
+from .local_responses import LocalResponse
 from .models import Action, FrozenModel, VerificationResult
 from .runtime_models import ExecutionResult
 
@@ -30,6 +31,18 @@ class UserVisibleResultStore:
             return (
                 None if self._snapshot is None else self._snapshot.model_copy(deep=True)
             )
+
+    def display_local_response(self, response: LocalResponse) -> None:
+        """Display only a validated, product-owned local response."""
+        if not isinstance(response, LocalResponse):
+            raise TypeError("response must be a LocalResponse")
+        snapshot = UserVisibleResultSnapshot(
+            capability_id=f"local.response.{response.code.value.lower()}",
+            title=response.title,
+            lines=response.lines,
+        )
+        with self._lock:
+            self._snapshot = snapshot
 
     def observe(
         self,

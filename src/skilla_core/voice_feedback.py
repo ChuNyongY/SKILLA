@@ -5,6 +5,7 @@ from threading import Event
 from typing import Protocol
 
 from .cancellation import CancellationToken
+from .local_responses import LocalResponse, LocalResponseCode
 from .models import ActionStatus
 from .runtime_models import TaskOutcome
 
@@ -18,6 +19,7 @@ class FeedbackCode(StrEnum):
     FAILED = "FAILED"
     SKILL_REGISTER_REVIEW = "SKILL_REGISTER_REVIEW"
     SKILL_REUSE_REVIEW = "SKILL_REUSE_REVIEW"
+    SELF_INTRODUCTION = "SELF_INTRODUCTION"
 
 
 _FIXED_KOREAN_MESSAGES: dict[FeedbackCode, str] = {
@@ -31,6 +33,11 @@ _FIXED_KOREAN_MESSAGES: dict[FeedbackCode, str] = {
         "새 스킬의 작업 순서와 안전 조건을 화면에서 확인해 주세요. 등록하고 실행할까요?"
     ),
     FeedbackCode.SKILL_REUSE_REVIEW: "저장된 스킬을 찾았어요. 화면에서 확인한 작업을 실행할까요?",
+    FeedbackCode.SELF_INTRODUCTION: (
+        "저는 스킬라예요. 반복 작업을 스킬로 저장하고 검색해 다시 실행하는 "
+        "로컬 인공지능 에이전트예요. 음성과 텍스트 명령을 받을 수 있고, "
+        "중요한 작업은 승인과 결과 확인 절차를 거쳐 실행해요."
+    ),
 }
 
 _SAFETY_ABORT_REASONS = frozenset(
@@ -82,6 +89,18 @@ class VoiceFeedbackPresenter:
         cancellation: CancellationToken | None = None,
     ) -> FeedbackCode:
         code = feedback_code_for_outcome(outcome)
+        self.present(code, cancellation=cancellation)
+        return code
+
+    def present_local_response(
+        self,
+        response: LocalResponse,
+        *,
+        cancellation: CancellationToken | None = None,
+    ) -> FeedbackCode:
+        if response.code is not LocalResponseCode.SELF_INTRODUCTION:
+            raise ValueError("unsupported local response")
+        code = FeedbackCode.SELF_INTRODUCTION
         self.present(code, cancellation=cancellation)
         return code
 

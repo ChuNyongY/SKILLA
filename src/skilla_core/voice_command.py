@@ -8,6 +8,7 @@ from typing import Protocol
 
 from .cancellation import CancellationToken
 from .intent import GateResult, GateRoute, InputSource, IntentEvidence, IntentGate
+from .local_responses import LocalResponse, LocalResponseRouter
 from .models import Plan
 from .voice import CaptureStatus, VoiceCaptureResult
 
@@ -15,6 +16,7 @@ from .voice import CaptureStatus, VoiceCaptureResult
 class VoiceCommandStatus(StrEnum):
     CAPTURE_ABORTED = "CAPTURE_ABORTED"
     ROUTED = "ROUTED"
+    RESPONSE_READY = "RESPONSE_READY"
     PLAN_READY = "PLAN_READY"
     FAILED = "FAILED"
 
@@ -25,6 +27,7 @@ class VoiceCommandDecision:
     reason: str
     gate: GateResult | None = None
     plan: Plan | None = None
+    local_response: LocalResponse | None = None
 
 
 class EvidenceClassifier(Protocol):
@@ -58,11 +61,13 @@ class VoiceCommandCoordinator:
         cancellation: CancellationToken,
         *,
         gate: IntentGate | None = None,
+        local_response_router: LocalResponseRouter | None = None,
     ) -> None:
         self._classifier = classifier
         self._planner = planner
         self._cancellation = cancellation
         self._gate = gate or IntentGate()
+        self._local_response_router = local_response_router or LocalResponseRouter()
 
     def process(
         self,
@@ -124,6 +129,13 @@ class VoiceCommandCoordinator:
         task_active: bool,
         trusted_context: Mapping[str, object] | None,
     ) -> VoiceCommandDecision:
+        local_response = self._local_response_router.resolve(transcript)
+        if local_response is not None:
+            return VoiceCommandDecision(
+                status=VoiceCommandStatus.RESPONSE_READY,
+                reason=local_response.reason,
+                local_response=local_response,
+            )
         try:
             classify_cancellable = getattr(
                 self._classifier, "classify_cancellable", None

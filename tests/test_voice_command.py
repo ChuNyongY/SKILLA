@@ -198,6 +198,23 @@ def test_trusted_text_uses_text_source_without_faking_microphone_evidence() -> N
     assert planner.calls == [("시스템 정보 확인", {"foreground_app_id": "notepad"})]
 
 
+def test_self_introduction_is_local_and_bypasses_model_components() -> None:
+    classifier = Classifier(IntentClass.COMMAND)
+    planner = Planner()
+
+    decision = VoiceCommandCoordinator(
+        classifier,
+        planner,
+        CancellationToken(),
+    ).process_text("스킬라, 자기소개해봐", task_active=False)
+
+    assert decision.status is VoiceCommandStatus.RESPONSE_READY
+    assert decision.reason == "SELF_INTRODUCTION_DELIVERED"
+    assert decision.local_response is not None
+    assert classifier.calls == 0
+    assert planner.calls == []
+
+
 def test_aborted_capture_never_reaches_classifier_or_planner() -> None:
     classifier = Classifier(IntentClass.COMMAND)
     planner = Planner()

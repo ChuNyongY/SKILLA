@@ -34,6 +34,8 @@ from skilla_core.always_on_runtime import (
     RuntimeEventType,
 )
 from skilla_core.intent import InputSource
+from skilla_core.user_visible_result import UserVisibleResultStore
+from skilla_core.voice_feedback import VoiceFeedbackPresenter
 
 
 def capture(text: str) -> VoiceCaptureResult:
@@ -187,6 +189,8 @@ def runtime_with_executor(
     policy: PolicyEngine | None = None,
     trace_observer: object | None = None,
     use_observer: object | None = None,
+    feedback: VoiceFeedbackPresenter | None = None,
+    user_visible_results: UserVisibleResultStore | None = None,
 ) -> tuple[AlwaysOnAgentRuntime, Classifier, Planner]:
     classifier = Classifier(classifier_confidence)
     selected_planner = planner or Planner()
@@ -217,10 +221,46 @@ def runtime_with_executor(
             planner_context_provider=planner_context_provider,
             skill_trace_observer=trace_observer,  # type: ignore[arg-type]
             skill_use_observer=use_observer,  # type: ignore[arg-type]
+            feedback=feedback,
+            user_visible_results=user_visible_results,
         ),
         classifier,
         selected_planner,
     )
+
+
+def test_runtime_delivers_local_self_introduction_without_execution() -> None:
+    class Sink:
+        def __init__(self) -> None:
+            self.spoken: list[str] = []
+
+        def speak(self, text: str, **_kwargs: object) -> None:
+            self.spoken.append(text)
+
+    sink = Sink()
+    visible = UserVisibleResultStore()
+    runtime, classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        feedback=VoiceFeedbackPresenter(sink),
+        user_visible_results=visible,
+    )
+
+    started = runtime.submit_text("자기소개해봐")
+    completed = runtime.wait_for_idle(timeout_seconds=2)
+
+    assert started.event_type is RuntimeEventType.TASK_STARTED
+    assert completed is not None
+    assert completed.event_type is RuntimeEventType.ROUTED
+    assert completed.reason == "SELF_INTRODUCTION_DELIVERED"
+    assert completed.completed_actions == 0
+    assert completed.feedback_delivered is True
+    assert classifier.calls == 0
+    assert planner.calls == 0
+    snapshot = visible.snapshot()
+    assert snapshot is not None
+    assert snapshot.title == "SKILLA 자기소개"
+    assert len(snapshot.lines) == 3
+    assert sink.spoken and sink.spoken[0].startswith("저는 스킬라예요.")
 
 
 class TraceObserver:

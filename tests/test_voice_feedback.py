@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 
 from skilla_core import ActionStatus, CancellationToken, TaskOutcome
+from skilla_core.local_responses import LocalResponseRouter
 from skilla_core.voice_feedback import (
     FeedbackCode,
     VoiceFeedbackPresenter,
@@ -96,6 +97,24 @@ def test_presenter_exposes_speaking_state_only_during_sink_playback() -> None:
 
     assert not worker.is_alive()
     assert not presenter.is_speaking
+
+
+def test_self_introduction_uses_only_product_owned_fixed_speech() -> None:
+    sink = FakeSpeechSink()
+    response = LocalResponseRouter().resolve("자기소개해줘")
+    assert response is not None
+
+    code = VoiceFeedbackPresenter(sink).present_local_response(response)
+
+    assert code is FeedbackCode.SELF_INTRODUCTION
+    assert sink.calls == [
+        (
+            "저는 스킬라예요. 반복 작업을 스킬로 저장하고 검색해 다시 실행하는 "
+            "로컬 인공지능 에이전트예요. 음성과 텍스트 명령을 받을 수 있고, "
+            "중요한 작업은 승인과 결과 확인 절차를 거쳐 실행해요.",
+            None,
+        )
+    ]
 
 
 @pytest.mark.parametrize(
