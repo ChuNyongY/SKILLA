@@ -3,6 +3,8 @@ import threading
 import time
 from collections.abc import Mapping
 
+import pytest
+
 from skilla_core import (
     Action,
     ActionStatus,
@@ -210,6 +212,23 @@ def test_self_introduction_is_local_and_bypasses_model_components() -> None:
 
     assert decision.status is VoiceCommandStatus.RESPONSE_READY
     assert decision.reason == "SELF_INTRODUCTION_DELIVERED"
+    assert decision.local_response is not None
+    assert classifier.calls == 0
+    assert planner.calls == []
+
+
+@pytest.mark.parametrize("utterance", ("안녕하세요", "뭐 할 수 있어?", "고마워", "다음에 보자"))
+def test_bounded_conversation_bypasses_classifier_and_planner(utterance: str) -> None:
+    classifier = Classifier(IntentClass.COMMAND)
+    planner = Planner()
+
+    decision = VoiceCommandCoordinator(
+        classifier,
+        planner,
+        CancellationToken(),
+    ).process_text(utterance, task_active=False)
+
+    assert decision.status is VoiceCommandStatus.RESPONSE_READY
     assert decision.local_response is not None
     assert classifier.calls == 0
     assert planner.calls == []

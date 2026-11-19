@@ -20,6 +20,10 @@ class FeedbackCode(StrEnum):
     SKILL_REGISTER_REVIEW = "SKILL_REGISTER_REVIEW"
     SKILL_REUSE_REVIEW = "SKILL_REUSE_REVIEW"
     SELF_INTRODUCTION = "SELF_INTRODUCTION"
+    GREETING = "GREETING"
+    CAPABILITY_OVERVIEW = "CAPABILITY_OVERVIEW"
+    THANKS = "THANKS"
+    GOODBYE = "GOODBYE"
 
 
 _FIXED_KOREAN_MESSAGES: dict[FeedbackCode, str] = {
@@ -38,6 +42,21 @@ _FIXED_KOREAN_MESSAGES: dict[FeedbackCode, str] = {
         "로컬 인공지능 에이전트예요. 음성과 텍스트 명령을 받을 수 있고, "
         "중요한 작업은 승인과 결과 확인 절차를 거쳐 실행해요."
     ),
+    FeedbackCode.GREETING: "안녕하세요. 스킬라예요. 필요한 작업을 말씀해 주세요.",
+    FeedbackCode.CAPABILITY_OVERVIEW: (
+        "저는 음성과 텍스트로 윈도우 작업을 받고, 반복 작업을 스킬로 저장해 다시 실행해요. "
+        "중요한 작업은 승인받고, 실행 결과도 직접 확인해요."
+    ),
+    FeedbackCode.THANKS: "도움이 되어 기뻐요. 다음 작업도 말씀해 주세요.",
+    FeedbackCode.GOODBYE: "네, 다음에 필요할 때 다시 불러 주세요.",
+}
+
+_LOCAL_RESPONSE_FEEDBACK = {
+    LocalResponseCode.SELF_INTRODUCTION: FeedbackCode.SELF_INTRODUCTION,
+    LocalResponseCode.GREETING: FeedbackCode.GREETING,
+    LocalResponseCode.CAPABILITY_OVERVIEW: FeedbackCode.CAPABILITY_OVERVIEW,
+    LocalResponseCode.THANKS: FeedbackCode.THANKS,
+    LocalResponseCode.GOODBYE: FeedbackCode.GOODBYE,
 }
 
 _SAFETY_ABORT_REASONS = frozenset(
@@ -98,9 +117,10 @@ class VoiceFeedbackPresenter:
         *,
         cancellation: CancellationToken | None = None,
     ) -> FeedbackCode:
-        if response.code is not LocalResponseCode.SELF_INTRODUCTION:
-            raise ValueError("unsupported local response")
-        code = FeedbackCode.SELF_INTRODUCTION
+        try:
+            code = _LOCAL_RESPONSE_FEEDBACK[response.code]
+        except KeyError as error:
+            raise ValueError("unsupported local response") from error
         self.present(code, cancellation=cancellation)
         return code
 

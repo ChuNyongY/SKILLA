@@ -118,6 +118,47 @@ def test_self_introduction_uses_only_product_owned_fixed_speech() -> None:
 
 
 @pytest.mark.parametrize(
+    ("utterance", "expected_code", "expected_text"),
+    (
+        (
+            "안녕하세요",
+            FeedbackCode.GREETING,
+            "안녕하세요. 스킬라예요. 필요한 작업을 말씀해 주세요.",
+        ),
+        (
+            "뭐 할 수 있어?",
+            FeedbackCode.CAPABILITY_OVERVIEW,
+            "저는 음성과 텍스트로 윈도우 작업을 받고, 반복 작업을 스킬로 저장해 다시 실행해요. "
+            "중요한 작업은 승인받고, 실행 결과도 직접 확인해요.",
+        ),
+        (
+            "고마워",
+            FeedbackCode.THANKS,
+            "도움이 되어 기뻐요. 다음 작업도 말씀해 주세요.",
+        ),
+        (
+            "다음에 보자",
+            FeedbackCode.GOODBYE,
+            "네, 다음에 필요할 때 다시 불러 주세요.",
+        ),
+    ),
+)
+def test_bounded_conversation_uses_product_owned_fixed_speech(
+    utterance: str,
+    expected_code: FeedbackCode,
+    expected_text: str,
+) -> None:
+    sink = FakeSpeechSink()
+    response = LocalResponseRouter().resolve(utterance)
+    assert response is not None
+
+    code = VoiceFeedbackPresenter(sink).present_local_response(response)
+
+    assert code is expected_code
+    assert sink.calls == [(expected_text, None)]
+
+
+@pytest.mark.parametrize(
     ("code", "expected"),
     [
         (FeedbackCode.PLAN_READY, "작업 순서를 정했어요."),
