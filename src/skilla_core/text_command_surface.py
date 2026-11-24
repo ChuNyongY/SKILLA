@@ -235,12 +235,19 @@ def run_tk_text_command(
 
         return invoke
 
-    for label, action, failure_message in optional_actions:
-        if tools is None or action is None:
-            continue
-        theme.button(tools, label, action_command(action, failure_message)).pack(
-            side="left", padx=(0, 8),
+    if tools is not None:
+        skill_entries = tuple(
+            (label, action_command(action, failure_message))
+            for label, action, failure_message in optional_actions[:-1]
+            if action is not None
         )
+        if skill_entries:
+            theme.action_menu(tools, "스킬", skill_entries).pack(side="left", padx=(0, 8))
+        if open_display_selector is not None:
+            theme.button(
+                tools, "작업 화면 선택",
+                action_command(open_display_selector, _DISPLAY_SELECTOR_FAILED),
+            ).pack(side="left", padx=(0, 8))
     entry.bind("<Return>", lambda _event: submit())
 
     previous_result = None

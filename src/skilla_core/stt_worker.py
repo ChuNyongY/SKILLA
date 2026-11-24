@@ -5,6 +5,7 @@ from __future__ import annotations
 import atexit
 import json
 import os
+import stat
 import subprocess
 import sys
 from collections.abc import Mapping
@@ -21,6 +22,27 @@ _MAX_AUDIO_BYTES = 2 * 1024 * 1024
 _MAX_RESPONSE_BYTES = 128 * 1024
 
 
+def _local_cuda_bins() -> tuple[Path, ...]:
+    local = os.environ.get("LOCALAPPDATA")
+    if os.name != "nt" or not local or not Path(local).is_absolute():
+        return ()
+    root = Path(local) / "SKILLA" / "voice-runtime"
+    libraries = (
+        root / "cublas" / "bin" / "cublas64_12.dll",
+        root / "cudnn" / "bin" / "cudnn64_9.dll",
+    )
+    try:
+        for library in libraries:
+            if not library.is_file():
+                return ()
+            for candidate in (library, library.parent, library.parent.parent, root, root.parent):
+                if candidate.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+                    return ()
+    except OSError:
+        return ()
+    return tuple(library.parent for library in libraries)
+
+
 class CudaWhisperWorker:
     def __init__(self, model_root: Path, language: str) -> None:
         self._lock = Lock()
@@ -33,6 +55,11 @@ class CudaWhisperWorker:
             )
             if key in os.environ
         }
+        cuda_bins = _local_cuda_bins()
+        if cuda_bins:
+            environment["PATH"] = os.pathsep.join(
+                (*map(str, cuda_bins), environment.get("PATH", ""))
+            ).rstrip(os.pathsep)
         self._process = subprocess.Popen(
             fixed_worker_command("skilla_core.stt_worker", STT_WORKER_TOKEN),
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,

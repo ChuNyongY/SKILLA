@@ -607,6 +607,8 @@ def build_parser() -> argparse.ArgumentParser:
         credential_product = subparsers.add_parser(command, help=help_text)
         credential_product.add_argument("project_root", type=Path)
         credential_product.add_argument("config", type=Path)
+        if command == "run-product-host-credential":
+            credential_product.add_argument("--mic-off", action="store_true")
     for command, help_text in (
         ("autostart-status", "Report current-user SKILLA Startup registration status"),
         ("install-autostart", "Register the SKILLA tray host for current-user Startup"),
@@ -1497,7 +1499,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 request_capture_stop=service.runtime.capture_pump.request_stop,
                 request_runtime_stop=service.lifecycle.stop,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                wakeword_mode=service.configuration.settings.wakeword_mode,
+                open_display_selector=lambda: run_tk_display_selector(service.display),
                 open_text_command=lambda: run_tk_text_command(
                     service.runtime.runtime,
                     poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
@@ -1572,10 +1574,18 @@ def main(arguments: Sequence[str] | None = None) -> int:
             args.config,
             load_nim_credential,
         )
-        started = service.lifecycle.start()
-        if started.state.value != "RUNNING":
-            print(started.model_dump_json(indent=2))
-            return 1
+        if not args.mic_off:
+            started = service.lifecycle.start()
+            if started.state.value != "RUNNING":
+                print(started.model_dump_json(indent=2))
+                return 1
+
+        def shutdown() -> object:
+            try:
+                return service.lifecycle.stop()
+            finally:
+                service.runtime.runtime.close()
+
         try:
             run_tk_status_hud(
                 submit_text=service.runtime.runtime.submit_text,
@@ -1584,9 +1594,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,
                 request_task_stop=service.runtime.runtime.cancel_current_task,
                 request_capture_stop=service.runtime.capture_pump.request_stop,
-                request_runtime_stop=service.lifecycle.stop,
+                request_runtime_stop=shutdown,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                wakeword_mode=service.configuration.settings.wakeword_mode,
+                enable_voice=(
+                    (lambda: service.lifecycle.start().state.value == "RUNNING")
+                    if args.mic_off else None
+                ),
+                open_display_selector=lambda: run_tk_display_selector(service.display),
                 open_text_command=lambda: run_tk_text_command(
                     service.runtime.runtime,
                     poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
@@ -1625,6 +1639,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             )
         finally:
             stopped = service.lifecycle.stop()
+            service.runtime.runtime.close()
         print(stopped.model_dump_json(indent=2))
         return 0 if stopped.state.value == "STOPPED" else 1
     if args.command == "run-product-tray":
@@ -2049,9 +2064,10 @@ def entrypoint() -> None:
                 ),
                 product_runner=lambda root, config: main(
                     (
-                        "run-product-console-credential",
+                        "run-product-host-credential",
                         str(root),
                         str(config),
+                        "--mic-off",
                     )
                 ),
             )

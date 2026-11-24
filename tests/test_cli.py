@@ -530,7 +530,7 @@ def test_text_product_console_does_not_start_microphone_capture(
     assert json.loads(capsys.readouterr().out)["event_type"] == "CLOSED"
 
 
-def test_frozen_double_click_defaults_to_text_console_without_microphone(
+def test_frozen_double_click_defaults_to_dashboard_without_microphone(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -567,9 +567,10 @@ def test_frozen_double_click_defaults_to_text_console_without_microphone(
         (
             executable,
             (
-            "run-product-console-credential",
+            "run-product-host-credential",
             str(tmp_path.resolve()),
             str(config.resolve()),
+            "--mic-off",
             ),
         ),
         (executable, ()),

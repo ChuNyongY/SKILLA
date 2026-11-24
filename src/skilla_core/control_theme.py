@@ -1,7 +1,7 @@
 """Shared palette and controls for the SKILLA desktop windows."""
 
 from collections.abc import Callable
-from tkinter import Button, Label, Misc
+from tkinter import Button, Label, Menu, Menubutton, Misc
 
 BACKGROUND = "#030711"
 PANEL = "#091b2b"
@@ -35,3 +35,20 @@ def button(
         highlightthickness=1, highlightbackground=BORDER, highlightcolor=ACCENT,
         font=("맑은 고딕", 10, "bold"), padx=12, pady=7,
     )
+
+
+def action_menu(
+    parent: Misc, label: str, actions: tuple[tuple[str, Callable[[], None] | None], ...],
+) -> Menubutton:
+    control = Menubutton(
+        parent, text=f"{label} ▾", takefocus=True, font=("맑은 고딕", 10, "bold"),
+        bg=FIELD, fg=TEXT, activebackground=ACCENT, activeforeground=BACKGROUND,
+        padx=12, pady=7, highlightthickness=1, highlightcolor=ACCENT,
+        highlightbackground=BORDER,
+    )
+    menu = Menu(control, tearoff=False, font=FONT)
+    for item, action in actions:
+        if action is not None:
+            menu.add_command(label=item, command=action)
+    control.configure(menu=menu)
+    return control

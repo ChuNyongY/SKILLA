@@ -22,6 +22,7 @@ class RuntimeStatusDisplay(FrozenModel):
     sequence: int = Field(ge=0)
     stop_enabled: bool
     voice_label: str = Field(default="마이크 상태 확인 중", min_length=1, max_length=80)
+    result_summary: str = Field(default="", max_length=480)
     input_level: float = Field(default=0.0, ge=0.0, le=1.0)
     audio_frame_count: int = Field(default=0, ge=0)
     skill_review: PendingSkillReview | None = None
@@ -280,6 +281,10 @@ class RuntimeStatusPresenter:
             sequence=snapshot.sequence,
             stop_enabled=snapshot.state is not AlwaysOnState.CLOSED,
             voice_label=voice_label,
+            result_summary=(
+                "\n".join((snapshot.result.title, *snapshot.result.lines[:3]))[:480]
+                if snapshot.result is not None else ""
+            ),
             input_level=0.0 if diagnostics is None else diagnostics.input_level,
             audio_frame_count=0 if diagnostics is None else diagnostics.input_sequence,
             skill_review=snapshot.skill_review,
@@ -291,7 +296,7 @@ class RuntimeStatusPresenter:
 class TkStatusView:
     """Cyber HUD for the SKILLA local skill agent."""
 
-    _MAIN_SIZE = "880x750"
+    _MAIN_SIZE = "760x600"
 
     def __init__(
         self,
@@ -299,6 +304,7 @@ class TkStatusView:
         title: str = "SKILLA // CONTROL INTERFACE",
         submit_text: Callable[[str], object] | None = None,
         open_text_command: Callable[[], None] | None = None,
+        open_display_selector: Callable[[], None] | None = None,
         open_verified_result: Callable[[], None] | None = None,
         review_skills: Callable[[], None] | None = None,
         review_skill_traces: Callable[[], None] | None = None,
@@ -309,7 +315,7 @@ class TkStatusView:
         dismiss_trigger_suggestion: Callable[[UUID], bool] | None = None,
         accept_schedule_suggestion: Callable[[UUID], bool] | None = None,
         dismiss_schedule_suggestion: Callable[[UUID], bool] | None = None,
-        wakeword_mode: str = "whisper_korean",
+        enable_voice: Callable[[], bool] | None = None,
     ) -> None:
         try:
             import tkinter as tk
@@ -320,7 +326,7 @@ class TkStatusView:
         except tk.TclError as error:
             raise RuntimeError("tkinter status HUD could not start") from error
         root.title(title)
-        root.minsize(820, 720)
+        root.minsize(720, 560)
         root.geometry(self._MAIN_SIZE)
         root.configure(bg="#030711")
 
@@ -353,19 +359,11 @@ class TkStatusView:
         header.pack(fill="x")
         tk.Label(
             header,
-            text="S . K . I . L . L . A",
+            text="SKILLA",
             bg=colors["bg"],
             fg=colors["cyan"],
             font=("Consolas", 22, "bold"),
         ).pack(side="left")
-        self._system_code = tk.Label(
-            header,
-            text="SYSTEM // BOOT",
-            bg=colors["bg"],
-            fg=colors["cyan_dim"],
-            font=("Consolas", 9, "bold"),
-        )
-        self._system_code.pack(side="right", pady=(8, 0))
         tk.Label(
             header,
             text="Windows 작업 도우미",
@@ -379,7 +377,7 @@ class TkStatusView:
 
         tk.Frame(shell, height=1, bg=colors["cyan_dim"]).pack(fill="x", pady=(12, 16))
 
-        from .control_theme import button
+        from .control_theme import action_menu, button
 
         command_panel = tk.Frame(shell, bg=colors["panel_alt"], padx=16, pady=8)
         command_panel.pack(fill="x", pady=(0, 12))
@@ -427,191 +425,87 @@ class TkStatusView:
             ).pack(fill="x")
             self._inline_command_widgets = (entry, send)
 
-        content = tk.Frame(shell, bg=colors["bg"])
-        content.pack(fill="x")
-
-        core_panel = tk.Frame(
-            content,
-            width=225,
-            height=260,
-            bg=colors["panel"],
-            highlightbackground=colors["line"],
-            highlightthickness=1,
-        )
-        core_panel.pack(side="left", fill="y")
-        core_panel.pack_propagate(False)
-        tk.Label(
-            core_panel,
-            text="마이크 입력",
-            bg=colors["panel"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 11, "bold"),
-        ).pack(pady=(16, 2))
-        self._core = tk.Canvas(
-            core_panel,
-            width=190,
-            height=190,
-            bg=colors["panel"],
-            highlightthickness=0,
-        )
-        self._core.pack()
-        self._core_ring_ids = self._draw_core()
-        self._core_level_id = self._core.create_text(
-            95,
-            178,
-            text="MIC 00%",
-            fill=colors["cyan_dim"],
-            font=("Consolas", 8, "bold"),
-        )
-        self._core_caption = tk.StringVar(value="VOICE LINK // STANDBY")
-        tk.Label(
-            core_panel,
-            textvariable=self._core_caption,
-            bg=colors["panel"],
-            fg=colors["cyan_dim"],
-            font=("Consolas", 8, "bold"),
-        ).pack()
-
-        data_panel = tk.Frame(
-            content,
-            bg=colors["panel_alt"],
-            highlightbackground=colors["line"],
-            highlightthickness=1,
-            padx=22,
-            pady=16,
-        )
-        data_panel.pack(side="left", fill="both", expand=True, padx=(14, 0))
-
         self._state = tk.StringVar(value="준비 중")
         self._detail = tk.StringVar(value="상태를 불러오고 있습니다.")
-        self._actions = tk.StringVar(value="완료 동작: 0")
         self._voice = tk.StringVar(value="마이크 상태 확인 중")
-        tk.Label(
-            data_panel,
-            text="작업 진행 상태",
-            bg=colors["panel_alt"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 11, "bold"),
-            anchor="w",
-        ).pack(fill="x")
-        self._state_label = tk.Label(
-            data_panel,
-            textvariable=self._state,
-            bg=colors["panel_alt"],
-            fg=colors["cyan"],
-            font=("맑은 고딕", 24, "bold"),
-            anchor="w",
-        )
-        self._state_label.pack(fill="x", pady=(2, 8))
-        tk.Label(
-            data_panel,
-            textvariable=self._detail,
-            bg=colors["panel_alt"],
-            fg=colors["text"],
-            font=("맑은 고딕", 10),
-            anchor="w",
-            justify="left",
-            wraplength=440,
-        ).pack(fill="x")
+        self._result = tk.StringVar(value="명령을 실행하면 여기에 결과가 표시됩니다.")
 
-        phase_row = tk.Frame(data_panel, bg=colors["panel_alt"])
-        phase_row.pack(fill="x", pady=(12, 0))
-        self._phase_labels: list[Any] = []
-        for phase in ("요청 분석", "스킬 검색", "안전 실행", "결과 검증"):
-            phase_label = tk.Label(
-                phase_row,
-                text=phase,
-                bg=colors["panel"],
-                fg=colors["muted"],
-                font=("맑은 고딕", 8, "bold"),
-                padx=7,
-                pady=4,
-                highlightbackground=colors["line"],
-                highlightthickness=1,
-            )
-            phase_label.pack(side="left", fill="x", expand=True, padx=(0, 5))
-            self._phase_labels.append(phase_label)
-
-        tk.Frame(data_panel, height=1, bg=colors["line"]).pack(fill="x", pady=14)
-        voice_header = tk.Frame(data_panel, bg=colors["panel_alt"])
-        voice_header.pack(fill="x")
-        self._voice_indicator = tk.Label(
-            voice_header,
-            text="●",
-            bg=colors["panel_alt"],
-            fg=colors["cyan_dim"],
-            font=("Segoe UI Symbol", 10, "bold"),
-        )
-        self._voice_indicator.pack(side="left")
-        tk.Label(
-            voice_header,
-            text="음성 인식 상태",
-            bg=colors["panel_alt"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 11, "bold"),
-        ).pack(side="left", padx=(7, 0))
-        tk.Label(
-            data_panel,
-            textvariable=self._voice,
-            bg=colors["panel_alt"],
-            fg=colors["cyan"],
-            font=("맑은 고딕", 10, "bold"),
-            anchor="w",
-            justify="left",
-            wraplength=440,
-        ).pack(fill="x", pady=(5, 0))
-
-        tk.Label(
-            data_panel,
-            text=wakeword_mode_label(wakeword_mode),
-            bg=colors["panel_alt"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 8),
-            anchor="w",
-            justify="left",
-            wraplength=440,
-        ).pack(fill="x", pady=(5, 0))
-
-        metric = tk.Frame(data_panel, bg=colors["panel_alt"])
-        metric.pack(fill="x", pady=(16, 0))
-        tk.Label(
-            metric,
-            text="검증 완료 동작",
-            bg=colors["panel_alt"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 9, "bold"),
-        ).pack(side="left")
-        tk.Label(
-            metric,
-            textvariable=self._actions,
-            bg=colors["panel_alt"],
-            fg=colors["success"],
-            font=("맑은 고딕", 10, "bold"),
-        ).pack(side="right")
-
-        primary = tk.Frame(shell, bg=colors["bg"])
-        primary.pack(fill="x", pady=(12, 0))
-        self._stop_button = self._button(primary, "■  현재 작업 중지", colors["danger"], width=16)
+        controls = tk.Frame(shell, bg=colors["bg"])
+        controls.pack(side="bottom", fill="x", pady=(12, 0))
+        self._stop_button = self._button(controls, "작업 중지", colors["danger"], width=13)
         self._stop_button.pack(side="left")
-        self._hide_button = self._button(primary, "—  최소화", colors["cyan_dim"], width=11)
-        self._hide_button.pack(side="left", padx=(8, 0))
-        self._exit_button = self._button(primary, "×  종료", colors["muted"], width=9)
-        self._exit_button.pack(side="left", padx=(8, 0))
-
-        tools = tk.Frame(shell, bg=colors["bg"])
-        tools.pack(fill="x", pady=(8, 0))
-        for label, callback in (
-            ("텍스트 창", open_text_command),
-            ("실행 결과", open_verified_result),
-            ("스킬 관리", review_skills),
-            ("스킬 후보 검토", review_skill_traces),
+        self._exit_button = self._button(controls, "종료", colors["muted"], width=8)
+        self._exit_button.pack(side="right")
+        if open_verified_result is not None:
+            button(controls, "결과 자세히", open_verified_result).pack(side="left", padx=(8, 0))
+        menu_items = (
+            ("저장된 스킬", review_skills),
+            ("개정 후보", review_skill_traces),
             ("상황 스킬", manage_skill_triggers),
             ("예약 스킬", manage_skill_schedules),
-        ):
-            if callback is not None:
-                tool_button = self._button(tools, label, colors["text"], width=10)
-                tool_button.configure(command=callback)
-                tool_button.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        )
+        if any(action is not None for _, action in menu_items):
+            action_menu(controls, "스킬", menu_items).pack(side="right", padx=(0, 8))
+        if open_display_selector is not None:
+            action_menu(controls, "설정", (("작업 화면 선택", open_display_selector),)).pack(
+                side="right", padx=(0, 8),
+            )
+        if open_text_command is not None and submit_text is None:
+            button(controls, "텍스트 창", open_text_command).pack(side="right", padx=(0, 8))
+
+        activity = tk.Frame(shell, bg=colors["panel_alt"], padx=16, pady=12)
+        activity.pack(fill="x", pady=(0, 10))
+        self._state_label = tk.Label(
+            activity, textvariable=self._state, bg=colors["panel_alt"],
+            fg=colors["cyan"], font=("맑은 고딕", 18, "bold"),
+        )
+        self._state_label.pack(anchor="w")
+        tk.Label(
+            activity, textvariable=self._detail, bg=colors["panel_alt"],
+            fg=colors["text"], font=("맑은 고딕", 10), justify="left", wraplength=640,
+        ).pack(anchor="w", pady=(2, 8))
+        voice_row = tk.Frame(activity, bg=colors["panel_alt"])
+        voice_row.pack(fill="x")
+        self._mic_meter = tk.Canvas(
+            voice_row, width=40, height=8, bg=colors["line"], highlightthickness=0,
+        )
+        self._mic_meter.pack(side="left", padx=(0, 8))
+        self._mic_fill = self._mic_meter.create_rectangle(
+            0, 0, 0, 8, fill=colors["cyan"], width=0,
+        )
+        tk.Label(
+            voice_row, textvariable=self._voice, bg=colors["panel_alt"],
+            fg=colors["muted"], font=("맑은 고딕", 10), justify="left", wraplength=570,
+        ).pack(side="left")
+        self._microphone_button = None
+        self._voice_not_started = enable_voice is not None
+        if enable_voice is not None:
+            def start_microphone() -> None:
+                assert self._microphone_button is not None
+                self._microphone_button.configure(state="disabled")
+                try:
+                    started = enable_voice()
+                except Exception:
+                    started = False
+                if started:
+                    self._voice_not_started = False
+                    self._microphone_button.pack_forget()
+                else:
+                    self._microphone_button.configure(text="마이크 시작 실패")
+
+            self._microphone_button = button(voice_row, "마이크 켜기", start_microphone)
+            self._microphone_button.pack(side="right")
+
+        result_card = tk.Frame(shell, bg=colors["panel"], padx=16, pady=12)
+        result_card.pack(fill="x")
+        tk.Label(
+            result_card, text="최근 결과", bg=colors["panel"],
+            fg=colors["muted"], font=("맑은 고딕", 10, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            result_card, textvariable=self._result, bg=colors["panel"], fg=colors["text"],
+            font=("맑은 고딕", 11), justify="left", wraplength=640,
+        ).pack(anchor="w", pady=(4, 0))
 
         self._review_response = respond_skill_review
         self._review_id: UUID | None = None
@@ -683,18 +577,8 @@ class TkStatusView:
         self._schedule_no.configure(command=self._dismiss_schedule)
         self._schedule_no.pack(side="right", padx=8)
 
-        footer = tk.Frame(shell, bg=colors["bg"])
-        footer.pack(fill="x", side="bottom", pady=(16, 0))
-        tk.Label(
-            footer,
-            text="음성으로 중지하려면 “스킬라, 멈춰”라고 말하세요.",
-            bg=colors["bg"],
-            fg=colors["muted"],
-            font=("맑은 고딕", 10),
-        ).pack(side="left")
 
         self._root = root
-        self._pulse_step = 0
         self._audio_level = 0.0
         self._audio_level_target = 0.0
         self._audio_frame_count = -1
@@ -723,78 +607,9 @@ class TkStatusView:
             cursor="hand2",
         )
 
-    def _draw_core(self) -> tuple[int, ...]:
-        colors = self._colors
-        canvas = self._core
-        for start, extent in ((20, 105), (165, 80), (280, 55)):
-            canvas.create_arc(
-                18,
-                18,
-                172,
-                172,
-                start=start,
-                extent=extent,
-                style="arc",
-                width=2,
-                outline=colors["cyan_dim"],
-            )
-        canvas.create_oval(35, 35, 155, 155, outline=colors["line"], width=1)
-        outer = canvas.create_oval(48, 48, 142, 142, outline=colors["cyan_dim"], width=2)
-        middle = canvas.create_oval(61, 61, 129, 129, outline=colors["cyan"], width=2)
-        inner = canvas.create_oval(
-            73,
-            73,
-            117,
-            117,
-            fill="#0b3a4d",
-            outline=colors["cyan"],
-            width=2,
-        )
-        canvas.create_text(
-            95,
-            95,
-            text="S",
-            fill=colors["text"],
-            font=("Consolas", 20, "bold"),
-        )
-        for angle in range(0, 360, 45):
-            import math
-
-            radians = math.radians(angle)
-            x1 = 95 + 61 * math.cos(radians)
-            y1 = 95 + 61 * math.sin(radians)
-            x2 = 95 + 70 * math.cos(radians)
-            y2 = 95 + 70 * math.sin(radians)
-            canvas.create_line(x1, y1, x2, y2, fill=colors["cyan_dim"], width=2)
-        return outer, middle, inner
-
     def _animate_core(self) -> None:
-        self._pulse_step = (self._pulse_step + 1) % 16
-        bright = self._pulse_step < 8
-        color = self._colors["cyan"] if bright else self._colors["cyan_dim"]
-        level = smooth_reactor_level(self._audio_level, self._audio_level_target)
-        self._audio_level = level
-        width, radius = reactor_pulse_geometry(level)
-        self._core.coords(
-            self._core_ring_ids[0], 95 - radius, 95 - radius, 95 + radius, 95 + radius
-        )
-        self._core.itemconfigure(self._core_ring_ids[0], outline=color, width=width)
-        self._core.itemconfigure(
-            self._core_ring_ids[1],
-            outline=self._colors["cyan"] if level >= 0.2 else self._colors["cyan_dim"],
-            width=max(2, width - 2),
-        )
-        self._core.itemconfigure(
-            self._core_ring_ids[2],
-            outline=self._colors["success"] if level >= 0.5 else self._colors["cyan"],
-            width=max(2, width - 3),
-        )
-        self._core.itemconfigure(
-            self._core_level_id,
-            text=reactor_level_label(level),
-            fill=color,
-        )
-        self._core_caption.set(reactor_activity_label(level))
+        self._audio_level = smooth_reactor_level(self._audio_level, self._audio_level_target)
+        self._mic_meter.coords(self._mic_fill, 0, 0, round(40 * self._audio_level), 8)
         self._root.after(70, self._animate_core)
 
     def bind_handlers(
@@ -805,7 +620,6 @@ class TkStatusView:
         on_exit: Callable[[], None],
     ) -> None:
         self._stop_button.configure(command=on_stop)
-        self._hide_button.configure(command=on_hide)
         self._exit_button.configure(command=on_exit)
         self._root.protocol("WM_DELETE_WINDOW", on_hide)
 
@@ -826,39 +640,15 @@ class TkStatusView:
             AlwaysOnState.EXECUTING: self._colors["success"],
             AlwaysOnState.CLOSED: self._colors["danger"],
         }
-        state_codes = {
-            AlwaysOnState.IDLE: "SYSTEM // STANDBY",
-            AlwaysOnState.PLANNING: "SYSTEM // ANALYZING",
-            AlwaysOnState.REVIEWING: "SYSTEM // REVIEW",
-            AlwaysOnState.EXECUTING: "SYSTEM // EXECUTING",
-            AlwaysOnState.CLOSED: "SYSTEM // OFFLINE",
-        }
         color = state_colors[display.state]
-        self._state.set(f"●  {display.state_label}")
-        self._detail.set(display.detail_label)
-        self._voice.set(display.voice_label)
-        self._actions.set(f"{display.completed_actions:02d}")
+        self._state.set(display.state_label)
+        self._detail.set(
+            "명령을 입력하거나 마이크를 켜세요."
+            if self._voice_not_started and display.sequence == 0 else display.detail_label
+        )
+        self._voice.set("마이크 꺼짐" if self._voice_not_started else display.voice_label)
+        self._result.set(display.result_summary or "명령을 실행하면 여기에 결과가 표시됩니다.")
         self._state_label.configure(fg=color)
-        self._voice_indicator.configure(fg=color)
-        self._system_code.configure(text=state_codes[display.state], fg=color)
-        if display.state in {AlwaysOnState.PLANNING, AlwaysOnState.REVIEWING}:
-            active_phases = 2
-        elif display.state is AlwaysOnState.EXECUTING:
-            active_phases = 3
-        elif display.state is AlwaysOnState.IDLE and display.completed_actions > 0:
-            active_phases = 4
-        else:
-            active_phases = 0
-        for index, phase_label in enumerate(self._phase_labels):
-            phase_color = color if index < active_phases else self._colors["muted"]
-            phase_label.configure(
-                fg=phase_color,
-                highlightbackground=(
-                    phase_color if index < active_phases else self._colors["line"]
-                ),
-            )
-        for ring_id in self._core_ring_ids[1:]:
-            self._core.itemconfigure(ring_id, outline=color)
         stop_enabled = display.stop_enabled and display.state is not AlwaysOnState.IDLE
         self._stop_button.configure(state="normal" if stop_enabled else "disabled")
         command_state = "normal" if display.state is AlwaysOnState.IDLE else "disabled"
@@ -985,7 +775,7 @@ class TkStatusView:
         )
         self._review_no.configure(state=enabled)
         self._review_panel.pack(fill="x", pady=(12, 0))
-        self._root.geometry("900x950")
+        self._root.geometry("780x810")
         self._root.deiconify()
 
     def schedule(self, delay_ms: int, callback: Callable[[], None]) -> None:
@@ -1011,6 +801,7 @@ def run_tk_status_hud(
     voice_diagnostics_provider: Callable[[], VoicePipelineDiagnostics] | None = None,
     submit_text: Callable[[str], object] | None = None,
     open_text_command: Callable[[], None] | None = None,
+    open_display_selector: Callable[[], None] | None = None,
     open_verified_result: Callable[[], None] | None = None,
     review_skills: Callable[[], None] | None = None,
     review_skill_traces: Callable[[], None] | None = None,
@@ -1024,7 +815,7 @@ def run_tk_status_hud(
     | None = None,
     accept_schedule_suggestion: Callable[[UUID], bool] | None = None,
     dismiss_schedule_suggestion: Callable[[UUID], bool] | None = None,
-    wakeword_mode: str = "whisper_korean",
+    enable_voice: Callable[[], bool] | None = None,
 ) -> None:
     RuntimeStatusPresenter(
         status_provider=status_provider,
@@ -1034,6 +825,7 @@ def run_tk_status_hud(
         view=TkStatusView(
             submit_text=submit_text,
             open_text_command=open_text_command,
+            open_display_selector=open_display_selector,
             open_verified_result=open_verified_result,
             review_skills=review_skills,
             review_skill_traces=review_skill_traces,
@@ -1044,7 +836,7 @@ def run_tk_status_hud(
             dismiss_trigger_suggestion=dismiss_trigger_suggestion,
             accept_schedule_suggestion=accept_schedule_suggestion,
             dismiss_schedule_suggestion=dismiss_schedule_suggestion,
-            wakeword_mode=wakeword_mode,
+            enable_voice=enable_voice,
         ),
         poll_interval_ms=poll_interval_ms,
         voice_diagnostics_provider=voice_diagnostics_provider,
