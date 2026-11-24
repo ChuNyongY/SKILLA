@@ -1,4 +1,4 @@
-SKILLA-PC 0.2.16 로컬 Windows 패키지
+SKILLA-PC 0.2.17 로컬 Windows 패키지
 
 이 프로그램은 현재 사용자 권한으로 실행합니다. NIM 키는 패키지에 들어 있지 않으며 Windows
 자격 증명 관리자에 따로 저장합니다.
@@ -48,6 +48,8 @@ SKILLA-PC 0.2.16 로컬 Windows 패키지
 - 이 실행 방식은 마이크를 열지 않습니다.
 - 자기소개·인사·기능 안내·감사·종료 인사는 원격 모델이나 PC 실행 기능 없이 화면과 음성으로
   응답합니다.
+- 음성 출력이 실패해도 화면 응답과 다음 명령 수신은 계속되며 상태 화면에 음성 전달 실패를
+  구분해 기록합니다.
 - 같은 기능을 명령으로 실행할 수도 있습니다.
   .\SKILLA.exe run-product-console-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
 

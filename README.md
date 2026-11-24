@@ -83,6 +83,8 @@ Wake/VAD/STT
 
 - 자기소개·인사·기능 안내·감사·종료 인사는 원격 모델이나 PC 실행 기능을 호출하지 않고 제품이
   소유한 고정 답변을 화면과 TTS로 제공한다. 이 응답은 실행 권한을 얻거나 스킬 기록을 만들지 않는다.
+- 로컬 대화의 TTS가 실패해도 화면 응답을 유지하고 다음 요청을 받을 수 있도록 음성 전달 실패를
+  비치명 결과로 분리한다.
 - SQLite 기반 로컬 스킬 카탈로그: DRAFT → VERIFIED → RETIRED lifecycle
 - `skill-create`, `skill-approve`, `skill-search`, `skill-revise`, `skill-record-use`,
   `skill-assess-staleness` CLI

@@ -263,6 +263,60 @@ def test_runtime_delivers_local_self_introduction_without_execution() -> None:
     assert sink.spoken and sink.spoken[0].startswith("저는 스킬라예요.")
 
 
+def test_local_response_survives_tts_failure_and_accepts_the_next_request() -> None:
+    class FailingSink:
+        def speak(self, _text: str, **_kwargs: object) -> None:
+            raise RuntimeError("private speaker failure")
+
+    visible = UserVisibleResultStore()
+    runtime, classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        feedback=VoiceFeedbackPresenter(FailingSink()),
+        user_visible_results=visible,
+    )
+
+    for utterance, expected_reason in (
+        ("안녕하세요", "GREETING_DELIVERED"),
+        ("고마워", "THANKS_DELIVERED"),
+    ):
+        started = runtime.submit_text(utterance)
+        completed = runtime.wait_for_idle(timeout_seconds=2)
+
+        assert started.event_type is RuntimeEventType.TASK_STARTED
+        assert completed is not None
+        assert completed.event_type is RuntimeEventType.ROUTED
+        assert completed.reason == expected_reason
+        assert completed.feedback_delivered is False
+        assert runtime.state is AlwaysOnState.IDLE
+
+    assert classifier.calls == 0
+    assert planner.calls == 0
+    assert "private speaker failure" not in runtime.status_snapshot().model_dump_json()
+
+
+def test_one_thousand_sequential_local_responses_leave_runtime_idle() -> None:
+    visible = UserVisibleResultStore()
+    runtime, classifier, planner = runtime_with_executor(
+        MockExecutor({"system.info.read": lambda _action: {}}),
+        user_visible_results=visible,
+    )
+    utterances = ("안녕하세요", "뭐 할 수 있어?", "고마워", "다음에 보자")
+
+    for index in range(1_000):
+        started = runtime.submit_text(utterances[index % len(utterances)])
+        completed = runtime.wait_for_idle(timeout_seconds=2)
+
+        assert started.event_type is RuntimeEventType.TASK_STARTED
+        assert completed is not None
+        assert completed.event_type is RuntimeEventType.ROUTED
+        assert runtime.state is AlwaysOnState.IDLE
+
+    assert classifier.calls == 0
+    assert planner.calls == 0
+    assert runtime.status_snapshot().sequence == 2_000
+    assert visible.snapshot() is not None
+
+
 class TraceObserver:
     def __init__(self, *, fail: bool = False) -> None:
         self.fail = fail

@@ -428,13 +428,16 @@ class AlwaysOnAgentRuntime:
             try:
                 if self._user_visible_results is not None:
                     self._user_visible_results.display_local_response(response)
-                feedback_delivered = None
-                if self._feedback is not None:
-                    self._feedback.present_local_response(response, cancellation=token)
-                    feedback_delivered = True
             except Exception:
                 self._finish_worker(token, self._failed("LOCAL_RESPONSE_FAILED"))
                 return
+            feedback_delivered: bool | None = None
+            if self._feedback is not None:
+                try:
+                    self._feedback.present_local_response(response, cancellation=token)
+                    feedback_delivered = True
+                except Exception:
+                    feedback_delivered = False
             self._finish_worker(
                 token,
                 RuntimeEvent(
