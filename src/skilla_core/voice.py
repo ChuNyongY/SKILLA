@@ -332,7 +332,10 @@ class KoreanWakeVoicePipeline:
             return self._complete_utterance(tuple(self._frames), "MAX_CAPTURE_FRAMES")
         if self._silence_frames < self._end_silence_frames:
             return None
-        spoken = tuple(self._frames[: -self._silence_frames])
+        # The energy gate can label a quiet final syllable as silence.
+        # Retain four frames of tail audio without extending the endpoint wait.
+        trailing_frames_to_trim = max(0, self._silence_frames - 4)
+        spoken = tuple(self._frames[: len(self._frames) - trailing_frames_to_trim])
         return self._complete_utterance(spoken, "UTTERANCE_COMPLETE")
 
     def cancel(self, *, reset_diagnostics: bool = True) -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import Protocol
 
@@ -340,14 +341,16 @@ def build_product_voice_stack(
     wake_bundle_loader: WakeBundleLoader = load_wakeword_bundle,
     stt_bundle_loader: SttBundleLoader = load_stt_bundle,
     wake_factory: WakeDetectorFactory = OpenWakeWordDetector.from_local_bundle,
-    stt_factory: SttFactory = (
-        BackgroundFasterWhisperSpeechToText.from_verified_local_bundle
-    ),
+    stt_factory: SttFactory | None = None,
     vad_factory: VadFactory = PcmEnergyVad,
     frame_source_factory: FrameSourceFactory = SoundDeviceFrameSource,
 ) -> ProductVoiceStack:
     """Build verified local voice objects without opening the microphone."""
     stt_bundle = stt_bundle_loader(configuration.stt_manifest)
+    if stt_factory is None:
+        stt_factory = partial(
+            BackgroundFasterWhisperSpeechToText.from_verified_local_bundle, device="auto",
+        )
     stt = stt_factory(stt_bundle)
     wake_detector: WakeWordDetector
     if configuration.settings.wakeword_mode == "whisper_korean":

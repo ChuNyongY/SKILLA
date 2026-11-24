@@ -6,6 +6,7 @@ from pathlib import Path
 TTS_WORKER_TOKEN = "__skilla_tts_worker__"
 UIA_WORKER_TOKEN = "__skilla_uia_worker__"
 EXPLORER_WORKER_TOKEN = "__skilla_explorer_worker__"
+STT_WORKER_TOKEN = "__skilla_stt_worker__"
 
 
 class WorkerProcessError(RuntimeError):
@@ -17,12 +18,14 @@ def fixed_worker_command(module: str, frozen_token: str) -> list[str]:
         "skilla_core.tts_worker",
         "skilla_core.uia_worker",
         "skilla_core.explorer_folder_worker",
+        "skilla_core.stt_worker",
     }:
         raise WorkerProcessError("WORKER_MODULE_INVALID")
     if frozen_token not in {
         TTS_WORKER_TOKEN,
         UIA_WORKER_TOKEN,
         EXPLORER_WORKER_TOKEN,
+        STT_WORKER_TOKEN,
     }:
         raise WorkerProcessError("WORKER_TOKEN_INVALID")
     if not getattr(sys, "frozen", False):

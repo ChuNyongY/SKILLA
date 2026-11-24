@@ -1,4 +1,4 @@
-SKILLA-PC 0.2.22 로컬 Windows 패키지
+SKILLA-PC 0.2.24 로컬 Windows 패키지
 
 이 프로그램은 현재 사용자 권한으로 실행합니다. NIM 키는 패키지에 들어 있지 않으며 Windows
 자격 증명 관리자에 따로 저장합니다.
@@ -59,6 +59,9 @@ SKILLA-PC 0.2.22 로컬 Windows 패키지
   .\SKILLA.exe run-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
 - MIC 수치는 마이크 입력 크기를 표시합니다. 명령 인식 여부는 오른쪽 음성 상태에서 확인합니다.
 - 저장된 스킬을 사용하려면 스킬 관리에 표시된 이름 또는 호출 표현으로 요청합니다.
+- NVIDIA CUDA 라이브러리가 앱의 실행 환경에 있으면 같은 Whisper 모델로 GPU 인식을 준비합니다.
+  초기화나 실행이 실패하면 CPU로 재시도합니다. 프로젝트에서 별도로 준비한 라이브러리를 사용하려면
+  프로젝트 폴더에서 `.\tools\start_skilla_voice.ps1 -PackageRoot .\dist\SKILLA-PC-0.2.24`을 실행합니다.
 
 스킬 관리
 

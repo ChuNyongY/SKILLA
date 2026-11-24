@@ -12,6 +12,7 @@ def main() -> None:
         "skilla_core.tts_worker",
         "skilla_core.uia_worker",
         "skilla_core.explorer_folder_worker",
+        "skilla_core.stt_worker",
     }
     if len(sys.argv) != 2 or sys.argv[1] not in allowed:
         raise SystemExit("WORKER_MODULE_INVALID")

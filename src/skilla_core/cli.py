@@ -166,6 +166,7 @@ from .windows_tray import WindowsTrayController, show_runtime_status_message
 from .windows_user_validation import ConsoleHumanAssessment, WindowsUserValidationRunners
 from .worker_process import (
     EXPLORER_WORKER_TOKEN,
+    STT_WORKER_TOKEN,
     TTS_WORKER_TOKEN,
     UIA_WORKER_TOKEN,
 )
@@ -2017,6 +2018,10 @@ def _smoke_system_info(audit_path: Path | None) -> int:
 
 
 def entrypoint() -> None:
+    if getattr(sys, "frozen", False) and sys.argv[1:] == [STT_WORKER_TOKEN]:
+        from .stt_worker import main as stt_worker_main
+
+        raise SystemExit(stt_worker_main())
     if getattr(sys, "frozen", False) and sys.argv[1:] == [TTS_WORKER_TOKEN]:
         from .tts_worker import main as tts_worker_main
 

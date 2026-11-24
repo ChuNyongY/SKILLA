@@ -75,6 +75,36 @@ def test_background_whisper_warmup_does_not_block_ui_construction() -> None:
     assert stt.transcribe((audio(),)) == "스킬라"
 
 
+@pytest.mark.parametrize("failure_on_warmup", [True, False])
+def test_background_whisper_cuda_failure_retries_on_cpu(
+    monkeypatch: pytest.MonkeyPatch, failure_on_warmup: bool,
+) -> None:
+    backend = ModuleType("ctranslate2")
+    monkeypatch.setattr(backend, "get_cuda_device_count", lambda: 1, raising=False)
+    monkeypatch.setitem(sys.modules, "ctranslate2", backend)
+    devices = []
+
+    class Delegate:
+        def __init__(self, device: str) -> None:
+            self.device = device
+
+        def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
+            if self.device == "cuda" and (failure_on_warmup or frames == (audio(),)):
+                raise RuntimeError("CUDA unavailable")
+            return "스킬라"
+
+    def load(_bundle: object, *, device: str, **_options: object) -> Delegate:
+        devices.append(device)
+        return Delegate(device)
+
+    stt = BackgroundFasterWhisperSpeechToText(
+        object(), device="auto", loader=load,  # type: ignore[arg-type]
+    )
+    assert stt.transcribe((audio(),)) == "스킬라"
+    assert stt.active_device == "cpu"
+    assert devices == ["cuda", "cpu"]
+
+
 def test_background_whisper_trusts_bundle_already_validated_by_loader(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

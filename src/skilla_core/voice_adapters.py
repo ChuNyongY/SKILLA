@@ -527,7 +527,7 @@ class BackgroundFasterWhisperSpeechToText:
         language: str = "ko",
         device: str = "cpu",
         compute_type: str = "int8",
-        loader: Callable[..., FasterWhisperSpeechToText] = (
+        loader: Callable[..., SpeechToText] = (
             FasterWhisperSpeechToText.from_local_bundle
         ),
         thread_factory: Callable[..., Thread] = Thread,
@@ -539,7 +539,8 @@ class BackgroundFasterWhisperSpeechToText:
         self._loader = loader
         self._ready = Event()
         self._lock = Lock()
-        self._delegate: FasterWhisperSpeechToText | None = None
+        self._delegate: SpeechToText | None = None
+        self._active_device: str | None = None
         self._error: Exception | None = None
         try:
             thread = thread_factory(
@@ -578,6 +579,7 @@ class BackgroundFasterWhisperSpeechToText:
         compute_type: str = "int8",
     ) -> BackgroundFasterWhisperSpeechToText:
         """Warm a bundle already validated by ``load_stt_bundle`` without rehashing it."""
+        isolate_cuda = device == "auto"
 
         def load_verified(
             loaded: LoadedSttBundle,
@@ -585,7 +587,11 @@ class BackgroundFasterWhisperSpeechToText:
             language: str,
             device: str,
             compute_type: str,
-        ) -> FasterWhisperSpeechToText:
+        ) -> SpeechToText:
+            if isolate_cuda and device == "cuda":
+                from .stt_worker import CudaWhisperWorker
+
+                return CudaWhisperWorker(loaded.root, language)
             return FasterWhisperSpeechToText.from_local_model(
                 loaded.root,
                 language=language,
@@ -603,28 +609,62 @@ class BackgroundFasterWhisperSpeechToText:
 
     def _initialize(self) -> None:
         try:
-            delegate = self._loader(
-                self._bundle,
-                language=self._language,
-                device=self._device,
-                compute_type=self._compute_type,
-            )
+            device = self._device
+            delegate = None
+            if device == "auto":
+                device = "cpu"
+                try:
+                    if import_module("ctranslate2").get_cuda_device_count() > 0:
+                        accelerated = self._load("cuda", "int8_float16")
+                        # CTranslate2 loads some CUDA libraries on first inference.
+                        # Use synthetic silence so readiness never requires microphone access.
+                        with suppress(ValueError):  # The confidence gate can reject silence.
+                            accelerated.transcribe((AudioFrame(pcm_s16le=bytes(32_000)),))
+                        delegate = accelerated
+                        device = "cuda"
+                except (ImportError, OSError, RuntimeError):
+                    pass
+            if delegate is None:
+                delegate = self._load(device, self._compute_type)
             with self._lock:
                 self._delegate = delegate
+                self._active_device = device
         except Exception as error:
             with self._lock:
                 self._error = error
         finally:
             self._ready.set()
 
+    def _load(self, device: str, compute_type: str) -> SpeechToText:
+        return self._loader(
+            self._bundle, language=self._language, device=device, compute_type=compute_type,
+        )
+
+    @property
+    def active_device(self) -> str | None:
+        with self._lock:
+            return self._active_device
+
     def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
         self._ready.wait()
         with self._lock:
             delegate = self._delegate
             error = self._error
+            active_device = self._active_device
         if delegate is None:
             raise RuntimeError("local Whisper model initialization failed") from error
-        return delegate.transcribe(frames)
+        try:
+            return delegate.transcribe(frames)
+        except (OSError, RuntimeError):
+            if self._device != "auto" or active_device != "cuda":
+                raise
+        with self._lock:
+            if self._active_device == "cuda":
+                self._delegate = self._load("cpu", self._compute_type)
+                self._active_device = "cpu"
+            fallback = self._delegate
+        assert fallback is not None
+        return fallback.transcribe(frames)
 
 
 class AudioCaptureError(RuntimeError):
