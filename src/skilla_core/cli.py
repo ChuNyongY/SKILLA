@@ -1488,6 +1488,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             return 1
         try:
             run_tk_status_hud(
+                submit_text=service.runtime.runtime.submit_text,
                 status_provider=service.runtime.runtime.status_snapshot,
                 respond_skill_review=service.runtime.runtime.respond_skill_review,
                 voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,
@@ -1576,6 +1577,7 @@ def main(arguments: Sequence[str] | None = None) -> int:
             return 1
         try:
             run_tk_status_hud(
+                submit_text=service.runtime.runtime.submit_text,
                 status_provider=service.runtime.runtime.status_snapshot,
                 respond_skill_review=service.runtime.runtime.respond_skill_review,
                 voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,

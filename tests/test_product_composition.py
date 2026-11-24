@@ -200,7 +200,7 @@ def test_voice_stack_builds_verified_components_without_opening_source(
         "rms": 55,
         "frame": (1, 40, 256),
     }
-    assert CONFIGURATION.settings.end_silence_frames == 35
+    assert CONFIGURATION.settings.end_silence_frames == 25
     assert CONFIGURATION.settings.start_speech_frames == 3
     assert CONFIGURATION.settings.hud_poll_interval_ms == 100
 

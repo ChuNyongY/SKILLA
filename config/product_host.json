@@ -18,7 +18,7 @@
   "wake_threshold": 0.5,
   "vad_rms_threshold": 55,
   "start_speech_frames": 3,
-  "end_silence_frames": 35,
+  "end_silence_frames": 25,
   "max_capture_frames": 1500,
   "microphone_device_index": 1,
   "microphone_frame_ms": 40,

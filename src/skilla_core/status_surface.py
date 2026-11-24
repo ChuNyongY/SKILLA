@@ -291,10 +291,13 @@ class RuntimeStatusPresenter:
 class TkStatusView:
     """Cyber HUD for the SKILLA local skill agent."""
 
+    _MAIN_SIZE = "880x750"
+
     def __init__(
         self,
         *,
         title: str = "SKILLA // CONTROL INTERFACE",
+        submit_text: Callable[[str], object] | None = None,
         open_text_command: Callable[[], None] | None = None,
         open_verified_result: Callable[[], None] | None = None,
         review_skills: Callable[[], None] | None = None,
@@ -317,8 +320,8 @@ class TkStatusView:
         except tk.TclError as error:
             raise RuntimeError("tkinter status HUD could not start") from error
         root.title(title)
-        root.resizable(False, False)
-        root.geometry("800x620")
+        root.minsize(820, 720)
+        root.geometry(self._MAIN_SIZE)
         root.configure(bg="#030711")
 
         self._colors = {
@@ -365,16 +368,64 @@ class TkStatusView:
         self._system_code.pack(side="right", pady=(8, 0))
         tk.Label(
             header,
-            text="반복작업을 스킬로 저장 후 사용하는 로컬 인공지능 에이전트 SKILLA",
+            text="Windows 작업 도우미",
             bg=colors["bg"],
             fg=colors["muted"],
-            font=("맑은 고딕", 8),
+            font=("맑은 고딕", 11),
             wraplength=240,
             anchor="w",
             justify="left",
         ).pack(side="left", padx=(16, 0), pady=(2, 0))
 
         tk.Frame(shell, height=1, bg=colors["cyan_dim"]).pack(fill="x", pady=(12, 16))
+
+        from .control_theme import button
+
+        command_panel = tk.Frame(shell, bg=colors["panel_alt"], padx=16, pady=8)
+        command_panel.pack(fill="x", pady=(0, 12))
+        tk.Label(
+            command_panel, text="무엇을 도와드릴까요?", bg=colors["panel_alt"],
+            fg=colors["text"], font=("맑은 고딕", 17, "bold"), anchor="w",
+        ).pack(fill="x")
+        tk.Label(
+            command_panel, text="“스킬라, 시스템 정보 확인해 줘”라고 말하거나 아래에 입력하세요.",
+            bg=colors["panel_alt"], fg=colors["muted"], font=("맑은 고딕", 11), anchor="w",
+        ).pack(fill="x", pady=(3, 8))
+        self._inline_command_widgets: tuple[Any, ...] = ()
+        if submit_text is not None:
+            row = tk.Frame(command_panel, bg=colors["panel_alt"])
+            row.pack(fill="x")
+            command = tk.StringVar()
+            hint = tk.StringVar()
+            entry = tk.Entry(
+                row, textvariable=command, bg=colors["panel"], fg=colors["text"],
+                insertbackground=colors["cyan"], disabledbackground=colors["panel"],
+                disabledforeground=colors["muted"], font=("맑은 고딕", 13),
+                relief="flat", highlightthickness=1, highlightbackground=colors["line"],
+                highlightcolor=colors["cyan"],
+            )
+            entry.pack(side="left", fill="x", expand=True, ipady=6)
+
+            def send_command() -> None:
+                if entry.cget("state") == "disabled":
+                    return
+                try:
+                    submit_text(command.get())
+                except ValueError:
+                    hint.set("명령을 1~2000자 한 줄로 입력하세요.")
+                else:
+                    command.set("")
+                    hint.set("")
+
+            send = button(row, "명령 실행", send_command, primary=True)
+            send.pack(side="left", padx=(8, 0))
+            entry.bind("<Return>", lambda _event: send_command())
+            entry.focus_set()
+            tk.Label(
+                command_panel, textvariable=hint, bg=colors["panel_alt"],
+                fg=colors["danger"], anchor="w", font=("맑은 고딕", 9),
+            ).pack(fill="x")
+            self._inline_command_widgets = (entry, send)
 
         content = tk.Frame(shell, bg=colors["bg"])
         content.pack(fill="x")
@@ -391,10 +442,10 @@ class TkStatusView:
         core_panel.pack_propagate(False)
         tk.Label(
             core_panel,
-            text="REACTOR STATUS",
+            text="마이크 입력",
             bg=colors["panel"],
             fg=colors["muted"],
-            font=("Consolas", 9, "bold"),
+            font=("맑은 고딕", 11, "bold"),
         ).pack(pady=(16, 2))
         self._core = tk.Canvas(
             core_panel,
@@ -437,10 +488,10 @@ class TkStatusView:
         self._voice = tk.StringVar(value="마이크 상태 확인 중")
         tk.Label(
             data_panel,
-            text="CURRENT OPERATION",
+            text="작업 진행 상태",
             bg=colors["panel_alt"],
             fg=colors["muted"],
-            font=("Consolas", 9, "bold"),
+            font=("맑은 고딕", 11, "bold"),
             anchor="w",
         ).pack(fill="x")
         self._state_label = tk.Label(
@@ -494,10 +545,10 @@ class TkStatusView:
         self._voice_indicator.pack(side="left")
         tk.Label(
             voice_header,
-            text="VOICE INTERFACE",
+            text="음성 인식 상태",
             bg=colors["panel_alt"],
             fg=colors["muted"],
-            font=("Consolas", 9, "bold"),
+            font=("맑은 고딕", 11, "bold"),
         ).pack(side="left", padx=(7, 0))
         tk.Label(
             data_panel,
@@ -525,10 +576,10 @@ class TkStatusView:
         metric.pack(fill="x", pady=(16, 0))
         tk.Label(
             metric,
-            text="VERIFIED ACTIONS",
+            text="검증 완료 동작",
             bg=colors["panel_alt"],
             fg=colors["muted"],
-            font=("Consolas", 8, "bold"),
+            font=("맑은 고딕", 9, "bold"),
         ).pack(side="left")
         tk.Label(
             metric,
@@ -550,17 +601,17 @@ class TkStatusView:
         tools = tk.Frame(shell, bg=colors["bg"])
         tools.pack(fill="x", pady=(8, 0))
         for label, callback in (
-            ("⌨ 텍스트 명령", open_text_command),
-            ("✓  결과", open_verified_result),
-            ("◇  후보 검토", review_skill_traces),
-            ("⌁  상황", manage_skill_triggers),
-            ("◷  예약", manage_skill_schedules),
-            ("⚙  스킬", review_skills),
+            ("텍스트 창", open_text_command),
+            ("실행 결과", open_verified_result),
+            ("스킬 관리", review_skills),
+            ("스킬 후보 검토", review_skill_traces),
+            ("상황 스킬", manage_skill_triggers),
+            ("예약 스킬", manage_skill_schedules),
         ):
             if callback is not None:
-                button = self._button(tools, label, colors["cyan_dim"], width=10)
-                button.configure(command=callback)
-                button.pack(side="left", fill="x", expand=True, padx=(0, 5))
+                tool_button = self._button(tools, label, colors["text"], width=10)
+                tool_button.configure(command=callback)
+                tool_button.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
         self._review_response = respond_skill_review
         self._review_id: UUID | None = None
@@ -573,7 +624,7 @@ class TkStatusView:
         from tkinter.scrolledtext import ScrolledText
 
         self._review_text = ScrolledText(
-            self._review_panel, height=10, wrap="word", bg=colors["panel"], fg=colors["text"],
+            self._review_panel, height=6, wrap="word", bg=colors["panel"], fg=colors["text"],
             font=("맑은 고딕", 10), relief="flat", padx=10, pady=8,
         )
         self._review_text.pack(fill="x", pady=6)
@@ -636,18 +687,11 @@ class TkStatusView:
         footer.pack(fill="x", side="bottom", pady=(16, 0))
         tk.Label(
             footer,
-            text="LOCAL CORE  •  SKILL MEMORY  •  VERIFIED EXECUTION",
+            text="음성으로 중지하려면 “스킬라, 멈춰”라고 말하세요.",
             bg=colors["bg"],
-            fg="#315a69",
-            font=("Consolas", 8),
+            fg=colors["muted"],
+            font=("맑은 고딕", 10),
         ).pack(side="left")
-        tk.Label(
-            footer,
-            text="ONLINE",
-            bg=colors["bg"],
-            fg=colors["success"],
-            font=("Consolas", 8, "bold"),
-        ).pack(side="right")
 
         self._root = root
         self._pulse_step = 0
@@ -815,7 +859,11 @@ class TkStatusView:
             )
         for ring_id in self._core_ring_ids[1:]:
             self._core.itemconfigure(ring_id, outline=color)
-        self._stop_button.configure(state="normal" if display.stop_enabled else "disabled")
+        stop_enabled = display.stop_enabled and display.state is not AlwaysOnState.IDLE
+        self._stop_button.configure(state="normal" if stop_enabled else "disabled")
+        command_state = "normal" if display.state is AlwaysOnState.IDLE else "disabled"
+        for widget in self._inline_command_widgets:
+            widget.configure(state=command_state)
 
     def _accept_trigger(self) -> None:
         if (
@@ -910,7 +958,7 @@ class TkStatusView:
         self._review_id = review_id
         if review is None:
             self._review_panel.pack_forget()
-            self._root.geometry("800x620")
+            self._root.geometry(self._MAIN_SIZE)
             return
         registering = review.kind is SkillReviewKind.REGISTER
         question = "새 스킬로 등록하고 실행할까요?" if registering else "이 스킬로 실행할까요?"
@@ -937,7 +985,7 @@ class TkStatusView:
         )
         self._review_no.configure(state=enabled)
         self._review_panel.pack(fill="x", pady=(12, 0))
-        self._root.geometry("900x890")
+        self._root.geometry("900x950")
         self._root.deiconify()
 
     def schedule(self, delay_ms: int, callback: Callable[[], None]) -> None:
@@ -961,6 +1009,7 @@ def run_tk_status_hud(
     request_runtime_stop: Callable[[], object],
     poll_interval_ms: int = 250,
     voice_diagnostics_provider: Callable[[], VoicePipelineDiagnostics] | None = None,
+    submit_text: Callable[[str], object] | None = None,
     open_text_command: Callable[[], None] | None = None,
     open_verified_result: Callable[[], None] | None = None,
     review_skills: Callable[[], None] | None = None,
@@ -983,6 +1032,7 @@ def run_tk_status_hud(
         request_capture_stop=request_capture_stop,
         request_runtime_stop=request_runtime_stop,
         view=TkStatusView(
+            submit_text=submit_text,
             open_text_command=open_text_command,
             open_verified_result=open_verified_result,
             review_skills=review_skills,
