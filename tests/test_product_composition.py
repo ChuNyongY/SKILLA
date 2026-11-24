@@ -197,9 +197,12 @@ def test_voice_stack_builds_verified_components_without_opening_source(
     assert not source.opened
     assert observed == {
         "stt_path": CONFIGURATION.stt_manifest,
-        "rms": 80,
-        "frame": (1, 80, 256),
+        "rms": 55,
+        "frame": (1, 40, 256),
     }
+    assert CONFIGURATION.settings.end_silence_frames == 35
+    assert CONFIGURATION.settings.start_speech_frames == 3
+    assert CONFIGURATION.settings.hud_poll_interval_ms == 100
 
 
 def test_stt_bundle_failure_prevents_all_runtime_component_construction() -> None:

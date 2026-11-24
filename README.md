@@ -85,6 +85,11 @@ Wake/VAD/STT
   소유한 고정 답변을 화면과 TTS로 제공한다. 이 응답은 실행 권한을 얻거나 스킬 기록을 만들지 않는다.
 - 로컬 대화의 TTS가 실패해도 화면 응답을 유지하고 다음 요청을 받을 수 있도록 음성 전달 실패를
   비치명 결과로 분리한다.
+- 음성 HUD는 40ms 마이크 프레임을 100ms 간격으로 읽고, 실제 입력 크기를 지각 음량으로 환산해
+  퍼센트·원형 크기·`RECEIVING`/`SPEAKING` 상태를 함께 갱신한다. 빠른 상승과 완만한 하강을 적용해
+  단일 프레임 노이즈로 표시가 튀지 않으며, 별도 단조 증가 입력 순번으로 문장 경계에서도 멈추지 않는다.
+- 한국어 음성 구간은 120ms 연속 음성으로 시작하고 약 1.4초 연속 침묵 뒤 종료해 짧은 잡음과
+  문장 중간의 자연스러운 쉼을 구분한다.
 - SQLite 기반 로컬 스킬 카탈로그: DRAFT → VERIFIED → RETIRED lifecycle
 - `skill-create`, `skill-approve`, `skill-search`, `skill-revise`, `skill-record-use`,
   `skill-assess-staleness` CLI

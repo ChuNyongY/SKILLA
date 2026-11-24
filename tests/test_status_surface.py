@@ -15,8 +15,10 @@ from skilla_core.skill_triggers import SkillTriggerSuggestion
 from skilla_core.status_surface import (
     RuntimeStatusDisplay,
     RuntimeStatusPresenter,
+    reactor_activity_label,
     reactor_level_label,
     reactor_pulse_geometry,
+    smooth_reactor_level,
     wakeword_mode_label,
 )
 from skilla_core.voice import VoicePipelineDiagnostics
@@ -232,6 +234,24 @@ def test_idle_voice_display_distinguishes_started_capture_from_no_frames() -> No
     assert receiving.voice_label == "마이크 수신 중 · 입력 프레임 12"
 
 
+def test_display_uses_monotonic_input_sequence_for_live_meter_updates() -> None:
+    display = RuntimeStatusPresenter._display(
+        snapshot(),
+        VoicePipelineDiagnostics(
+            frame_count=3,
+            speech_frame_count=1,
+            max_wake_confidence=0.0,
+            wake_detected=False,
+            speech_active=True,
+            input_level=0.42,
+            input_sequence=103,
+        ),
+    )
+
+    assert display.input_level == 0.42
+    assert display.audio_frame_count == 103
+
+
 def test_non_wake_background_speech_does_not_show_garbled_transcript() -> None:
     display = RuntimeStatusPresenter._display(
         snapshot(),
@@ -247,6 +267,22 @@ def test_non_wake_background_speech_does_not_show_garbled_transcript() -> None:
 
     assert display.voice_label == "주변 음성 무시 · '스킬라'를 기다리는 중"
     assert "잘못" not in display.voice_label
+
+
+def test_historical_speech_count_does_not_claim_current_speech() -> None:
+    display = RuntimeStatusPresenter._display(
+        snapshot(),
+        VoicePipelineDiagnostics(
+            frame_count=20,
+            speech_frame_count=12,
+            max_wake_confidence=0.0,
+            wake_detected=False,
+            speech_active=False,
+            input_sequence=20,
+        ),
+    )
+
+    assert display.voice_label == "마이크 수신 중 · 입력 프레임 20"
 
 
 def test_review_waiting_has_an_explicit_voice_instruction() -> None:
@@ -301,10 +337,26 @@ def test_reactor_level_label_is_readable_and_clamped() -> None:
     assert reactor_level_label(2) == "MIC 100%"
 
 
+def test_reactor_level_smoothing_attacks_quickly_and_releases_gently() -> None:
+    rising = smooth_reactor_level(0.0, 1.0)
+    falling = smooth_reactor_level(1.0, 0.0)
+
+    assert rising == pytest.approx(0.58)
+    assert falling == pytest.approx(0.8)
+    assert smooth_reactor_level(0.001, 0.0) == 0.0
+
+
+def test_reactor_activity_tracks_the_smoothed_microphone_level() -> None:
+    assert reactor_activity_label(0.0) == "VOICE LINK // STANDBY"
+    assert reactor_activity_label(0.05) == "VOICE LINK // RECEIVING"
+    assert reactor_activity_label(0.18) == "VOICE LINK // RECEIVING"
+    assert reactor_activity_label(0.5) == "VOICE LINK // SPEAKING"
+
+
 def test_wakeword_mode_label_describes_the_configured_product_path() -> None:
     assert "로컬 Whisper 한국어 인식" in wakeword_mode_label("whisper_korean")
     assert "openWakeWord" in wakeword_mode_label("openwakeword")
-    assert "Hermes는 비교 실험용" in wakeword_mode_label("whisper_korean")
+    assert "Hermes" not in wakeword_mode_label("whisper_korean")
 
 
 def test_wakeword_mode_label_rejects_unknown_modes() -> None:

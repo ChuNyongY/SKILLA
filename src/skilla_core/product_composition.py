@@ -340,7 +340,9 @@ def build_product_voice_stack(
     wake_bundle_loader: WakeBundleLoader = load_wakeword_bundle,
     stt_bundle_loader: SttBundleLoader = load_stt_bundle,
     wake_factory: WakeDetectorFactory = OpenWakeWordDetector.from_local_bundle,
-    stt_factory: SttFactory = BackgroundFasterWhisperSpeechToText.from_local_bundle,
+    stt_factory: SttFactory = (
+        BackgroundFasterWhisperSpeechToText.from_verified_local_bundle
+    ),
     vad_factory: VadFactory = PcmEnergyVad,
     frame_source_factory: FrameSourceFactory = SoundDeviceFrameSource,
 ) -> ProductVoiceStack:
@@ -367,6 +369,7 @@ def build_product_voice_stack(
             stt,
             end_silence_frames=settings.end_silence_frames,
             max_capture_frames=settings.max_capture_frames,
+            start_speech_frames=settings.start_speech_frames,
         )
         if settings.wakeword_mode == "whisper_korean"
         else VoicePipeline(

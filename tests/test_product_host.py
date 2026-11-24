@@ -71,6 +71,7 @@ def create_root(tmp_path: Path) -> tuple[Path, Path]:
                 "nim_model": "z-ai/glm-5.3",
                 "wake_threshold": 0.75,
                 "vad_rms_threshold": 500,
+                "start_speech_frames": 3,
                 "end_silence_frames": 5,
                 "max_capture_frames": 1500,
                 "microphone_device_index": 2,

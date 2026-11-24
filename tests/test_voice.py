@@ -65,6 +65,19 @@ def test_korean_pipeline_reports_live_input_level_and_silence() -> None:
     assert 0 < quiet < voice.diagnostics.input_level <= 1
     voice.feed(AudioFrame(pcm_s16le=b"\x00\x00" * 100))
     assert voice.diagnostics.input_level == 0
+    assert voice.diagnostics.input_sequence == 3
+    voice.feed(frame(b"S"))
+    assert voice.diagnostics.input_sequence == 4
+    assert not voice.diagnostics.speech_active
+
+
+def test_microphone_meter_keeps_quiet_real_input_visible() -> None:
+    import struct
+
+    voice = KoreanWakeVoicePipeline(FakeVad(), FakeStt())
+    voice.feed(AudioFrame(pcm_s16le=struct.pack("<100h", *([90] * 100))))
+
+    assert voice.diagnostics.input_level >= 0.1
 
 
 def test_wake_speech_and_silence_produce_transcript() -> None:

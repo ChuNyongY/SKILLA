@@ -86,6 +86,24 @@ def reactor_level_label(input_level: float) -> str:
     return f"MIC {round(level * 100):02d}%"
 
 
+def smooth_reactor_level(current: float, target: float) -> float:
+    """Apply a quick attack and gentle release to the visible microphone meter."""
+    current_level = max(0.0, min(1.0, float(current)))
+    target_level = max(0.0, min(1.0, float(target)))
+    factor = 0.58 if target_level > current_level else 0.20
+    smoothed = current_level + (target_level - current_level) * factor
+    return 0.0 if smoothed < 0.005 else smoothed
+
+
+def reactor_activity_label(input_level: float) -> str:
+    level = max(0.0, min(1.0, float(input_level)))
+    if level >= 0.20:
+        return "VOICE LINK // SPEAKING"
+    if level >= 0.02:
+        return "VOICE LINK // RECEIVING"
+    return "VOICE LINK // STANDBY"
+
+
 def wakeword_mode_label(mode: str) -> str:
     labels = {
         "whisper_korean": "로컬 Whisper 한국어 인식",
@@ -95,10 +113,7 @@ def wakeword_mode_label(mode: str) -> str:
         selected = labels[mode]
     except KeyError as error:
         raise ValueError("unsupported wakeword mode") from error
-    return (
-        f"호출어 감지: {selected} · Hermes는 비교 실험용이며 "
-        "현재 제품 음성 경로에는 미연결"
-    )
+    return f"호출어 감지: {selected}"
 
 
 class RuntimeStatusPresenter:
@@ -237,7 +252,7 @@ class RuntimeStatusPresenter:
             voice_label = "음성을 문장으로 변환하는 중"
         elif diagnostics.recognition_reason == "REVIEW_WAITING":
             voice_label = "승인 음성 대기 중 · 예 또는 아니요"
-        elif diagnostics.speech_frame_count > 0:
+        elif diagnostics.speech_active:
             voice_label = "마이크 입력 감지됨 · 호출어 확인 중"
         elif diagnostics.frame_count > 0:
             voice_label = f"마이크 수신 중 · 입력 프레임 {diagnostics.frame_count}"
@@ -262,7 +277,7 @@ class RuntimeStatusPresenter:
             stop_enabled=snapshot.state is not AlwaysOnState.CLOSED,
             voice_label=voice_label,
             input_level=0.0 if diagnostics is None else diagnostics.input_level,
-            audio_frame_count=0 if diagnostics is None else diagnostics.frame_count,
+            audio_frame_count=0 if diagnostics is None else diagnostics.input_sequence,
             skill_review=snapshot.skill_review,
             trigger_suggestion=trigger_suggestion,
             schedule_suggestion=schedule_suggestion,
@@ -634,6 +649,9 @@ class TkStatusView:
 
         self._root = root
         self._pulse_step = 0
+        self._audio_level = 0.0
+        self._audio_level_target = 0.0
+        self._audio_frame_count = -1
         self._animate_core()
 
     def _button(self, parent: Any, text: str, color: str, *, width: int) -> Any:
@@ -708,8 +726,8 @@ class TkStatusView:
         self._pulse_step = (self._pulse_step + 1) % 16
         bright = self._pulse_step < 8
         color = self._colors["cyan"] if bright else self._colors["cyan_dim"]
-        level = getattr(self, "_audio_level", 0.0)
-        self._audio_level = level * 0.88
+        level = smooth_reactor_level(self._audio_level, self._audio_level_target)
+        self._audio_level = level
         width, radius = reactor_pulse_geometry(level)
         self._core.coords(
             self._core_ring_ids[0], 95 - radius, 95 - radius, 95 + radius, 95 + radius
@@ -730,6 +748,7 @@ class TkStatusView:
             text=reactor_level_label(level),
             fill=color,
         )
+        self._core_caption.set(reactor_activity_label(level))
         self._root.after(70, self._animate_core)
 
     def bind_handlers(
@@ -748,9 +767,12 @@ class TkStatusView:
         self._render_review(display.skill_review)
         self._render_trigger_suggestion(display.trigger_suggestion)
         self._render_schedule_suggestion(display.schedule_suggestion)
-        if display.audio_frame_count != getattr(self, "_audio_frame_count", -1):
-            self._audio_level = display.input_level
+        if display.audio_frame_count != self._audio_frame_count:
+            self._audio_level_target = display.input_level
             self._audio_frame_count = display.audio_frame_count
+        else:
+            # A stalled or intentionally paused capture must not leave a frozen level.
+            self._audio_level_target = 0.0
         state_colors = {
             AlwaysOnState.IDLE: self._colors["cyan"],
             AlwaysOnState.PLANNING: self._colors["warning"],
@@ -773,13 +795,6 @@ class TkStatusView:
         self._state_label.configure(fg=color)
         self._voice_indicator.configure(fg=color)
         self._system_code.configure(text=state_codes[display.state], fg=color)
-        self._core_caption.set(
-            "VOICE LINK // ACTIVE"
-            if display.state in {
-                AlwaysOnState.PLANNING, AlwaysOnState.REVIEWING, AlwaysOnState.EXECUTING,
-            }
-            else "VOICE LINK // STANDBY"
-        )
         if display.state in {AlwaysOnState.PLANNING, AlwaysOnState.REVIEWING}:
             active_phases = 2
         elif display.state is AlwaysOnState.EXECUTING:

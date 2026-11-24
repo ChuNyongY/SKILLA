@@ -42,6 +42,8 @@ class VoicePipelineDiagnostics(FrozenModel):
     last_transcript: str | None = Field(default=None, max_length=200)
     recognition_reason: str = Field(default="WAITING", pattern=r"^[A-Z_]{2,40}$")
     input_level: float = Field(default=0.0, ge=0.0, le=1.0)
+    input_sequence: int = Field(default=0, ge=0)
+    speech_active: bool = False
 
 
 def pcm_input_level(frame: AudioFrame) -> float:
@@ -50,7 +52,11 @@ def pcm_input_level(frame: AudioFrame) -> float:
         raise ValueError("PCM must contain complete 16-bit samples")
     count = len(frame.pcm_s16le) // 2
     energy = sum(sample[0] ** 2 for sample in struct.iter_unpack("<h", frame.pcm_s16le))
-    return min(1.0, math.sqrt(energy / count) / 32768.0 * 6.0)
+    linear_level = min(1.0, math.sqrt(energy / count) / 32768.0 * 6.0)
+    # Human loudness perception is closer to logarithmic than linear.  A square-root
+    # response keeps quiet but real microphone input visible without changing VAD or
+    # retaining any audio data.
+    return math.sqrt(linear_level)
 
 
 class WakeWordDetector(Protocol):
@@ -98,6 +104,8 @@ class VoicePipeline:
         self._last_transcript: str | None = None
         self._recognition_reason = "WAITING"
         self._input_level = 0.0
+        self._input_sequence = 0
+        self._speech_active = False
 
     @property
     def is_capturing(self) -> bool:
@@ -113,11 +121,15 @@ class VoicePipeline:
             last_transcript=self._last_transcript,
             recognition_reason=self._recognition_reason,
             input_level=self._input_level,
+            input_sequence=self._input_sequence,
+            speech_active=self._speech_active,
         )
 
     def feed(self, frame: AudioFrame) -> VoiceCaptureResult | None:
         self._input_level = pcm_input_level(frame)
+        self._input_sequence += 1
         speech = self._vad.is_speech(frame)
+        self._speech_active = speech
         self._diagnostic_frame_count += 1
         if speech:
             self._diagnostic_speech_frame_count += 1
@@ -199,6 +211,7 @@ class VoicePipeline:
         self._diagnostic_speech_frame_count = 0
         self._diagnostic_max_wake_confidence = 0.0
         self._diagnostic_wake_detected = False
+        self._speech_active = False
 
 
 _KOREAN_WAKE_PREFIX = re.compile(
@@ -262,6 +275,8 @@ class KoreanWakeVoicePipeline:
         self._last_transcript: str | None = None
         self._recognition_reason = "WAITING"
         self._input_level = 0.0
+        self._input_sequence = 0
+        self._speech_active = False
         self._review_active = False
 
     @property
@@ -278,13 +293,17 @@ class KoreanWakeVoicePipeline:
             last_transcript=self._last_transcript,
             recognition_reason=self._recognition_reason,
             input_level=self._input_level,
+            input_sequence=self._input_sequence,
+            speech_active=self._speech_active,
         )
 
     def feed(self, frame: AudioFrame) -> VoiceCaptureResult | None:
         self._input_level = pcm_input_level(frame)
+        self._input_sequence += 1
         if frame.sample_rate != 16_000 or frame.channels != 1:
             raise ValueError("Korean voice recognition requires mono 16 kHz PCM")
         speech = self._vad.is_speech(frame)
+        self._speech_active = speech
         self._diagnostic_frame_count += 1
         if speech:
             self._diagnostic_speech_frame_count += 1
@@ -448,6 +467,7 @@ class KoreanWakeVoicePipeline:
         self._diagnostic_speech_frame_count = 0
         self._diagnostic_max_wake_confidence = 0.0
         self._diagnostic_wake_detected = False
+        self._speech_active = False
 
 
 def _split_korean_wake_command(transcript: str) -> tuple[bool, str]:

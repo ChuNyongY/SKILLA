@@ -576,6 +576,39 @@ class BackgroundFasterWhisperSpeechToText:
             compute_type=compute_type,
         )
 
+    @classmethod
+    def from_verified_local_bundle(
+        cls,
+        bundle: LoadedSttBundle,
+        *,
+        language: str = "ko",
+        device: str = "cpu",
+        compute_type: str = "int8",
+    ) -> BackgroundFasterWhisperSpeechToText:
+        """Warm a bundle already validated by ``load_stt_bundle`` without rehashing it."""
+
+        def load_verified(
+            loaded: LoadedSttBundle,
+            *,
+            language: str,
+            device: str,
+            compute_type: str,
+        ) -> FasterWhisperSpeechToText:
+            return FasterWhisperSpeechToText.from_local_model(
+                loaded.root,
+                language=language,
+                device=device,
+                compute_type=compute_type,
+            )
+
+        return cls(
+            bundle,
+            language=language,
+            device=device,
+            compute_type=compute_type,
+            loader=load_verified,
+        )
+
     def _initialize(self) -> None:
         try:
             delegate = self._loader(

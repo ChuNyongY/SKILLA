@@ -75,6 +75,41 @@ def test_background_whisper_warmup_does_not_block_ui_construction() -> None:
     assert stt.transcribe((audio(),)) == "스킬라"
 
 
+def test_background_whisper_trusts_bundle_already_validated_by_loader(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    class VerifiedBundle:
+        root = tmp_path
+
+        def verify(self) -> bool:
+            raise AssertionError("a validated bundle must not be rehashed")
+
+    class Delegate:
+        def transcribe(self, frames: tuple[AudioFrame, ...]) -> str:
+            assert frames == (audio(),)
+            return "스킬라"
+
+    def load_model(
+        model_path: Path,
+        *,
+        language: str,
+        device: str,
+        compute_type: str,
+    ) -> Delegate:
+        assert model_path == tmp_path
+        assert (language, device, compute_type) == ("ko", "cpu", "int8")
+        return Delegate()
+
+    monkeypatch.setattr(FasterWhisperSpeechToText, "from_local_model", load_model)
+
+    stt = BackgroundFasterWhisperSpeechToText.from_verified_local_bundle(
+        VerifiedBundle()  # type: ignore[arg-type]
+    )
+
+    assert stt.transcribe((audio(),)) == "스킬라"
+
+
 def test_openwakeword_selects_named_score_and_clamps() -> None:
     model = WakeModel(1.4)
     detector = OpenWakeWordDetector(model, "hey_jarvis", pcm_converter=lambda raw: raw)

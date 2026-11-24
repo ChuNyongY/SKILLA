@@ -192,8 +192,10 @@ def _stt(root: Path) -> bool:
         root / "models" / "faster-whisper-tiny" / "manifest.json",
     )
     manifest = next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
-    bundle = load_stt_bundle(manifest)
-    return bundle.verify()
+    # load_stt_bundle already validates every declared size and SHA-256 digest.
+    # Repeating bundle.verify() here doubles a multi-gigabyte startup read.
+    load_stt_bundle(manifest)
+    return True
 
 
 def _microphone(root: Path) -> bool:

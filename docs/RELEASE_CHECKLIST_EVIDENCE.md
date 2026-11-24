@@ -1,6 +1,6 @@
 # 릴리스 전 안전 체크리스트 증거
 
-최종 갱신: 2026-11-19 (SKILLA-PC 0.2.17)
+최종 갱신: 2026-11-25 (SKILLA-PC 0.2.19)
 
 원 계획서의 릴리스 전 자동화 체크리스트 13개를 현재 코드와 직접 대응한다. `PASS`는 명시된
 계약 범위의 자동 테스트를 뜻하며 실제 마이크·사용자·snapshot VM 증거를 대신하지 않는다.
@@ -30,23 +30,23 @@
 ## 현재 릴리스 게이트
 
 - 자동 계약 체크리스트: 13/13에 직접 테스트 증거 존재.
-- 전체 Python 회귀: 1,307개 수집, 1,302 passed, 5 skipped.
-- 제품 코드 검사: Ruff `src tests` PASS, mypy 171개 source file PASS.
-- 0.2.17 패키지 doctor: 17개 필수 항목 PASS(Windows, Python, SQLite FTS5, 앱 registry,
+- 전체 Python 회귀: 1,313개 수집, 1,308 passed, 5 skipped.
+- 제품 코드 검사: Ruff `src tests` PASS, mypy 172개 source file PASS.
+- 0.2.19 패키지 doctor: 17개 필수 항목 PASS(Windows, Python, SQLite FTS5, 앱 registry,
   Hello, wakeword, STT, Chrome 기록, 마이크, Supertonic/SAPI TTS와 필수 의존성).
   선택 개발 도구인 .NET SDK는 미설치 WARN이며 패키지 실행 필수 항목이 아니다.
 - safe evaluation 재실행: 8 PASS, 7 NOT_RUN. 미실행 항목은 실제 앱 조작 3개와 snapshot VM
   공급자가 필요한 4개이며, 따라서 실제 시나리오 전체 완료는 아님.
-- 0.2.17 package manifest와 Setup sidecar: PASS. manifest 1,870개 파일 검증 완료.
+- 0.2.19 package manifest와 Setup sidecar: PASS. manifest 1,870개 파일 검증 완료.
   Setup 크기 449,896,448 bytes, SHA-256
-  `90e0384d5dbede5349bdf9663a021174ae0de28c7a3e5d532593cdc2e11125d2`이며 독립 재계산값과
+  `88d3823b970bd8165993e0a052a550b74b470466461082aaa652d034ddb98b74`이며 독립 재계산값과
   sidecar가 일치한다. 휴대용 패키지의 doctor와 제품 서비스 구성 검사(`ready=true`, 등록 기능
-  15개)는 PASS다. 0.2.17 Setup 자체 설치와 깨끗한 사용자 계정 최초 설치는 이번 점검에서
+  15개)는 PASS다. 0.2.19 Setup 자체 설치와 깨끗한 사용자 계정 최초 설치는 이번 점검에서
   실행하지 않았다.
-- 0.2.17 배포 폴더에는 `NIM.txt`가 없고, 현재 운영 credential 원문의 exact-match 검색 결과는
+- 0.2.19 배포 폴더에는 `NIM.txt`가 없고, 현재 운영 credential 원문의 exact-match 검색 결과는
   0건이다. 제품 자산의 `JAVIS`/`JARVIS` 잔존 명칭은 0건이며, 제3자 openWakeWord 패키지의
   원저자 메타데이터에만 `Jarvis` 문자열이 3개 파일에 남는다.
-- 0.2.17 내장 `verify-package`는 version 0.2.17과 1,870개 파일을 `VERIFIED`로 반환했다.
+- 0.2.19 내장 `verify-package`는 version 0.2.19와 1,870개 파일을 `VERIFIED`로 반환했다.
   검증 전후 manifest SHA-256은 같고 배포 폴더 안 `state` 디렉터리는 전후 모두 0개다. 내장
   release audit은 package manifest와 Setup hash만 PASS, console·tray·Setup 서명 세 항목은
   `SIGNATURE_INVALID`로 거부해 `ready=false`를 반환했다.
@@ -56,19 +56,28 @@
   직접 입력한 문자열은 여전히 원격 의도 판정·계획에 포함될 수 있다. 이 변경은 0.2.12 휴대용
   패키지와 Setup에 반영됐으며 패키지 안내문과 manifest 포함을 확인했다.
 - console/tray/Setup Authenticode: FAIL(신뢰된 코드 서명 인증서 없음).
-- 제한된 로컬 대화: 0.2.17 SOURCE·PACKAGE PASS. 자기소개·인사·기능 안내·감사·종료 인사는 원격
+- 제한된 로컬 대화: 0.2.19 SOURCE·PACKAGE PASS. 자기소개·인사·기능 안내·감사·종료 인사는 원격
   의도 판정기와 계획기를 호출하지 않고 제품 소유 문구를 화면과 TTS로 전달하며, 실행 기능·스킬
   기록을 만들지 않는다. 실제 제품 서비스에서 기능 안내가
   `TASK_STARTED → CAPABILITY_OVERVIEW_DELIVERED → IDLE`, 화면 결과 4줄, `feedback=true`로
   완료되는 것을 확인했다.
-- 연속 운용 안정성: 0.2.17 SOURCE·PACKAGE PASS. 로컬 대화 1,000회를 순차 실행한 뒤 runtime이
+- 연속 운용 안정성: 0.2.19 SOURCE·PACKAGE PASS. 로컬 대화 1,000회를 순차 실행한 뒤 runtime이
   `IDLE`이고 상태 전환 2,000회가 일치하며 의도 분류기·계획기 호출이 0회임을 확인했다. TTS sink가
   예외를 내도 화면 응답을 유지하고 `feedback=false`로 기록한 뒤 다음 요청을 정상 수용한다.
 - 실제 마이크 무녹음 형식 점검: 장치 28개 중 입력 16개·호환 9개이며 제품 설정의 1번 장치는
   기본 입력이자 16 kHz mono int16 호환 장치로 PASS했다. 이 점검은 음성 내용을 녹음하지 않는다.
-- 호출어·헤더 UI 표기: 0.2.14 FIXED. 제품 설정의 `wakeword_mode`를 HUD에 전달해 현재 기본값
+- 실제 마이크 실시간 표시: 0.2.19 SOURCE PASS. 1번 장치에서 40ms 프레임 250개를 수신했고
+  표시 환산값은 1~20% 범위로 변했다. 실제 HUD에서 `MIC 14%`와
+  `VOICE LINK // SPEAKING`이 함께 바뀌는 것을 확인했다. 입력 표시는 빠른 상승·완만한 하강을
+  사용하고 단조 증가 입력 순번으로 문장 경계에서도 갱신한다. 음성 시작은 120ms 연속 입력,
+  종료는 약 1.4초 연속 침묵으로 설정했다.
+- 시작 성능: 0.2.19 SOURCE·PACKAGE PASS. 이미 SHA-256 검증을 마친 1.6GB STT 모델을 같은
+  시작 과정에서 반복 해시하던 경로를 제거했다. source 서비스 구성은 16.88초, 휴대용 package
+  서비스 구성은 23.24초에 `ready=true`로 완료됐다. 무결성 검사는 생략하지 않고 최초 bundle
+  적재 시 한 번 수행하며 Whisper 모델 메모리 적재는 백그라운드에서 진행한다.
+- 호출어·헤더 UI 표기: 0.2.19 FIXED. 제품 설정의 `wakeword_mode`를 HUD에 전달해 현재 기본값
   `whisper_korean`은 `로컬 Whisper 한국어 인식`으로 표시한다. `openwakeword` 설정은
-  `openWakeWord`로 표시하고, Hermes는 비교 실험용이며 제품 음성 경로에 미연결임을 유지한다.
+  `openWakeWord`로 표시한다. 실제 제품에서 사용하지 않는 Hermes 비교 실험 문구는 HUD에서 제거했다.
   실제 800×570 렌더링에서 한글 제품 설명을 두 줄로 배치하고 우측 `SYSTEM // STANDBY`가
   잘리지 않음을 확인했다.
 - Supertonic 3 모델 라이선스 번들: 0.2.14 PACKAGE PASS. 공식 OpenRAIL-M 전체 사본과 MIT

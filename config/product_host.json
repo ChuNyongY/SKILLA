@@ -16,11 +16,12 @@
   "nim_model": "z-ai/glm-5.3-flash",
   "wakeword_mode": "whisper_korean",
   "wake_threshold": 0.5,
-  "vad_rms_threshold": 80,
-  "end_silence_frames": 10,
+  "vad_rms_threshold": 55,
+  "start_speech_frames": 3,
+  "end_silence_frames": 35,
   "max_capture_frames": 1500,
   "microphone_device_index": 1,
-  "microphone_frame_ms": 80,
+  "microphone_frame_ms": 40,
   "microphone_queue_capacity": 256,
-  "hud_poll_interval_ms": 250
+  "hud_poll_interval_ms": 100
 }
