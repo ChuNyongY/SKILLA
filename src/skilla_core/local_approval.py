@@ -74,58 +74,64 @@ class TkApprovalDialog:
         import tkinter as tk
         from tkinter import scrolledtext
 
+        from . import control_theme as theme
+
         approved = False
         root = tk.Tk()
         root.title(view.title)
-        root.resizable(False, False)
+        root.geometry("740x620")
+        root.minsize(680, 560)
+        root.configure(bg=theme.BACKGROUND)
         root.attributes("-topmost", True)
+        timeout_id: str | None = None
 
         def finish(value: bool) -> None:
             nonlocal approved
             approved = value
+            if timeout_id is not None:
+                root.after_cancel(timeout_id)
             root.destroy()
 
         root.protocol("WM_DELETE_WINDOW", lambda: finish(False))
-        root.after(timeout_seconds * 1000, lambda: finish(False))
-        frame = tk.Frame(root, padx=18, pady=18)
-        frame.pack()
-        fields = (
-            ("기능", view.capability),
-            ("목적", view.purpose),
-            ("대상", view.target),
-            ("위험도", view.risk),
-            ("요청 ID", view.request_reference),
+        root.bind("<Escape>", lambda _event: finish(False))
+        frame = tk.Frame(root, bg=theme.BACKGROUND, padx=22, pady=18)
+        frame.pack(fill="both", expand=True)
+        theme.heading(frame, "작업 승인", "대상과 실행 내용을 확인한 뒤 승인하거나 취소하세요.")
+        buttons = tk.Frame(frame, bg=theme.BACKGROUND)
+        buttons.pack(fill="x", side="bottom", pady=(12, 0))
+        cancel = theme.button(buttons, "취소", lambda: finish(False))
+        cancel.pack(side="right")
+        theme.button(buttons, "승인하고 계속", lambda: finish(True), primary=True).pack(
+            side="right", padx=(0, 8),
         )
-        for row, (label, value) in enumerate(fields):
-            tk.Label(frame, text=label, anchor="w", width=10).grid(row=row, column=0, sticky="nw")
-            tk.Label(frame, text=value, anchor="w", justify="left", wraplength=520).grid(
-                row=row,
-                column=1,
-                sticky="w",
-            )
-        arguments = scrolledtext.ScrolledText(frame, width=68, height=8, wrap="word")
-        arguments.grid(row=len(fields), column=0, columnspan=2, pady=(12, 8))
-        arguments.insert("1.0", view.arguments_json)
+        tk.Label(
+            buttons, text=f"{timeout_seconds}초 안에 선택하지 않으면 자동 취소",
+            bg=theme.BACKGROUND, fg=theme.MUTED, font=theme.FONT,
+        ).pack(side="left")
+        tk.Label(
+            frame, text=view.strong_auth_notice, bg=theme.BACKGROUND,
+            fg=theme.WARNING, font=theme.FONT, anchor="w",
+        ).pack(fill="x", side="bottom", pady=(10, 0))
+        card = tk.Frame(frame, bg=theme.PANEL, padx=14, pady=12)
+        card.pack(fill="both", expand=True)
+        tk.Label(card, text="실행 내용", bg=theme.PANEL, fg=theme.ACCENT,
+                 font=("맑은 고딕", 14, "bold")).pack(anchor="w", pady=(0, 8))
+        arguments = scrolledtext.ScrolledText(
+            card, height=8, wrap="word", bg=theme.FIELD, fg=theme.TEXT,
+            font=theme.FONT, relief="flat", padx=10, pady=8,
+        )
+        arguments.pack(fill="both", expand=True)
+        arguments.insert("1.0", (
+            f"작업 목적\n{view.purpose}\n\n작업 대상\n{view.target}\n\n"
+            f"위험도  {view.risk}\n기능  {view.capability}\n\n"
+            f"실행 설정\n{view.arguments_json}\n\n요청 번호  {view.request_reference}"
+        ))
         arguments.configure(state="disabled")
-        tk.Label(frame, text=view.strong_auth_notice, fg="#9a3412").grid(
-            row=len(fields) + 1,
-            column=0,
-            columnspan=2,
-            sticky="w",
-        )
-        buttons = tk.Frame(frame)
-        buttons.grid(row=len(fields) + 2, column=0, columnspan=2, pady=(16, 0))
-        tk.Button(buttons, text="거부", width=14, command=lambda: finish(False)).pack(
-            side="left",
-            padx=8,
-        )
-        tk.Button(buttons, text="승인", width=14, command=lambda: finish(True)).pack(
-            side="left",
-            padx=8,
-        )
         root.lift()
         root.focus_force()
+        cancel.focus_set()
         root.grab_set()
+        timeout_id = root.after(timeout_seconds * 1000, lambda: finish(False))
         root.mainloop()
         return approved
 

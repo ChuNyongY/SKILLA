@@ -137,7 +137,9 @@ def _build_windows_product_service(
         root,
         state_directory=state_directory,
     )
-    skills = LocalSkillCatalog(state_directory / "skills.sqlite3", capabilities.registry)
+    skills = LocalSkillCatalog(
+        state_directory / "skills.sqlite3", capabilities.registry, require_call_phrase=True,
+    )
     skill_triggers = LocalSkillTriggerRepository(
         state_directory / "skill-triggers.sqlite3",
         registered_app_ids=capabilities.registered_app_ids,

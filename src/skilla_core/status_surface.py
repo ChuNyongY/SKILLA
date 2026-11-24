@@ -238,6 +238,12 @@ class RuntimeStatusPresenter:
     ) -> RuntimeStatusDisplay:
         if diagnostics is None:
             voice_label = "마이크 상태 확인 중"
+        elif diagnostics.recognition_reason == "TRANSCRIBING":
+            voice_label = "음성을 문장으로 변환하는 중"
+        elif diagnostics.recognition_reason in {"STT_FAILED", "EMPTY_TRANSCRIPT"}:
+            voice_label = "음성을 인식하지 못했습니다 · '스킬라'부터 다시 말해 주세요"
+        elif diagnostics.recognition_reason == "LISTENING":
+            voice_label = "듣는 중 · 말을 마치면 자동으로 인식합니다"
         elif diagnostics.wake_detected:
             voice_label = "호출어 인식됨 · 명령을 듣는 중"
         elif diagnostics.last_transcript is not None:
@@ -248,8 +254,6 @@ class RuntimeStatusPresenter:
                 voice_label = f"명령 인식: {heard}"
             else:
                 voice_label = f"들은 말: {heard}"
-        elif diagnostics.recognition_reason == "TRANSCRIBING":
-            voice_label = "음성을 문장으로 변환하는 중"
         elif diagnostics.recognition_reason == "REVIEW_WAITING":
             voice_label = "승인 음성 대기 중 · 예 또는 아니요"
         elif diagnostics.speech_active:
@@ -314,7 +318,7 @@ class TkStatusView:
             raise RuntimeError("tkinter status HUD could not start") from error
         root.title(title)
         root.resizable(False, False)
-        root.geometry("800x570")
+        root.geometry("800x620")
         root.configure(bg="#030711")
 
         self._colors = {
@@ -534,10 +538,8 @@ class TkStatusView:
             font=("맑은 고딕", 10, "bold"),
         ).pack(side="right")
 
-        controls = tk.Frame(shell, bg=colors["bg"])
-        controls.pack(fill="x", pady=(16, 0))
-        primary = tk.Frame(controls, bg=colors["bg"])
-        primary.pack(side="left")
+        primary = tk.Frame(shell, bg=colors["bg"])
+        primary.pack(fill="x", pady=(12, 0))
         self._stop_button = self._button(primary, "■  현재 작업 중지", colors["danger"], width=16)
         self._stop_button.pack(side="left")
         self._hide_button = self._button(primary, "—  최소화", colors["cyan_dim"], width=11)
@@ -545,10 +547,10 @@ class TkStatusView:
         self._exit_button = self._button(primary, "×  종료", colors["muted"], width=9)
         self._exit_button.pack(side="left", padx=(8, 0))
 
-        tools = tk.Frame(controls, bg=colors["bg"])
-        tools.pack(side="right")
+        tools = tk.Frame(shell, bg=colors["bg"])
+        tools.pack(fill="x", pady=(8, 0))
         for label, callback in (
-            ("⌨  명령", open_text_command),
+            ("⌨ 텍스트 명령", open_text_command),
             ("✓  결과", open_verified_result),
             ("◇  후보 검토", review_skill_traces),
             ("⌁  상황", manage_skill_triggers),
@@ -558,7 +560,7 @@ class TkStatusView:
             if callback is not None:
                 button = self._button(tools, label, colors["cyan_dim"], width=10)
                 button.configure(command=callback)
-                button.pack(side="left", padx=(8, 0))
+                button.pack(side="left", fill="x", expand=True, padx=(0, 5))
 
         self._review_response = respond_skill_review
         self._review_id: UUID | None = None
@@ -908,7 +910,7 @@ class TkStatusView:
         self._review_id = review_id
         if review is None:
             self._review_panel.pack_forget()
-            self._root.geometry("800x570")
+            self._root.geometry("800x620")
             return
         registering = review.kind is SkillReviewKind.REGISTER
         question = "새 스킬로 등록하고 실행할까요?" if registering else "이 스킬로 실행할까요?"
@@ -935,7 +937,7 @@ class TkStatusView:
         )
         self._review_no.configure(state=enabled)
         self._review_panel.pack(fill="x", pady=(12, 0))
-        self._root.geometry("900x840")
+        self._root.geometry("900x890")
         self._root.deiconify()
 
     def schedule(self, delay_ms: int, callback: Callable[[], None]) -> None:

@@ -114,6 +114,20 @@ def test_skill_is_retrieved_then_binds_the_planner_to_its_allowlist(tmp_path: Pa
         SkillAwarePlanner(Planner("file.delete.trash"), store).plan("볼륨 알려 줘")
 
 
+def test_runtime_reuse_requires_registered_phrase_instead_of_keyword_overlap(
+    tmp_path: Path,
+) -> None:
+    store = LocalSkillCatalog(
+        tmp_path / "skills.sqlite3", default_registry(), require_call_phrase=True,
+    )
+    skill = store.approve(store.propose(proposal()).skill_id)
+
+    assert store.search("소리 좋은 노래를 추천해 줘")
+    assert store.retrieve("소리 좋은 노래를 추천해 줘").selected_skill is None
+    assert store.retrieve("볼륨 알려 줘").selected_skill == skill
+    assert store.retrieve("볼륨 조절해 줘.").selected_skill == skill
+
+
 def test_internal_invocation_binding_uses_exact_verified_skill(tmp_path: Path) -> None:
     store = catalog(tmp_path)
     bound = store.approve(store.propose(proposal()).skill_id)

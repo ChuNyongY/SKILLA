@@ -487,14 +487,6 @@ class FasterWhisperSpeechToText:
             beam_size=5,
             condition_on_previous_text=False,
             vad_filter=False,
-            initial_prompt=(
-                "한국어 Windows PC 명령입니다. 스킬라, 시스템 정보 확인, "
-                "파일 정리, 폴더 열기, 프로그램 실행, 소리 조절."
-            ),
-            hotwords=(
-                "스킬라 시스템 정보 확인 컴퓨터 정보 파일 폴더 프로그램 실행 "
-                "스킬 소리 음량 중지 취소"
-            ),
         )
         pieces: list[str] = []
         characters = 0

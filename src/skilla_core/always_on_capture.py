@@ -132,7 +132,8 @@ class AlwaysOnCapturePump:
                 if feedback_cooldown > 0:
                     feedback_cooldown -= 1
                     continue
-                review_active = getattr(self._runtime, "state", None) is AlwaysOnState.REVIEWING
+                runtime_state = getattr(self._runtime, "state", None)
+                review_active = runtime_state is AlwaysOnState.REVIEWING
                 set_review_active = getattr(self._voice_pipeline, "set_review_active", None)
                 if callable(set_review_active):
                     set_review_active(review_active)
@@ -143,6 +144,7 @@ class AlwaysOnCapturePump:
                     if (
                         normalized is not None
                         and not review_active
+                        and runtime_state is not AlwaysOnState.IDLE
                         and not self._stop_detector.matches(normalized)
                         and normalized == last_transcript
                         and frames - last_transcript_frame
@@ -155,7 +157,10 @@ class AlwaysOnCapturePump:
                     except Exception:
                         failed_reason = "RUNTIME_SUBMISSION_FAILED"
                         break
-                    if normalized is not None:
+                    if (
+                        normalized is not None
+                        and last_event.event_type is RuntimeEventType.TASK_STARTED
+                    ):
                         last_transcript = normalized
                         last_transcript_frame = frames
                     started += last_event.event_type is RuntimeEventType.TASK_STARTED

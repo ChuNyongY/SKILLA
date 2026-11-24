@@ -216,7 +216,8 @@ class VoicePipeline:
 
 _KOREAN_WAKE_PREFIX = re.compile(
     r"^\s*\uc2a4\s*\ud0ac\s*\ub77c(?:\uc57c)?"
-    r"(?:\s|[,\uff0c.!?\u2026:;~\-])*(.*)$",
+    r"(?=$|[\s,\uff0c.!?\u2026:;~\-])"
+    r"[\s,\uff0c.!?\u2026:;~\-]*(.*)$",
     re.DOTALL,
 )
 _LOCAL_STOP_PHRASES = frozenset(
@@ -228,7 +229,6 @@ _LOCAL_STOP_PHRASES = frozenset(
         "\uc2a4\ud0ac\ub77c \uba48\ucdb0",
     }
 )
-_KOREAN_WAKE_TOKENS = frozenset({"스킬라", "스킬나"})
 
 
 class KoreanWakeVoicePipeline:
@@ -475,14 +475,7 @@ def _split_korean_wake_command(transcript: str) -> tuple[bool, str]:
     match = _KOREAN_WAKE_PREFIX.fullmatch(normalized)
     if match is not None:
         return True, match.group(1).strip()
-    token_match = re.match(r"^\s*([^\s,\uff0c.!?\u2026:;~\-]+)(.*)$", normalized, re.DOTALL)
-    if token_match is None:
-        return False, normalized
-    token = token_match.group(1)
-    if token not in _KOREAN_WAKE_TOKENS:
-        return False, normalized
-    command = token_match.group(2).lstrip(" \t,\uff0c.!?\u2026:;~-").strip()
-    return True, command
+    return False, normalized
 
 
 def _normalize_local_phrase(transcript: str) -> str:

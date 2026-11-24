@@ -250,8 +250,8 @@ def test_faster_whisper_joins_segments_with_offline_options() -> None:
     assert options["language"] == "ko"
     assert options["condition_on_previous_text"] is False
     assert options["vad_filter"] is False
-    assert "스킬라" in str(options["initial_prompt"])
-    assert "시스템 정보" in str(options["hotwords"])
+    assert "initial_prompt" not in options
+    assert "hotwords" not in options
 
 
 def test_faster_whisper_bounds_transcript() -> None:

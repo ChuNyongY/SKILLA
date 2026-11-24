@@ -275,11 +275,14 @@ class LocalSkillCatalog:
     capability that is absent from the immutable Windows capability registry.
     """
 
-    def __init__(self, path: Path, registry: CapabilityRegistry) -> None:
+    def __init__(
+        self, path: Path, registry: CapabilityRegistry, *, require_call_phrase: bool = False,
+    ) -> None:
         if not path.is_absolute() or path.is_symlink() or not path.parent.is_dir():
             raise ValueError("skill catalog path must be absolute in an existing directory")
         self._path = path
         self._registry = registry
+        self._require_call_phrase = require_call_phrase
         try:
             validate_existing_sqlite(path)
             self._initialize()
@@ -366,7 +369,7 @@ class LocalSkillCatalog:
 
     def retrieve(self, query: str) -> SkillRetrievalResult:
         """Resolve one verified skill or fail safely when the best score is tied."""
-        scored = self._scored_matches(query)
+        scored = self._scored_matches(query, require_call_phrase=self._require_call_phrase)
         if not scored:
             return SkillRetrievalResult(decision=SkillRetrievalDecision.NO_MATCH)
         top_score = scored[0][0]
@@ -629,7 +632,9 @@ class LocalSkillCatalog:
             ).fetchone()
         return _record(row) if row is not None else None
 
-    def _scored_matches(self, query: str) -> tuple[tuple[int, SkillRecord], ...]:
+    def _scored_matches(
+        self, query: str, *, require_call_phrase: bool = False,
+    ) -> tuple[tuple[int, SkillRecord], ...]:
         tokens = _tokens(query)
         normalized_query = _normalize_phrase(query)
         if not tokens or not normalized_query:
@@ -643,6 +648,7 @@ class LocalSkillCatalog:
             (_retrieval_score(normalized_query, tokens, record), record)
             for row in rows
             for record in (_record(row),)
+            if not require_call_phrase or _matches_call_phrase(query, record)
         ]
         scored = [item for item in scored if item[0] > 0]
         scored.sort(
@@ -1047,6 +1053,21 @@ def _strip_registered_korean_suffix(
 
 def _normalize_phrase(value: str) -> str:
     return " ".join(value.casefold().split())
+
+
+def _matches_call_phrase(query: str, skill: SkillRecord) -> bool:
+    words = " ".join(re.findall(r"\w+", query.casefold()))
+    request = re.sub(
+        r"(?:\s*(?:해\s*주(?:세요|실래요)|해\s*줘|해줘요)|"
+        r"\s+(?:알려|실행해|확인해|보여)\s*(?:줘|주세요))$",
+        "",
+        words,
+    )
+    for phrase in (skill.title, *skill.triggers):
+        registered = " ".join(re.findall(r"\w+", phrase.casefold()))
+        if registered and registered in {words, request}:
+            return True
+    return False
 
 
 def _is_observation_context(context: Mapping[str, object] | None) -> bool:

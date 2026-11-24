@@ -284,17 +284,19 @@ def test_korean_single_noise_spike_does_not_start_transcription() -> None:
     assert not voice.is_capturing
 
 
-def test_korean_one_character_wake_typo_is_accepted_and_reported() -> None:
-    voice = korean_pipeline(SequencedStt("스킬나 시스템 정보 알려줘"))
+def test_korean_wake_player_requires_the_whole_call_word() -> None:
+    voice = korean_pipeline(SequencedStt("스킬나 시스템 정보 알려줘", "스킬라면 어떨까"))
 
     voice.feed(frame(b"A"))
     voice.feed(frame(b"A"))
     result = voice.feed(frame(b"S"))
 
-    assert result is not None
-    assert result.transcript == "시스템 정보 알려줘"
-    assert voice.diagnostics.last_transcript == "스킬나 시스템 정보 알려줘"
-    assert voice.diagnostics.recognition_reason == "COMMAND_RECOGNIZED"
+    assert result is None
+    assert voice.diagnostics.recognition_reason == "WAKE_WORD_NOT_FOUND"
+    voice.feed(frame(b"A"))
+    voice.feed(frame(b"A"))
+    assert voice.feed(frame(b"S")) is None
+    assert voice.diagnostics.recognition_reason == "WAKE_WORD_NOT_FOUND"
 
 
 def test_korean_unrelated_word_is_not_treated_as_fuzzy_wake_word() -> None:

@@ -215,3 +215,28 @@ def test_immediate_duplicate_command_is_not_submitted_twice() -> None:
     assert result.capture_count == 2
     assert result.tasks_started == 1
     assert result.duplicate_ignored == 1
+
+
+def test_repeated_command_can_run_again_after_completion() -> None:
+    planner = BlockingPlanner()
+    planner.release.set()
+    runtime, _, _ = runtime_with_executor(BlockingExecutor(), planner=planner)
+    pipeline = ScriptedPipeline([capture("스킬라 자기소개해 봐")] * 2)
+
+    class WaitForCompletionSource:
+        def frames(
+            self, cancellation: CancellationToken, *, max_frames: int,
+        ) -> Iterable[AudioFrame]:
+            yield FRAME
+            assert runtime.wait_for_idle(timeout_seconds=2) is not None
+            yield FRAME
+
+    result = AlwaysOnCapturePump(
+        frame_source=WaitForCompletionSource(),
+        voice_pipeline=pipeline,
+        runtime=runtime,
+    ).run(max_frames=2)
+    runtime.close()
+
+    assert result.tasks_started == 2
+    assert result.duplicate_ignored == 0

@@ -1,4 +1,4 @@
-SKILLA-PC 0.2.19 로컬 Windows 패키지
+SKILLA-PC 0.2.21 로컬 Windows 패키지
 
 이 프로그램은 현재 사용자 권한으로 실행합니다. NIM 키는 패키지에 들어 있지 않으며 Windows
 자격 증명 관리자에 따로 저장합니다.
@@ -52,6 +52,13 @@ SKILLA-PC 0.2.19 로컬 Windows 패키지
   구분해 기록합니다.
 - 같은 기능을 명령으로 실행할 수도 있습니다.
   .\SKILLA.exe run-product-console-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
+
+음성 명령 화면으로 실행
+
+- 패키지 폴더에서 아래 명령을 실행한 뒤 “스킬라, 시스템 정보 확인해 줘”라고 말합니다.
+  .\SKILLA.exe run-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
+- MIC 수치는 마이크 입력 크기를 표시합니다. 명령 인식 여부는 오른쪽 음성 상태에서 확인합니다.
+- 저장된 스킬을 사용하려면 스킬 관리에 표시된 이름 또는 호출 표현으로 요청합니다.
 
 스킬 관리
 
