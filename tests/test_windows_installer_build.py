@@ -19,7 +19,7 @@ from tools.build_windows_package import VERSION as PACKAGE_VERSION
 def test_release_version_is_consistent_across_builders_and_metadata() -> None:
     metadata = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
 
-    assert PACKAGE_VERSION == INSTALLER_VERSION == "0.2.26"
+    assert PACKAGE_VERSION == INSTALLER_VERSION == "0.2.27"
     assert metadata["project"]["version"] == PACKAGE_VERSION
     assert Path("docs/PACKAGE_README.ko.txt").read_text(encoding="utf-8").startswith(
         f"SKILLA-PC {PACKAGE_VERSION} "

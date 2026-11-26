@@ -23,6 +23,7 @@ class RuntimeStatusDisplay(FrozenModel):
     stop_enabled: bool
     voice_label: str = Field(default="마이크 상태 확인 중", min_length=1, max_length=80)
     heard_text: str = Field(default="", max_length=200)
+    voice_title: str = ""
     result_summary: str = Field(default="", max_length=480)
     input_level: float = Field(default=0.0, ge=0.0, le=1.0)
     audio_frame_count: int = Field(default=0, ge=0)
@@ -282,6 +283,10 @@ class RuntimeStatusPresenter:
             sequence=snapshot.sequence,
             stop_enabled=snapshot.state is not AlwaysOnState.CLOSED,
             voice_label=voice_label,
+            voice_title=(
+                "음성 인식 중" if diagnostics.recognition_reason == "TRANSCRIBING"
+                else "듣는 중" if diagnostics.input_sequence else "마이크 준비 중"
+            ) if diagnostics is not None else "",
             heard_text=(
                 diagnostics.last_transcript or ""
                 if diagnostics is not None and diagnostics.recognition_reason in {
@@ -380,20 +385,21 @@ class TkStatusView:
             justify="left",
         ).pack(side="left", padx=(16, 0), pady=(2, 0))
 
-        tk.Frame(shell, height=1, bg=colors["cyan_dim"]).pack(fill="x", pady=(12, 16))
-
         from .control_theme import action_menu, button
 
-        command_panel = tk.Frame(shell, bg=colors["panel_alt"], padx=16, pady=8)
-        command_panel.pack(fill="x", pady=(0, 12))
-        tk.Label(
-            command_panel, text="무엇을 도와드릴까요?", bg=colors["panel_alt"],
-            fg=colors["text"], font=("맑은 고딕", 17, "bold"), anchor="w",
-        ).pack(fill="x")
-        tk.Label(
-            command_panel, text="“스킬라, 시스템 정보 확인해 줘”라고 말해 보세요.",
-            bg=colors["panel_alt"], fg=colors["muted"], font=("맑은 고딕", 11), anchor="w",
-        ).pack(fill="x", pady=(3, 8))
+        menu_items = (
+            ("저장된 스킬", review_skills),
+            ("개정 후보", review_skill_traces),
+            ("상황 스킬", manage_skill_triggers),
+            ("예약 스킬", manage_skill_schedules),
+        )
+        if any(action is not None for _, action in menu_items):
+            action_menu(header, "스킬", menu_items).pack(side="right")
+        if open_display_selector is not None:
+            action_menu(header, "설정", (("작업 화면 선택", open_display_selector),)).pack(
+                side="right", padx=(0, 8),
+            )
+        tk.Frame(shell, height=1, bg=colors["cyan_dim"]).pack(fill="x", pady=(12, 14))
 
         self._state = tk.StringVar(value="준비 중")
         self._detail = tk.StringVar(value="상태를 불러오고 있습니다.")
@@ -409,43 +415,38 @@ class TkStatusView:
         self._exit_button.pack(side="right")
         if open_verified_result is not None:
             button(controls, "결과 자세히", open_verified_result).pack(side="left", padx=(8, 0))
-        menu_items = (
-            ("저장된 스킬", review_skills),
-            ("개정 후보", review_skill_traces),
-            ("상황 스킬", manage_skill_triggers),
-            ("예약 스킬", manage_skill_schedules),
-        )
-        if any(action is not None for _, action in menu_items):
-            action_menu(controls, "스킬", menu_items).pack(side="right", padx=(0, 8))
-        if open_display_selector is not None:
-            action_menu(controls, "설정", (("작업 화면 선택", open_display_selector),)).pack(
-                side="right", padx=(0, 8),
-            )
-
-        activity = tk.Frame(shell, bg=colors["panel_alt"], padx=16, pady=12)
+        activity = tk.Frame(shell, bg=colors["bg"], padx=16, pady=6)
         activity.pack(fill="x", pady=(0, 10))
-        self._state_label = tk.Label(
-            activity, textvariable=self._state, bg=colors["panel_alt"],
-            fg=colors["cyan"], font=("맑은 고딕", 18, "bold"),
-        )
-        self._state_label.pack(anchor="w")
-        tk.Label(
-            activity, textvariable=self._detail, bg=colors["panel_alt"],
-            fg=colors["text"], font=("맑은 고딕", 10), justify="left", wraplength=640,
-        ).pack(anchor="w", pady=(2, 8))
-        voice_row = tk.Frame(activity, bg=colors["panel_alt"])
-        voice_row.pack(fill="x")
         self._mic_meter = tk.Canvas(
-            voice_row, width=40, height=8, bg=colors["line"], highlightthickness=0,
+            activity, width=88, height=88, bg=colors["bg"], highlightthickness=0,
         )
-        self._mic_meter.pack(side="left", padx=(0, 8))
-        self._mic_fill = self._mic_meter.create_rectangle(
-            0, 0, 0, 8, fill=colors["cyan"], width=0,
+        self._mic_meter.pack(pady=(0, 5))
+        self._mic_meter.create_oval(5, 5, 83, 83, outline=colors["line"], width=1)
+        self._mic_ring = self._mic_meter.create_oval(
+            16, 16, 72, 72, outline=colors["cyan_dim"], width=2,
         )
+        for start in (28, 208):
+            self._mic_meter.create_arc(
+                8, 8, 80, 80, start=start, extent=58, style="arc",
+                outline=colors["cyan_dim"], width=2,
+            )
+        self._mic_meter.create_oval(
+            33, 33, 55, 55, outline=colors["cyan"], fill=colors["panel_alt"], width=2,
+        )
+        self._mic_meter.create_oval(41, 41, 47, 47, fill=colors["cyan"], width=0)
+        self._state_label = tk.Label(
+            activity, textvariable=self._state, bg=colors["bg"],
+            fg=colors["cyan"], font=("맑은 고딕", 22, "bold"),
+        )
+        self._state_label.pack()
         tk.Label(
-            voice_row, textvariable=self._voice, bg=colors["panel_alt"],
-            fg=colors["muted"], font=("맑은 고딕", 10), justify="left", wraplength=570,
-        ).pack(side="left")
+            activity, textvariable=self._detail, bg=colors["bg"],
+            fg=colors["muted"], font=("맑은 고딕", 10), wraplength=600,
+        ).pack(pady=(2, 3))
+        tk.Label(
+            activity, textvariable=self._voice, bg=colors["bg"],
+            fg=colors["muted"], font=("맑은 고딕", 10), wraplength=600,
+        ).pack()
         self._microphone_button = None
         self._voice_not_started = enable_voice is not None
         if enable_voice is not None:
@@ -462,8 +463,8 @@ class TkStatusView:
                 else:
                     self._microphone_button.configure(text="마이크 시작 실패")
 
-            self._microphone_button = button(voice_row, "마이크 켜기", start_microphone)
-            self._microphone_button.pack(side="right")
+            self._microphone_button = button(activity, "마이크 켜기", start_microphone)
+            self._microphone_button.pack(pady=(6, 0))
 
         transcript_card = tk.Frame(shell, bg=colors["panel"], padx=16, pady=10)
         transcript_card.pack(fill="x", pady=(0, 10))
@@ -589,7 +590,13 @@ class TkStatusView:
 
     def _animate_core(self) -> None:
         self._audio_level = smooth_reactor_level(self._audio_level, self._audio_level_target)
-        self._mic_meter.coords(self._mic_fill, 0, 0, round(40 * self._audio_level), 8)
+        radius = 25 + 11 * self._audio_level
+        self._mic_meter.coords(self._mic_ring, 44 - radius, 44 - radius, 44 + radius, 44 + radius)
+        self._mic_meter.itemconfigure(
+            self._mic_ring,
+            outline=self._colors["cyan"] if self._audio_level > 0.04 else self._colors["cyan_dim"],
+            width=2 + round(2 * self._audio_level),
+        )
         self._root.after(70, self._animate_core)
 
     def bind_handlers(
@@ -621,12 +628,25 @@ class TkStatusView:
             AlwaysOnState.CLOSED: self._colors["danger"],
         }
         color = state_colors[display.state]
-        self._state.set(display.state_label)
+        idle = display.state is AlwaysOnState.IDLE
+        self._state.set(
+            (
+                "마이크 꺼짐" if self._voice_not_started
+                else display.voice_title or display.state_label
+            )
+            if idle else display.state_label
+        )
         self._detail.set(
             "음성 명령을 쓰려면 마이크를 켜세요."
-            if self._voice_not_started and display.sequence == 0 else display.detail_label
+            if self._voice_not_started and display.sequence == 0
+            else "“스킬라, 시스템 정보 확인해 줘”라고 말해 보세요."
+            if idle and display.sequence == 0 else display.detail_label
         )
-        self._voice.set("마이크 꺼짐" if self._voice_not_started else display.voice_label)
+        self._voice.set(
+            "" if self._voice_not_started
+            else "마이크 연결됨" if display.voice_label.startswith("마이크 수신 중")
+            else display.voice_label
+        )
         if display.heard_text:
             self._heard.set(display.heard_text)
         self._result.set(display.result_summary or "명령을 실행하면 여기에 결과가 표시됩니다.")
