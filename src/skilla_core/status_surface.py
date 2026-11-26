@@ -22,6 +22,7 @@ class RuntimeStatusDisplay(FrozenModel):
     sequence: int = Field(ge=0)
     stop_enabled: bool
     voice_label: str = Field(default="마이크 상태 확인 중", min_length=1, max_length=80)
+    heard_text: str = Field(default="", max_length=200)
     result_summary: str = Field(default="", max_length=480)
     input_level: float = Field(default=0.0, ge=0.0, le=1.0)
     audio_frame_count: int = Field(default=0, ge=0)
@@ -247,14 +248,14 @@ class RuntimeStatusPresenter:
             voice_label = "듣는 중 · 말을 마치면 자동으로 인식합니다"
         elif diagnostics.wake_detected:
             voice_label = "호출어 인식됨 · 명령을 듣는 중"
-        elif diagnostics.last_transcript is not None:
-            heard = diagnostics.last_transcript[:32]
-            if diagnostics.recognition_reason == "WAKE_WORD_NOT_FOUND":
-                voice_label = "주변 음성 무시 · '스킬라'를 기다리는 중"
-            elif diagnostics.recognition_reason == "COMMAND_RECOGNIZED":
-                voice_label = f"명령 인식: {heard}"
-            else:
-                voice_label = f"들은 말: {heard}"
+        elif diagnostics.recognition_reason == "WAKE_WORD_NOT_FOUND":
+            voice_label = "주변 음성 무시 · '스킬라'를 기다리는 중"
+        elif diagnostics.recognition_reason == "COMMAND_RECOGNIZED":
+            voice_label = "음성 명령을 인식했습니다"
+        elif diagnostics.recognition_reason == "LOCAL_STOP_RECOGNIZED":
+            voice_label = "음성 중지 명령을 인식했습니다"
+        elif diagnostics.recognition_reason == "REVIEW_RESPONSE_RECOGNIZED":
+            voice_label = "음성 검토 응답을 인식했습니다"
         elif diagnostics.recognition_reason == "REVIEW_WAITING":
             voice_label = "승인 음성 대기 중 · 예 또는 아니요"
         elif diagnostics.speech_active:
@@ -281,6 +282,12 @@ class RuntimeStatusPresenter:
             sequence=snapshot.sequence,
             stop_enabled=snapshot.state is not AlwaysOnState.CLOSED,
             voice_label=voice_label,
+            heard_text=(
+                diagnostics.last_transcript or ""
+                if diagnostics is not None and diagnostics.recognition_reason in {
+                    "COMMAND_RECOGNIZED", "LOCAL_STOP_RECOGNIZED", "REVIEW_RESPONSE_RECOGNIZED",
+                } else ""
+            ),
             result_summary=(
                 "\n".join((snapshot.result.title, *snapshot.result.lines[:3]))[:480]
                 if snapshot.result is not None else ""
@@ -301,9 +308,7 @@ class TkStatusView:
     def __init__(
         self,
         *,
-        title: str = "SKILLA // CONTROL INTERFACE",
-        submit_text: Callable[[str], object] | None = None,
-        open_text_command: Callable[[], None] | None = None,
+        title: str = "SKILLA · 음성 작업 도우미",
         open_display_selector: Callable[[], None] | None = None,
         open_verified_result: Callable[[], None] | None = None,
         review_skills: Callable[[], None] | None = None,
@@ -366,7 +371,7 @@ class TkStatusView:
         ).pack(side="left")
         tk.Label(
             header,
-            text="Windows 작업 도우미",
+            text="음성 전용 Windows 도우미",
             bg=colors["bg"],
             fg=colors["muted"],
             font=("맑은 고딕", 11),
@@ -386,48 +391,14 @@ class TkStatusView:
             fg=colors["text"], font=("맑은 고딕", 17, "bold"), anchor="w",
         ).pack(fill="x")
         tk.Label(
-            command_panel, text="“스킬라, 시스템 정보 확인해 줘”라고 말하거나 아래에 입력하세요.",
+            command_panel, text="“스킬라, 시스템 정보 확인해 줘”라고 말해 보세요.",
             bg=colors["panel_alt"], fg=colors["muted"], font=("맑은 고딕", 11), anchor="w",
         ).pack(fill="x", pady=(3, 8))
-        self._inline_command_widgets: tuple[Any, ...] = ()
-        if submit_text is not None:
-            row = tk.Frame(command_panel, bg=colors["panel_alt"])
-            row.pack(fill="x")
-            command = tk.StringVar()
-            hint = tk.StringVar()
-            entry = tk.Entry(
-                row, textvariable=command, bg=colors["panel"], fg=colors["text"],
-                insertbackground=colors["cyan"], disabledbackground=colors["panel"],
-                disabledforeground=colors["muted"], font=("맑은 고딕", 13),
-                relief="flat", highlightthickness=1, highlightbackground=colors["line"],
-                highlightcolor=colors["cyan"],
-            )
-            entry.pack(side="left", fill="x", expand=True, ipady=6)
-
-            def send_command() -> None:
-                if entry.cget("state") == "disabled":
-                    return
-                try:
-                    submit_text(command.get())
-                except ValueError:
-                    hint.set("명령을 1~2000자 한 줄로 입력하세요.")
-                else:
-                    command.set("")
-                    hint.set("")
-
-            send = button(row, "명령 실행", send_command, primary=True)
-            send.pack(side="left", padx=(8, 0))
-            entry.bind("<Return>", lambda _event: send_command())
-            entry.focus_set()
-            tk.Label(
-                command_panel, textvariable=hint, bg=colors["panel_alt"],
-                fg=colors["danger"], anchor="w", font=("맑은 고딕", 9),
-            ).pack(fill="x")
-            self._inline_command_widgets = (entry, send)
 
         self._state = tk.StringVar(value="준비 중")
         self._detail = tk.StringVar(value="상태를 불러오고 있습니다.")
         self._voice = tk.StringVar(value="마이크 상태 확인 중")
+        self._heard = tk.StringVar(value="인식된 명령이 여기에 표시됩니다.")
         self._result = tk.StringVar(value="명령을 실행하면 여기에 결과가 표시됩니다.")
 
         controls = tk.Frame(shell, bg=colors["bg"])
@@ -450,8 +421,6 @@ class TkStatusView:
             action_menu(controls, "설정", (("작업 화면 선택", open_display_selector),)).pack(
                 side="right", padx=(0, 8),
             )
-        if open_text_command is not None and submit_text is None:
-            button(controls, "텍스트 창", open_text_command).pack(side="right", padx=(0, 8))
 
         activity = tk.Frame(shell, bg=colors["panel_alt"], padx=16, pady=12)
         activity.pack(fill="x", pady=(0, 10))
@@ -495,6 +464,17 @@ class TkStatusView:
 
             self._microphone_button = button(voice_row, "마이크 켜기", start_microphone)
             self._microphone_button.pack(side="right")
+
+        transcript_card = tk.Frame(shell, bg=colors["panel"], padx=16, pady=10)
+        transcript_card.pack(fill="x", pady=(0, 10))
+        tk.Label(
+            transcript_card, text="인식한 말", bg=colors["panel"],
+            fg=colors["muted"], font=("맑은 고딕", 10, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            transcript_card, textvariable=self._heard, bg=colors["panel"], fg=colors["text"],
+            font=("맑은 고딕", 12), justify="left", wraplength=640,
+        ).pack(anchor="w", pady=(4, 0))
 
         result_card = tk.Frame(shell, bg=colors["panel"], padx=16, pady=12)
         result_card.pack(fill="x")
@@ -621,7 +601,7 @@ class TkStatusView:
     ) -> None:
         self._stop_button.configure(command=on_stop)
         self._exit_button.configure(command=on_exit)
-        self._root.protocol("WM_DELETE_WINDOW", on_hide)
+        self._root.protocol("WM_DELETE_WINDOW", on_exit)
 
     def render(self, display: RuntimeStatusDisplay) -> None:
         self._render_review(display.skill_review)
@@ -643,17 +623,16 @@ class TkStatusView:
         color = state_colors[display.state]
         self._state.set(display.state_label)
         self._detail.set(
-            "명령을 입력하거나 마이크를 켜세요."
+            "음성 명령을 쓰려면 마이크를 켜세요."
             if self._voice_not_started and display.sequence == 0 else display.detail_label
         )
         self._voice.set("마이크 꺼짐" if self._voice_not_started else display.voice_label)
+        if display.heard_text:
+            self._heard.set(display.heard_text)
         self._result.set(display.result_summary or "명령을 실행하면 여기에 결과가 표시됩니다.")
         self._state_label.configure(fg=color)
         stop_enabled = display.stop_enabled and display.state is not AlwaysOnState.IDLE
         self._stop_button.configure(state="normal" if stop_enabled else "disabled")
-        command_state = "normal" if display.state is AlwaysOnState.IDLE else "disabled"
-        for widget in self._inline_command_widgets:
-            widget.configure(state=command_state)
 
     def _accept_trigger(self) -> None:
         if (
@@ -799,8 +778,6 @@ def run_tk_status_hud(
     request_runtime_stop: Callable[[], object],
     poll_interval_ms: int = 250,
     voice_diagnostics_provider: Callable[[], VoicePipelineDiagnostics] | None = None,
-    submit_text: Callable[[str], object] | None = None,
-    open_text_command: Callable[[], None] | None = None,
     open_display_selector: Callable[[], None] | None = None,
     open_verified_result: Callable[[], None] | None = None,
     review_skills: Callable[[], None] | None = None,
@@ -823,8 +800,6 @@ def run_tk_status_hud(
         request_capture_stop=request_capture_stop,
         request_runtime_stop=request_runtime_stop,
         view=TkStatusView(
-            submit_text=submit_text,
-            open_text_command=open_text_command,
             open_display_selector=open_display_selector,
             open_verified_result=open_verified_result,
             review_skills=review_skills,

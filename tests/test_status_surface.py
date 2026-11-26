@@ -267,6 +267,24 @@ def test_non_wake_background_speech_does_not_show_garbled_transcript() -> None:
 
     assert display.voice_label == "주변 음성 무시 · '스킬라'를 기다리는 중"
     assert "잘못" not in display.voice_label
+    assert display.heard_text == ""
+
+
+def test_command_transcript_is_visible_separately_from_its_result() -> None:
+    display = RuntimeStatusPresenter._display(
+        snapshot(),
+        VoicePipelineDiagnostics(
+            frame_count=25,
+            speech_frame_count=8,
+            max_wake_confidence=1.0,
+            wake_detected=False,
+            last_transcript="스킬라 시스템 정보 확인해 줘",
+            recognition_reason="COMMAND_RECOGNIZED",
+        ),
+    )
+
+    assert display.heard_text == "스킬라 시스템 정보 확인해 줘"
+    assert display.result_summary == ""
 
 
 def test_historical_speech_count_does_not_claim_current_speech() -> None:

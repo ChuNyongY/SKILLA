@@ -1,4 +1,4 @@
-SKILLA-PC 0.2.25 로컬 Windows 패키지
+SKILLA-PC 0.2.26 로컬 Windows 패키지
 
 이 프로그램은 현재 사용자 권한으로 실행합니다. NIM 키는 패키지에 들어 있지 않으며 Windows
 자격 증명 관리자에 따로 저장합니다.
@@ -6,7 +6,7 @@ SKILLA-PC 0.2.25 로컬 Windows 패키지
 개인정보와 원격 모델 안내
 
 - 스킬 저장·실행, Windows 조작, STT와 TTS는 사용자 PC에서 처리합니다.
-- 시스템 정보 명령, 중단 명령과 등록된 고정 대화 응답을 제외한 텍스트 명령 및 음성 인식 문자열은
+- 시스템 정보 명령, 중단 명령과 등록된 고정 대화 응답을 제외한 음성 인식 문자열은
   의도 판정과 계획 생성을 위해 NVIDIA NIM 원격 API로 전송될 수 있습니다. 음성 녹음 파일 자체는
   보내지 않습니다.
 - 여러 단계 작업의 후속 계획에는 앞 단계의 검증 관측값이 전송될 수 있습니다. 이때 capability별
@@ -40,24 +40,12 @@ SKILLA-PC 0.2.25 로컬 Windows 패키지
 - 구성 파일 또는 필수 구성 요소 안내가 나오면 Setup으로 다시 설치한 뒤 위의 사전점검 명령을
   실행합니다.
 
-텍스트 명령으로 실행
+음성으로 사용하기
 
-- Setup으로 설치하면 현재 사용자의 시작 메뉴에 `SKILLA-PC` 바로가기가 생성됩니다.
-- 키를 저장한 뒤 시작 메뉴의 SKILLA-PC, SKILLA-Tray.exe 또는 SKILLA.exe를 실행하면 명령 화면이
-  열립니다. 마이크 켜기를 누르면 음성 명령도 받을 수 있습니다.
-- 자기소개·인사·기능 안내·감사·종료 인사는 원격 모델이나 PC 실행 기능 없이 화면과 음성으로
-  응답합니다.
-- 음성 출력이 실패해도 화면 응답과 다음 명령 수신은 계속되며 상태 화면에 음성 전달 실패를
-  구분해 기록합니다.
-- 같은 기능을 명령으로 실행할 수도 있습니다.
-  .\SKILLA.exe run-product-console-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
-
-음성 명령 화면으로 실행
-
-- 패키지 폴더에서 아래 명령을 실행한 뒤 “스킬라, 시스템 정보 확인해 줘”라고 말합니다.
-  .\SKILLA.exe run-product-host-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
-- MIC 수치는 마이크 입력 크기를 표시합니다. 명령 인식 여부는 오른쪽 음성 상태에서 확인합니다.
-- 저장된 스킬을 사용하려면 스킬 관리에 표시된 이름 또는 호출 표현으로 요청합니다.
+- 시작 메뉴의 SKILLA-PC 또는 배포본의 SKILLA-Tray.exe를 실행하면 음성 대기가 시작됩니다.
+- “스킬라, 시스템 정보 확인해 줘”라고 말하면 인식한 문장과 작업 결과가 화면에 표시됩니다.
+- 작업을 멈추려면 “스킬라, 멈춰”라고 말하거나 작업 중지를 누릅니다.
+- 자기소개·인사·기능 안내는 로컬에서 화면과 음성으로 응답합니다.
 - 같은 Whisper 모델로 GPU 인식을 우선 준비합니다. Windows 사용자 폴더의
   %LOCALAPPDATA%\SKILLA\voice-runtime 또는 실행 환경의 NVIDIA CUDA 라이브러리를 사용합니다.
   GPU 초기화나 실행이 실패하면 CPU로 재시도합니다.
@@ -94,8 +82,8 @@ SKILLA-PC 0.2.25 로컬 Windows 패키지
 
 - 마이크 사용에 동의한 경우에만 다음 명령을 직접 실행합니다.
   .\SKILLA-Tray.exe run-product-tray-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
-- 상태 화면의 MIC 퍼센트와 원형 표시가 실제 입력 크기를 따라 실시간으로 움직입니다.
-- 짧은 잡음은 무시하고, 말을 마친 뒤 약 1초 동안 소리가 없을 때 한 문장으로 인식합니다.
+- 메인 화면의 작은 마이크 막대가 입력 크기를 표시합니다.
+- 말을 마친 뒤 약 0.8초 동안 소리가 없으면 한 문장으로 인식합니다.
 
 자동 시작은 기본 해제입니다. 명시적으로 원할 때만 install-autostart-credential을 실행하십시오.
 삭제할 때는 `remove-start-menu`, remove-autostart-credential과 remove-nim-credential을 먼저

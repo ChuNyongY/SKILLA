@@ -88,7 +88,7 @@ Wake/VAD/STT
 - 음성 HUD는 40ms 마이크 프레임을 100ms 간격으로 읽고, 실제 입력 크기를 지각 음량으로 환산해
   퍼센트·원형 크기·`RECEIVING`/`SPEAKING` 상태를 함께 갱신한다. 빠른 상승과 완만한 하강을 적용해
   단일 프레임 노이즈로 표시가 튀지 않으며, 별도 단조 증가 입력 순번으로 문장 경계에서도 멈추지 않는다.
-- 한국어 음성 구간은 120ms 연속 음성으로 시작하고 약 1초 연속 침묵 뒤 종료해 짧은 잡음과
+- 한국어 음성 구간은 120ms 연속 음성으로 시작하고 약 0.8초 연속 침묵 뒤 종료해 짧은 잡음과
   문장 중간의 자연스러운 쉼을 구분한다.
 - SQLite 기반 로컬 스킬 카탈로그: DRAFT → VERIFIED → RETIRED lifecycle
 - `skill-create`, `skill-approve`, `skill-search`, `skill-revise`, `skill-record-use`,

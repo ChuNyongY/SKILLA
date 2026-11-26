@@ -4,6 +4,7 @@ import math
 import re
 import struct
 import unicodedata
+from collections import deque
 from enum import StrEnum
 from typing import Protocol
 
@@ -144,6 +145,8 @@ class VoicePipeline:
             self._frames.append(frame)
             self._wake_confidence = wake_confidence
             self._diagnostic_wake_detected = True
+            self._last_transcript = None
+            self._recognition_reason = "LISTENING"
             return None
 
         self._frames.append(frame)
@@ -158,6 +161,7 @@ class VoicePipeline:
             return None
 
         captured = tuple(self._frames[: -self._silence_frames])
+        self._recognition_reason = "TRANSCRIBING"
         try:
             transcript = self._stt.transcribe(captured).strip()
         except Exception:
@@ -199,6 +203,8 @@ class VoicePipeline:
         )
         self._reset()
         self._reset_diagnostics()
+        self._last_transcript = None if transcript is None else _visible_transcript(transcript)
+        self._recognition_reason = "COMMAND_RECOGNIZED" if transcript is not None else reason
         return result
 
     def _reset(self) -> None:
@@ -265,6 +271,7 @@ class KoreanWakeVoicePipeline:
         self._armed_timeout_frames = armed_timeout_frames
         self._start_speech_frames = start_speech_frames
         self._speech_start: list[AudioFrame] = []
+        self._pre_roll: deque[AudioFrame] = deque(maxlen=4)
         self._frames: list[AudioFrame] = []
         self._silence_frames = 0
         self._armed_remaining = 0
@@ -315,13 +322,17 @@ class KoreanWakeVoicePipeline:
             if speech:
                 self._speech_start.append(frame)
                 if len(self._speech_start) >= self._start_speech_frames:
+                    self._frames.extend(self._pre_roll)
                     self._frames.extend(self._speech_start)
                     self._speech_start.clear()
+                    self._pre_roll.clear()
                     self._silence_frames = 0
                     self._last_transcript = None
                     self._recognition_reason = "LISTENING"
             else:
+                self._pre_roll.extend(self._speech_start)
                 self._speech_start.clear()
+                self._pre_roll.append(frame)
             if not speech and self._armed_remaining == 0:
                 self._diagnostic_wake_detected = False
             return None
@@ -333,8 +344,8 @@ class KoreanWakeVoicePipeline:
         if self._silence_frames < self._end_silence_frames:
             return None
         # The energy gate can label a quiet final syllable as silence.
-        # Retain four frames of tail audio without extending the endpoint wait.
-        trailing_frames_to_trim = max(0, self._silence_frames - 4)
+        # Preserve weak tail syllables without extending the endpoint wait.
+        trailing_frames_to_trim = max(0, self._silence_frames - 6)
         spoken = tuple(self._frames[: len(self._frames) - trailing_frames_to_trim])
         return self._complete_utterance(spoken, "UTTERANCE_COMPLETE")
 
@@ -462,6 +473,7 @@ class KoreanWakeVoicePipeline:
 
     def _reset_utterance(self) -> None:
         self._speech_start.clear()
+        self._pre_roll.clear()
         self._frames.clear()
         self._silence_frames = 0
 

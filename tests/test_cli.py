@@ -448,7 +448,6 @@ def test_credential_product_commands_do_not_accept_a_secret_path() -> None:
         "check-product-service-credential",
         "run-product-host-credential",
         "run-product-tray-credential",
-        "run-product-console-credential",
         "install-autostart-credential",
     ):
         parsed = parser.parse_args((command, "C:/project", "C:/project/config.json"))
@@ -456,81 +455,9 @@ def test_credential_product_commands_do_not_accept_a_secret_path() -> None:
         assert not hasattr(parsed, "nim_secret")
 
 
-def test_text_product_console_does_not_start_microphone_capture(
-    monkeypatch: MonkeyPatch,
-    capsys: CaptureFixture[str],
-) -> None:
-    calls: list[str] = []
-
-    class Runtime:
-        def close(self) -> RuntimeEvent:
-            calls.append("close")
-            return RuntimeEvent(
-                event_type=RuntimeEventType.CLOSED,
-                reason="RUNTIME_CLOSED",
-            )
-
-    runtime = Runtime()
-    display = object()
-    skills = object()
-    traces = object()
-    workflow = object()
-    service = SimpleNamespace(
-        runtime=SimpleNamespace(runtime=runtime),
-        display=display,
-        skills=skills,
-        skill_traces=traces,
-        skill_draft_workflow=workflow,
-        configuration=SimpleNamespace(
-            settings=SimpleNamespace(hud_poll_interval_ms=250)
-        ),
-    )
-    monkeypatch.setattr(
-        cli_module,
-        "build_windows_product_service_with_secret_loader",
-        lambda *_args: service,
-    )
-    monkeypatch.setattr(
-        cli_module,
-        "run_tk_text_command",
-        lambda received, **kwargs: (
-            calls.append("window"),
-            kwargs["review_skills"](),
-            kwargs["review_skill_traces"](),
-            kwargs["open_display_selector"](),
-        )
-        if received is runtime
-        else None,
-    )
-    monkeypatch.setattr(
-        cli_module,
-        "run_tk_display_selector",
-        lambda received: calls.append("display") if received is display else None,
-    )
-    monkeypatch.setattr(
-        cli_module,
-        "run_tk_skill_review",
-        lambda received: calls.append("skills") if received is skills else None,
-    )
-    monkeypatch.setattr(
-        cli_module,
-        "run_tk_skill_trace_review",
-        lambda received_traces, received_workflow, received_skills: calls.append("traces")
-        if (received_traces, received_workflow, received_skills)
-        == (traces, workflow, skills)
-        else None,
-    )
-
-    result = main(
-        ("run-product-console-credential", "C:/project", "C:/config.json")
-    )
-
-    assert result == 0
-    assert calls == ["window", "skills", "traces", "display", "close"]
-    assert json.loads(capsys.readouterr().out)["event_type"] == "CLOSED"
 
 
-def test_frozen_double_click_defaults_to_dashboard_without_microphone(
+def test_frozen_double_click_defaults_to_voice_dashboard(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -570,7 +497,6 @@ def test_frozen_double_click_defaults_to_dashboard_without_microphone(
             "run-product-host-credential",
             str(tmp_path.resolve()),
             str(config.resolve()),
-            "--mic-off",
             ),
         ),
         (executable, ()),

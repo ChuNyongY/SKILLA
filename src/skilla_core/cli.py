@@ -129,7 +129,6 @@ from .state_backup import (
 from .status_surface import run_tk_status_hud
 from .study_analysis import StudyCondition, analyze_paired_study, load_study_observations
 from .supertonic_tts import SupertonicTtsRunner
-from .text_command_surface import run_tk_text_command
 from .user_validation import (
     ConsoleConsentProvider,
     UserValidationSink,
@@ -598,10 +597,6 @@ def build_parser() -> argparse.ArgumentParser:
         (
             "run-product-tray-credential",
             "Start the tray host using Windows Credential Manager",
-        ),
-        (
-            "run-product-console-credential",
-            "Start a text-only product window without opening the microphone",
         ),
     ):
         credential_product = subparsers.add_parser(command, help=help_text)
@@ -1491,7 +1486,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
             return 1
         try:
             run_tk_status_hud(
-                submit_text=service.runtime.runtime.submit_text,
                 status_provider=service.runtime.runtime.status_snapshot,
                 respond_skill_review=service.runtime.runtime.respond_skill_review,
                 voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,
@@ -1500,16 +1494,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 request_runtime_stop=service.lifecycle.stop,
                 poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
                 open_display_selector=lambda: run_tk_display_selector(service.display),
-                open_text_command=lambda: run_tk_text_command(
-                    service.runtime.runtime,
-                    poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                    manage_skill_triggers=lambda: run_tk_skill_trigger_review(
-                        service.skill_triggers, service.skills
-                    ),
-                    manage_skill_schedules=lambda: run_tk_skill_schedule_review(
-                        service.skill_schedules, service.skills
-                    ),
-                ),
                 open_verified_result=lambda: run_tk_verified_result(
                     lambda: service.runtime.runtime.status_snapshot().result
                 ),
@@ -1540,34 +1524,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
             stopped = service.lifecycle.stop()
         print(stopped.model_dump_json(indent=2))
         return 0 if stopped.state.value == "STOPPED" else 1
-    if args.command == "run-product-console-credential":
-        service = build_windows_product_service_with_secret_loader(
-            args.project_root,
-            args.config,
-            load_nim_credential,
-        )
-        try:
-            run_tk_text_command(
-                service.runtime.runtime,
-                poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                open_display_selector=lambda: run_tk_display_selector(service.display),
-                review_skills=lambda: run_tk_skill_review(service.skills),
-                review_skill_traces=lambda: run_tk_skill_trace_review(
-                    service.skill_traces,
-                    service.skill_draft_workflow,
-                    service.skills,
-                ),
-                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
-                    service.skill_triggers, service.skills
-                ),
-                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
-                    service.skill_schedules, service.skills
-                ),
-            )
-        finally:
-            closed = service.runtime.runtime.close()
-        print(closed.model_dump_json(indent=2))
-        return 0 if closed.event_type.value == "CLOSED" else 1
     if args.command == "run-product-host-credential":
         service = build_windows_product_service_with_secret_loader(
             args.project_root,
@@ -1588,7 +1544,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
 
         try:
             run_tk_status_hud(
-                submit_text=service.runtime.runtime.submit_text,
                 status_provider=service.runtime.runtime.status_snapshot,
                 respond_skill_review=service.runtime.runtime.respond_skill_review,
                 voice_diagnostics_provider=lambda: service.voice.pipeline.diagnostics,
@@ -1601,16 +1556,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
                     if args.mic_off else None
                 ),
                 open_display_selector=lambda: run_tk_display_selector(service.display),
-                open_text_command=lambda: run_tk_text_command(
-                    service.runtime.runtime,
-                    poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                    manage_skill_triggers=lambda: run_tk_skill_trigger_review(
-                        service.skill_triggers, service.skills
-                    ),
-                    manage_skill_schedules=lambda: run_tk_skill_schedule_review(
-                        service.skill_schedules, service.skills
-                    ),
-                ),
                 open_verified_result=lambda: run_tk_verified_result(
                     lambda: service.runtime.runtime.status_snapshot().result
                 ),
@@ -1665,23 +1610,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 service.skills,
             ),
             select_display=lambda: run_tk_display_selector(service.display),
-            text_command=lambda: run_tk_text_command(
-                service.runtime.runtime,
-                poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                open_display_selector=lambda: run_tk_display_selector(service.display),
-                review_skills=lambda: run_tk_skill_review(service.skills),
-                review_skill_traces=lambda: run_tk_skill_trace_review(
-                    service.skill_traces,
-                    service.skill_draft_workflow,
-                    service.skills,
-                ),
-                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
-                    service.skill_triggers, service.skills
-                ),
-                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
-                    service.skill_schedules, service.skills
-                ),
-            ),
         )
         try:
             tray.run()
@@ -1712,23 +1640,6 @@ def main(arguments: Sequence[str] | None = None) -> int:
                 service.skills,
             ),
             select_display=lambda: run_tk_display_selector(service.display),
-            text_command=lambda: run_tk_text_command(
-                service.runtime.runtime,
-                poll_interval_ms=service.configuration.settings.hud_poll_interval_ms,
-                open_display_selector=lambda: run_tk_display_selector(service.display),
-                review_skills=lambda: run_tk_skill_review(service.skills),
-                review_skill_traces=lambda: run_tk_skill_trace_review(
-                    service.skill_traces,
-                    service.skill_draft_workflow,
-                    service.skills,
-                ),
-                manage_skill_triggers=lambda: run_tk_skill_trigger_review(
-                    service.skill_triggers, service.skills
-                ),
-                manage_skill_schedules=lambda: run_tk_skill_schedule_review(
-                    service.skill_schedules, service.skills
-                ),
-            ),
         )
         try:
             tray.run()
@@ -2067,7 +1978,6 @@ def entrypoint() -> None:
                         "run-product-host-credential",
                         str(root),
                         str(config),
-                        "--mic-off",
                     )
                 ),
             )
