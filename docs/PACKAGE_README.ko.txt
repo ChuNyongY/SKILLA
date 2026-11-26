@@ -1,4 +1,4 @@
-SKILLA-PC 0.2.27 로컬 Windows 패키지
+SKILLA-PC 0.2.28 로컬 Windows 패키지
 
 이 프로그램은 현재 사용자 권한으로 실행합니다. NIM 키는 패키지에 들어 있지 않으며 Windows
 자격 증명 관리자에 따로 저장합니다.
@@ -82,7 +82,7 @@ SKILLA-PC 0.2.27 로컬 Windows 패키지
 
 - 마이크 사용에 동의한 경우에만 다음 명령을 직접 실행합니다.
   .\SKILLA-Tray.exe run-product-tray-credential (Get-Location).Path (Resolve-Path .\config\product_host.json).Path
-- 메인 화면 중앙의 청록색 원이 마이크 입력 크기에 반응합니다.
+- 메인 화면 중앙 계기판의 링과 MIC 퍼센트가 마이크 입력 크기에 따라 바뀝니다.
 - 말을 마친 뒤 약 0.8초 동안 소리가 없으면 한 문장으로 인식합니다.
 
 자동 시작은 기본 해제입니다. 명시적으로 원할 때만 install-autostart-credential을 실행하십시오.

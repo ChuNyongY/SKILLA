@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from time import monotonic
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -308,7 +309,7 @@ class RuntimeStatusPresenter:
 class TkStatusView:
     """Cyber HUD for the SKILLA local skill agent."""
 
-    _MAIN_SIZE = "760x600"
+    _MAIN_SIZE = "760x710"
 
     def __init__(
         self,
@@ -336,7 +337,7 @@ class TkStatusView:
         except tk.TclError as error:
             raise RuntimeError("tkinter status HUD could not start") from error
         root.title(title)
-        root.minsize(720, 560)
+        root.minsize(720, 680)
         root.geometry(self._MAIN_SIZE)
         root.configure(bg="#030711")
 
@@ -417,23 +418,30 @@ class TkStatusView:
             button(controls, "결과 자세히", open_verified_result).pack(side="left", padx=(8, 0))
         activity = tk.Frame(shell, bg=colors["bg"], padx=16, pady=6)
         activity.pack(fill="x", pady=(0, 10))
-        self._mic_meter = tk.Canvas(
-            activity, width=88, height=88, bg=colors["bg"], highlightthickness=0,
+        self._core = tk.Canvas(
+            activity,
+            width=190,
+            height=190,
+            bg=colors["bg"],
+            highlightthickness=0,
         )
-        self._mic_meter.pack(pady=(0, 5))
-        self._mic_meter.create_oval(5, 5, 83, 83, outline=colors["line"], width=1)
-        self._mic_ring = self._mic_meter.create_oval(
-            16, 16, 72, 72, outline=colors["cyan_dim"], width=2,
+        self._core.pack()
+        self._core_ring_ids = self._draw_core()
+        self._core_level_id = self._core.create_text(
+            95,
+            178,
+            text="MIC 00%",
+            fill=colors["cyan_dim"],
+            font=("Consolas", 8, "bold"),
         )
-        for start in (28, 208):
-            self._mic_meter.create_arc(
-                8, 8, 80, 80, start=start, extent=58, style="arc",
-                outline=colors["cyan_dim"], width=2,
-            )
-        self._mic_meter.create_oval(
-            33, 33, 55, 55, outline=colors["cyan"], fill=colors["panel_alt"], width=2,
-        )
-        self._mic_meter.create_oval(41, 41, 47, 47, fill=colors["cyan"], width=0)
+        self._core_caption = tk.StringVar(value="VOICE LINK // STANDBY")
+        tk.Label(
+            activity,
+            textvariable=self._core_caption,
+            bg=colors["bg"],
+            fg=colors["cyan_dim"],
+            font=("Consolas", 8, "bold"),
+        ).pack()
         self._state_label = tk.Label(
             activity, textvariable=self._state, bg=colors["bg"],
             fg=colors["cyan"], font=("맑은 고딕", 22, "bold"),
@@ -563,6 +571,7 @@ class TkStatusView:
         self._audio_level = 0.0
         self._audio_level_target = 0.0
         self._audio_frame_count = -1
+        self._last_audio_update = 0.0
         self._animate_core()
 
     def _button(self, parent: Any, text: str, color: str, *, width: int) -> Any:
@@ -588,15 +597,77 @@ class TkStatusView:
             cursor="hand2",
         )
 
-    def _animate_core(self) -> None:
-        self._audio_level = smooth_reactor_level(self._audio_level, self._audio_level_target)
-        radius = 25 + 11 * self._audio_level
-        self._mic_meter.coords(self._mic_ring, 44 - radius, 44 - radius, 44 + radius, 44 + radius)
-        self._mic_meter.itemconfigure(
-            self._mic_ring,
-            outline=self._colors["cyan"] if self._audio_level > 0.04 else self._colors["cyan_dim"],
-            width=2 + round(2 * self._audio_level),
+    def _draw_core(self) -> tuple[int, ...]:
+        colors = self._colors
+        canvas = self._core
+        for start, extent in ((20, 105), (165, 80), (280, 55)):
+            canvas.create_arc(
+                18,
+                18,
+                172,
+                172,
+                start=start,
+                extent=extent,
+                style="arc",
+                width=2,
+                outline=colors["cyan_dim"],
+            )
+        canvas.create_oval(35, 35, 155, 155, outline=colors["line"], width=1)
+        outer = canvas.create_oval(48, 48, 142, 142, outline=colors["cyan_dim"], width=2)
+        middle = canvas.create_oval(61, 61, 129, 129, outline=colors["cyan"], width=2)
+        inner = canvas.create_oval(
+            73,
+            73,
+            117,
+            117,
+            fill="#0b3a4d",
+            outline=colors["cyan"],
+            width=2,
         )
+        canvas.create_text(
+            95,
+            95,
+            text="S",
+            fill=colors["text"],
+            font=("Consolas", 20, "bold"),
+        )
+        for angle in range(0, 360, 45):
+            import math
+
+            radians = math.radians(angle)
+            x1 = 95 + 61 * math.cos(radians)
+            y1 = 95 + 61 * math.sin(radians)
+            x2 = 95 + 70 * math.cos(radians)
+            y2 = 95 + 70 * math.sin(radians)
+            canvas.create_line(x1, y1, x2, y2, fill=colors["cyan_dim"], width=2)
+        return outer, middle, inner
+
+    def _animate_core(self) -> None:
+        target = self._audio_level_target if monotonic() - self._last_audio_update < 0.3 else 0.0
+        level = smooth_reactor_level(self._audio_level, target)
+        color = self._colors["cyan"] if level >= 0.02 else self._colors["cyan_dim"]
+        self._audio_level = level
+        width, radius = reactor_pulse_geometry(level)
+        self._core.coords(
+            self._core_ring_ids[0], 95 - radius, 95 - radius, 95 + radius, 95 + radius
+        )
+        self._core.itemconfigure(self._core_ring_ids[0], outline=color, width=width)
+        self._core.itemconfigure(
+            self._core_ring_ids[1],
+            outline=self._colors["cyan"] if level >= 0.2 else self._colors["cyan_dim"],
+            width=max(2, width - 2),
+        )
+        self._core.itemconfigure(
+            self._core_ring_ids[2],
+            outline=self._colors["success"] if level >= 0.5 else self._colors["cyan"],
+            width=max(2, width - 3),
+        )
+        self._core.itemconfigure(
+            self._core_level_id,
+            text=reactor_level_label(level),
+            fill=color,
+        )
+        self._core_caption.set(reactor_activity_label(level))
         self._root.after(70, self._animate_core)
 
     def bind_handlers(
@@ -617,9 +688,7 @@ class TkStatusView:
         if display.audio_frame_count != self._audio_frame_count:
             self._audio_level_target = display.input_level
             self._audio_frame_count = display.audio_frame_count
-        else:
-            # A stalled or intentionally paused capture must not leave a frozen level.
-            self._audio_level_target = 0.0
+            self._last_audio_update = monotonic()
         state_colors = {
             AlwaysOnState.IDLE: self._colors["cyan"],
             AlwaysOnState.PLANNING: self._colors["warning"],
@@ -774,7 +843,7 @@ class TkStatusView:
         )
         self._review_no.configure(state=enabled)
         self._review_panel.pack(fill="x", pady=(12, 0))
-        self._root.geometry("780x810")
+        self._root.geometry("780x890")
         self._root.deiconify()
 
     def schedule(self, delay_ms: int, callback: Callable[[], None]) -> None:
